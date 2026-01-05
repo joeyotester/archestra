@@ -248,6 +248,185 @@ setInterval(
   10 * 60 * 1000,
 );
 
+/**
+ * Refresh an OAuth access token using the stored refresh token.
+ * This function is called when an access token is expired or about to expire.
+ *
+ * @param secretId - The ID of the secret containing the OAuth tokens
+ * @param catalogId - The ID of the catalog item (MCP server) for OAuth config
+ * @returns Object with new tokens if successful, null if refresh failed or not possible
+ */
+export async function refreshOAuthToken(
+  secretId: string,
+  catalogId: string,
+): Promise<{
+  access_token: string;
+  refresh_token?: string;
+  expires_at?: number;
+} | null> {
+  try {
+    // Get the current secret with refresh token
+    const secret = await secretManager().getSecret(secretId);
+    if (!secret?.secret) {
+      logger.warn({ secretId }, "refreshOAuthToken: Secret not found");
+      return null;
+    }
+
+    const currentTokens = secret.secret as {
+      access_token?: string;
+      refresh_token?: string;
+      expires_in?: number;
+      expires_at?: number;
+      token_type?: string;
+    };
+
+    if (!currentTokens.refresh_token) {
+      logger.warn(
+        { secretId },
+        "refreshOAuthToken: No refresh token available",
+      );
+      return null;
+    }
+
+    // Get catalog item with OAuth configuration
+    const catalogItem =
+      await InternalMcpCatalogModel.findByIdWithResolvedSecrets(catalogId);
+    if (!catalogItem?.oauthConfig) {
+      logger.warn(
+        { catalogId },
+        "refreshOAuthToken: Catalog item or OAuth config not found",
+      );
+      return null;
+    }
+
+    const oauthConfig = catalogItem.oauthConfig;
+
+    // Discover token endpoint
+    let tokenEndpoint: string;
+    let discoveryServerUrl = oauthConfig.server_url;
+
+    // Try resource metadata discovery first if supported
+    if (oauthConfig.supports_resource_metadata) {
+      try {
+        const resourceMetadata = await discoverOAuthResourceMetadata(
+          oauthConfig.server_url,
+        );
+        if (
+          resourceMetadata.authorization_servers &&
+          Array.isArray(resourceMetadata.authorization_servers) &&
+          resourceMetadata.authorization_servers.length > 0
+        ) {
+          discoveryServerUrl = resourceMetadata.authorization_servers[0];
+        }
+      } catch {
+        // Continue with standard discovery
+      }
+    }
+
+    try {
+      const metadata =
+        await discoverAuthorizationServerMetadata(discoveryServerUrl);
+      tokenEndpoint = metadata.token_endpoint;
+    } catch {
+      // Fallback to config or constructed endpoint
+      tokenEndpoint =
+        oauthConfig.token_endpoint || `${oauthConfig.server_url}/token`;
+    }
+
+    logger.info(
+      { secretId, catalogId, tokenEndpoint },
+      "refreshOAuthToken: Attempting token refresh",
+    );
+
+    // Exchange refresh token for new access token
+    const tokenResponse = await fetch(tokenEndpoint, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+        Accept: "application/json",
+      },
+      body: new URLSearchParams({
+        grant_type: "refresh_token",
+        refresh_token: currentTokens.refresh_token,
+        client_id: oauthConfig.client_id,
+        ...(oauthConfig.client_secret && {
+          client_secret: oauthConfig.client_secret,
+        }),
+      }),
+    });
+
+    if (!tokenResponse.ok) {
+      const errorText = await tokenResponse.text();
+      logger.error(
+        { secretId, status: tokenResponse.status, error: errorText },
+        "refreshOAuthToken: Token refresh request failed",
+      );
+      return null;
+    }
+
+    const tokenData = (await tokenResponse.json()) as {
+      access_token?: string;
+      refresh_token?: string;
+      expires_in?: number;
+      error?: string;
+      error_description?: string;
+    };
+
+    if (!tokenData.access_token) {
+      logger.error(
+        {
+          secretId,
+          error: tokenData.error,
+          errorDescription: tokenData.error_description,
+        },
+        "refreshOAuthToken: No access token in refresh response",
+      );
+      return null;
+    }
+
+    // Build updated secret payload
+    const updatedSecretPayload = {
+      access_token: tokenData.access_token,
+      // Use new refresh token if provided, otherwise keep the old one
+      refresh_token: tokenData.refresh_token || currentTokens.refresh_token,
+      ...(tokenData.expires_in && {
+        expires_in: tokenData.expires_in,
+        expires_at: Date.now() + tokenData.expires_in * 1000,
+      }),
+      token_type: "Bearer",
+    };
+
+    // Update the secret in storage
+    await secretManager().updateSecret(secretId, updatedSecretPayload);
+
+    logger.info(
+      {
+        secretId,
+        catalogId,
+        hasNewRefreshToken: !!tokenData.refresh_token,
+        expiresIn: tokenData.expires_in,
+      },
+      "refreshOAuthToken: Token refresh successful",
+    );
+
+    return {
+      access_token: tokenData.access_token,
+      refresh_token: updatedSecretPayload.refresh_token,
+      expires_at: updatedSecretPayload.expires_at,
+    };
+  } catch (error) {
+    logger.error(
+      {
+        secretId,
+        catalogId,
+        error: error instanceof Error ? error.message : String(error),
+      },
+      "refreshOAuthToken: Unexpected error during token refresh",
+    );
+    return null;
+  }
+}
+
 const oauthRoutes: FastifyPluginAsyncZod = async (fastify) => {
   /**
    * Initiate OAuth flow for an MCP server
@@ -694,7 +873,11 @@ const oauthRoutes: FastifyPluginAsyncZod = async (fastify) => {
         ...(tokenData.refresh_token && {
           refresh_token: tokenData.refresh_token,
         }),
-        ...(tokenData.expires_in && { expires_in: tokenData.expires_in }),
+        ...(tokenData.expires_in && {
+          expires_in: tokenData.expires_in,
+          // Store absolute expiration timestamp for reliable expiration checking
+          expires_at: Date.now() + tokenData.expires_in * 1000,
+        }),
         token_type: "Bearer",
       };
 
