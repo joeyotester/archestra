@@ -20,6 +20,7 @@ import {
   useDeleteMcpServer,
   useInstallMcpServer,
   useMcpServers,
+  useReinstallMcpServer,
   useRestartAllMcpServerInstallations,
 } from "@/lib/mcp-server.query";
 import { CreateCatalogDialog } from "./create-catalog-dialog";
@@ -70,6 +71,7 @@ export function InternalMCPCatalog({
   });
   const installMutation = useInstallMcpServer();
   const deleteMutation = useDeleteMcpServer();
+  const reinstallMutation = useReinstallMcpServer();
   const restartAllMutation = useRestartAllMcpServerInstallations();
   const session = authClient.useSession();
   const currentUserId = session.data?.user?.id;
@@ -405,18 +407,16 @@ export function InternalMCPCatalog({
 
     closeDialog("reinstall");
 
-    // Delete the installed server using its server ID
-    await deleteMutation.mutateAsync({
+    // For local servers, track as installing to show progress
+    if (catalogItemForReinstall.serverType === "local") {
+      setInstallingServerIds((prev) => new Set([...prev, installedServer.id]));
+    }
+
+    // Atomic reinstall: preserves mcp_server record and agent_tools assignments
+    await reinstallMutation.mutateAsync({
       id: installedServer.id,
       name: catalogItemForReinstall.name,
     });
-
-    // Then reinstall (for local servers, this will prompt for credentials again)
-    if (catalogItemForReinstall.serverType === "local") {
-      await handleInstallLocalServer(catalogItemForReinstall);
-    } else {
-      await handleInstallRemoteServer(catalogItemForReinstall, false);
-    }
 
     setCatalogItemForReinstall(null);
   };
@@ -653,7 +653,7 @@ export function InternalMCPCatalog({
         isRemoteServer={catalogItemForReinstall?.serverType === "remote"}
         onConfirm={handleReinstallConfirm}
         serverName={catalogItemForReinstall?.name || ""}
-        isReinstalling={installMutation.isPending}
+        isReinstalling={reinstallMutation.isPending}
       />
 
       <NoAuthInstallDialog

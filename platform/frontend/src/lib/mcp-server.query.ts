@@ -17,6 +17,7 @@ const {
   getMcpServer,
   getMcpServerLogs,
   restartMcpServer,
+  reinstallMcpServer,
   restartAllMcpServerInstallations,
 } = archestraApiSdk;
 
@@ -164,6 +165,43 @@ export function useRestartMcpServer() {
     },
     onError: (_error, variables) => {
       toast.error(`Failed to restart ${variables.name}`);
+    },
+  });
+}
+
+/**
+ * Atomic reinstall: stops deployment, starts with updated catalog config, refreshes tools.
+ * Preserves the mcp_server record and all agent_tools assignments.
+ */
+export function useReinstallMcpServer() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (data: { id: string; name: string }) => {
+      const { data: result, error } = await reinstallMcpServer({
+        path: { id: data.id },
+      });
+      if (error) {
+        const msg =
+          typeof error.error === "string"
+            ? error.error
+            : error.error?.message || "Unknown error";
+        throw new Error(msg);
+      }
+      return result;
+    },
+    onSuccess: async (_, variables) => {
+      await queryClient.refetchQueries({ queryKey: ["mcp-servers"] });
+      // Invalidate tools queries since tools may have been updated
+      queryClient.invalidateQueries({ queryKey: ["tools"] });
+      queryClient.invalidateQueries({ queryKey: ["tools", "unassigned"] });
+      queryClient.invalidateQueries({ queryKey: ["agent-tools"] });
+      queryClient.invalidateQueries({ queryKey: ["chat", "agents"] });
+      toast.success(`Successfully reinstalled ${variables.name}`);
+    },
+    onError: (error, variables) => {
+      toast.error(
+        `Failed to reinstall ${variables.name}: ${error instanceof Error ? error.message : "Unknown error"}`,
+      );
     },
   });
 }

@@ -18,9 +18,88 @@ import {
   InsertMcpServerSchema,
   type InternalMcpCatalogServerType,
   LocalMcpServerInstallationStatusSchema,
+  type McpServer,
   SelectMcpServerSchema,
   UuidIdSchema,
 } from "@/types";
+
+/**
+ * Shared async function for local MCP server installation.
+ * Waits for deployment, discovers tools, persists them, and assigns to profiles.
+ * Used by both install and reinstall to ensure identical behavior.
+ */
+async function installLocalMcpServer(params: {
+  mcpServer: McpServer;
+  catalogId: string;
+  catalogName: string;
+  /** Profile IDs to assign tools to. If not provided, auto-assigns to profiles that already have this catalog's tools. */
+  agentIds?: string[];
+}): Promise<void> {
+  const { mcpServer, catalogId, catalogName, agentIds } = params;
+
+  const k8sDeployment = McpServerRuntimeManager.getDeployment(mcpServer.id);
+  if (!k8sDeployment) {
+    throw new Error("Deployment manager not found");
+  }
+
+  logger.info(`Waiting for deployment to be ready: ${mcpServer.name}`);
+  await k8sDeployment.waitForDeploymentReady(60, 2000);
+
+  logger.info(
+    `Deployment is ready, updating status to discovering-tools: ${mcpServer.name}`,
+  );
+  await McpServerModel.update(mcpServer.id, {
+    localInstallationStatus: "discovering-tools",
+    localInstallationError: null,
+  });
+
+  logger.info(`Attempting to fetch tools from local server: ${mcpServer.name}`);
+  const tools = await McpServerModel.getToolsFromServer(mcpServer);
+  logger.info(`Discovered ${tools.length} tools from ${mcpServer.name}`);
+
+  const toolsToCreate = tools.map((tool) => ({
+    name: ToolModel.slugifyName(catalogName, tool.name),
+    description: tool.description,
+    parameters: tool.inputSchema,
+    catalogId,
+    mcpServerId: mcpServer.id,
+  }));
+
+  const createdTools = await ToolModel.bulkCreateToolsIfNotExists(toolsToCreate);
+  const toolIds = createdTools.map((t) => t.id);
+
+  // Assign tools to profiles
+  if (agentIds && agentIds.length > 0) {
+    // Explicit profile IDs provided (fresh install with agentIds)
+    await AgentToolModel.bulkCreateForAgentsAndTools(agentIds, toolIds, {
+      executionSourceMcpServerId: mcpServer.id,
+    });
+    logger.info(`Assigned ${toolIds.length} tools to ${agentIds.length} profiles`);
+  } else {
+    // Auto-assign to profiles that already have this catalog's tools (reinstall case)
+    const profilesWithTools =
+      await ToolModel.getProfilesWithCatalogTools(catalogId);
+    if (profilesWithTools.length > 0 && toolIds.length > 0) {
+      await AgentToolModel.bulkCreateForAgentsAndTools(
+        profilesWithTools,
+        toolIds,
+        { executionSourceMcpServerId: mcpServer.id },
+      );
+      logger.info(
+        `Auto-assigned ${toolIds.length} tools to ${profilesWithTools.length} profiles`,
+      );
+    }
+  }
+
+  await McpServerModel.update(mcpServer.id, {
+    localInstallationStatus: "success",
+    localInstallationError: null,
+  });
+
+  logger.info(
+    `Successfully installed ${tools.length} tools from local server: ${mcpServer.name}`,
+  );
+}
 
 const mcpServerRoutes: FastifyPluginAsyncZod = async (fastify) => {
   fastify.get(
@@ -396,90 +475,22 @@ const mcpServerRoutes: FastifyPluginAsyncZod = async (fastify) => {
             );
 
             // Start async tool fetching in the background (non-blocking)
-            (async () => {
-              try {
-                // Wait for the deployment to be fully ready before fetching tools
-                const k8sDeployment = McpServerRuntimeManager.getDeployment(
-                  mcpServer.id,
-                );
-                if (!k8sDeployment) {
-                  throw new Error("Deployment manager not found");
-                }
-
-                fastify.log.info(
-                  `Waiting for deployment to be ready: ${mcpServer.name}`,
-                );
-
-                // Wait for deployment to be ready (with timeout)
-                await k8sDeployment.waitForDeploymentReady(60, 2000); // 60 attempts * 2s = 2 minutes max
-
-                fastify.log.info(
-                  `Deployment is ready, updating status to discovering-tools: ${mcpServer.name}`,
-                );
-
-                await McpServerModel.update(mcpServer.id, {
-                  localInstallationStatus: "discovering-tools",
-                  localInstallationError: null,
-                });
-
-                fastify.log.info(
-                  `Attempting to fetch tools from local server: ${mcpServer.name}`,
-                );
-                const tools =
-                  await McpServerModel.getToolsFromServer(mcpServer);
-
-                // Persist tools in the database
-                // Use catalog item name (without userId) for tool naming to avoid duplicates across users
-                const toolNamePrefix = capturedCatalogName || mcpServer.name;
-                const toolsToCreate = tools.map((tool) => ({
-                  name: ToolModel.slugifyName(toolNamePrefix, tool.name),
-                  description: tool.description,
-                  parameters: tool.inputSchema,
-                  catalogId: capturedCatalogId,
-                  mcpServerId: mcpServer.id,
-                }));
-
-                // Bulk create tools to avoid N+1 queries
-                const createdTools =
-                  await ToolModel.bulkCreateToolsIfNotExists(toolsToCreate);
-
-                // If agentIds were provided, create agent-tool assignments with executionSourceMcpServerId
-                if (agentIds && agentIds.length > 0) {
-                  const toolIds = createdTools.map((t) => t.id);
-                  await AgentToolModel.bulkCreateForAgentsAndTools(
-                    agentIds,
-                    toolIds,
-                    {
-                      executionSourceMcpServerId: mcpServer.id,
-                    },
-                  );
-                }
-
-                // Set status to success after tools are fetched
-                await McpServerModel.update(mcpServer.id, {
-                  localInstallationStatus: "success",
-                  localInstallationError: null,
-                });
-
-                fastify.log.info(
-                  `Successfully fetched and persisted ${tools.length} tools from local server: ${mcpServer.name}`,
-                );
-              } catch (toolError) {
-                const errorMessage =
-                  toolError instanceof Error
-                    ? toolError.message
-                    : "Unknown error";
-                fastify.log.error(
-                  `Failed to fetch tools from local server ${mcpServer.name}: ${errorMessage}`,
-                );
-
-                // Set status to error if tool fetching fails
-                await McpServerModel.update(mcpServer.id, {
-                  localInstallationStatus: "error",
-                  localInstallationError: errorMessage,
-                });
-              }
-            })();
+            installLocalMcpServer({
+              mcpServer,
+              catalogId: capturedCatalogId,
+              catalogName: capturedCatalogName,
+              agentIds,
+            }).catch(async (error) => {
+              const errorMessage =
+                error instanceof Error ? error.message : "Unknown error";
+              fastify.log.error(
+                `Failed to install local server ${mcpServer.name}: ${errorMessage}`,
+              );
+              await McpServerModel.update(mcpServer.id, {
+                localInstallationStatus: "error",
+                localInstallationError: errorMessage,
+              });
+            });
 
             // Return the MCP server with pending status
             return reply.send({
@@ -816,6 +827,188 @@ const mcpServerRoutes: FastifyPluginAsyncZod = async (fastify) => {
           500,
           `Failed to restart MCP server: ${error instanceof Error ? error.message : "Unknown error"}`,
         );
+      }
+    },
+  );
+
+  /**
+   * Atomic reinstall: Stops deployment, starts with updated catalog config, refreshes tools.
+   * Unlike uninstall+install, this preserves the mcp_server record and all agent_tools assignments.
+   */
+  fastify.post(
+    "/api/mcp_server/:id/reinstall",
+    {
+      schema: {
+        operationId: RouteId.ReinstallMcpServer,
+        description:
+          "Reinstall an MCP server with updated catalog config (atomic operation)",
+        tags: ["MCP Server"],
+        params: z.object({
+          id: UuidIdSchema,
+        }),
+        response: constructResponseSchema(SelectMcpServerSchema),
+      },
+    },
+    async ({ params: { id } }, reply) => {
+      // Get the existing MCP server
+      const mcpServer = await McpServerModel.findById(id);
+      if (!mcpServer) {
+        throw new ApiError(404, "MCP server not found");
+      }
+
+      // Get the catalog item for config
+      if (!mcpServer.catalogId) {
+        throw new ApiError(400, "Cannot reinstall server without catalog");
+      }
+
+      const catalogItem = await InternalMcpCatalogModel.findById(
+        mcpServer.catalogId,
+      );
+      if (!catalogItem) {
+        throw new ApiError(404, "Catalog item not found");
+      }
+
+      try {
+        // For local servers: stop, start with fresh config, refresh tools
+        if (catalogItem.serverType === "local") {
+          // Update status to pending
+          await McpServerModel.update(mcpServer.id, {
+            localInstallationStatus: "pending",
+            localInstallationError: null,
+            reinstallRequired: false,
+          });
+
+          // Stop the deployment
+          try {
+            await McpServerRuntimeManager.removeMcpServer(mcpServer.id);
+          } catch (stopError) {
+            // Ignore if deployment doesn't exist (might have been cleaned up)
+            fastify.log.warn(
+              `Could not stop deployment during reinstall: ${stopError instanceof Error ? stopError.message : "Unknown error"}`,
+            );
+          }
+
+          // Wait for cleanup
+          await new Promise((resolve) => setTimeout(resolve, 2000));
+
+          // Build userConfigValues from catalog defaults
+          // This ensures ${user_config.xxx} placeholders are interpolated correctly
+          let userConfigValues: Record<string, string> | undefined;
+          if (catalogItem.userConfig) {
+            userConfigValues = {};
+            for (const [key, field] of Object.entries(catalogItem.userConfig)) {
+              if (field.default !== undefined) {
+                userConfigValues[key] = String(field.default);
+              }
+            }
+            fastify.log.info(
+              { userConfigValues },
+              "Reinstall: built userConfigValues from catalog defaults",
+            );
+          }
+
+          // Load secret env values (for secrets like K8S_TOKEN)
+          let environmentValues: Record<string, string> | undefined;
+          if (mcpServer.secretId) {
+            const secret = await secretManager().getSecret(mcpServer.secretId);
+            if (secret?.secret && typeof secret.secret === "object") {
+              environmentValues = {};
+              for (const [key, value] of Object.entries(secret.secret)) {
+                environmentValues[key] = String(value);
+              }
+              fastify.log.info(
+                { keys: Object.keys(environmentValues) },
+                "Reinstall: loaded secret env values",
+              );
+            }
+          }
+
+          // Start with fresh config using catalog defaults
+          await McpServerRuntimeManager.startServer(
+            mcpServer,
+            userConfigValues,
+            environmentValues,
+          );
+
+          // Return immediately, tool refresh happens async (same as install)
+          installLocalMcpServer({
+            mcpServer,
+            catalogId: catalogItem.id,
+            catalogName: catalogItem.name,
+            // No agentIds = auto-assign to profiles that already have this catalog's tools
+          }).catch(async (error) => {
+            const errorMessage =
+              error instanceof Error ? error.message : "Unknown error";
+            fastify.log.error(
+              `Reinstall failed for ${mcpServer.name}: ${errorMessage}`,
+            );
+            await McpServerModel.update(mcpServer.id, {
+              localInstallationStatus: "error",
+              localInstallationError: errorMessage,
+            });
+          });
+
+          return reply.send({
+            ...mcpServer,
+            localInstallationStatus: "pending",
+            reinstallRequired: false,
+          });
+        }
+
+        // For remote servers: just refresh tools
+        await McpServerModel.update(mcpServer.id, {
+          reinstallRequired: false,
+        });
+
+        const tools = await McpServerModel.getToolsFromServer(mcpServer);
+        const toolsToCreate = tools.map((tool) => ({
+          name: ToolModel.slugifyName(catalogItem.name, tool.name),
+          description: tool.description,
+          parameters: tool.inputSchema,
+          catalogId: catalogItem.id,
+          mcpServerId: mcpServer.id,
+        }));
+
+        const refreshedTools =
+          await ToolModel.bulkCreateToolsIfNotExists(toolsToCreate);
+
+        // Auto-assign new tools to profiles that already have this catalog's tools
+        const allToolIds = refreshedTools.map((t) => t.id);
+        const profilesWithTools =
+          await ToolModel.getProfilesWithCatalogTools(catalogItem.id);
+
+        if (profilesWithTools.length > 0 && allToolIds.length > 0) {
+          await AgentToolModel.bulkCreateForAgentsAndTools(
+            profilesWithTools,
+            allToolIds,
+            { executionSourceMcpServerId: mcpServer.id },
+          );
+          fastify.log.info(
+            `Auto-assigned ${allToolIds.length} tools to ${profilesWithTools.length} profiles`,
+          );
+        }
+
+        fastify.log.info(
+          `Reinstall complete for remote server ${mcpServer.name}: ${tools.length} tools refreshed`,
+        );
+
+        return reply.send({
+          ...mcpServer,
+          reinstallRequired: false,
+        });
+      } catch (error) {
+        const errorMessage =
+          error instanceof Error ? error.message : "Unknown error";
+        fastify.log.error(
+          `Reinstall failed for ${mcpServer.name}: ${errorMessage}`,
+        );
+
+        await McpServerModel.update(mcpServer.id, {
+          localInstallationStatus: "error",
+          localInstallationError: `Reinstall failed: ${errorMessage}`,
+        });
+
+        throw new ApiError(500, `Reinstall failed: ${errorMessage}`);
       }
     },
   );

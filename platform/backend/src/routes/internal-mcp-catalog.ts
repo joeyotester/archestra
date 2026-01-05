@@ -2,7 +2,7 @@ import { RouteId } from "@shared";
 import type { FastifyPluginAsyncZod } from "fastify-type-provider-zod";
 import { z } from "zod";
 import logger from "@/logging";
-import { InternalMcpCatalogModel, McpServerModel, ToolModel } from "@/models";
+import { InternalMcpCatalogModel, McpServerModel } from "@/models";
 import { isByosEnabled, secretManager } from "@/secrets-manager";
 import {
   ApiError,
@@ -376,7 +376,8 @@ const internalMcpCatalogRoutes: FastifyPluginAsyncZod = async (fastify) => {
       }
 
       // Mark all installed servers for reinstall
-      // and delete existing tools so they can be rediscovered
+      // Tools are NOT deleted - they will be updated in place during reinstall
+      // This preserves agent_tools assignments (profile-tool bindings)
       const installedServers = await McpServerModel.findByCatalogId(id);
 
       for (const server of installedServers) {
@@ -384,10 +385,6 @@ const internalMcpCatalogRoutes: FastifyPluginAsyncZod = async (fastify) => {
           reinstallRequired: true,
         });
       }
-
-      // Delete all tools associated with this catalog id
-      // This ensures tools are rediscovered with updated configuration during reinstall
-      await ToolModel.deleteByCatalogId(id);
 
       return reply.send(catalogItem);
     },
