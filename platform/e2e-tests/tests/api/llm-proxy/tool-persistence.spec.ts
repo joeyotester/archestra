@@ -130,6 +130,28 @@ const geminiConfig: ToolPersistenceTestConfig = {
   }),
 };
 
+const openaiResponsesConfig: ToolPersistenceTestConfig = {
+  providerName: "OpenAI-Responses",
+
+  endpoint: (agentId) => `/v1/openai-responses/${agentId}/responses`,
+
+  headers: (wiremockStub) => ({
+    Authorization: `Bearer ${wiremockStub}`,
+    "Content-Type": "application/json",
+  }),
+
+  buildRequest: (content, tools) => ({
+    model: "gpt-4o",
+    input: content,
+    tools: tools.map((t) => ({
+      type: "function",
+      name: t.name,
+      description: t.description,
+      parameters: t.parameters,
+    })),
+  }),
+};
+
 // =============================================================================
 // Test Suite
 // =============================================================================
@@ -138,6 +160,7 @@ const testConfigs: ToolPersistenceTestConfig[] = [
   openaiConfig,
   anthropicConfig,
   geminiConfig,
+  openaiResponsesConfig,
 ];
 
 for (const config of testConfigs) {

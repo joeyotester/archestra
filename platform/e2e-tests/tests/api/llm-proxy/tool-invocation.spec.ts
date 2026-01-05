@@ -316,6 +316,97 @@ const geminiConfig: ToolInvocationTestConfig = {
     ),
 };
 
+const openaiResponsesConfig: ToolInvocationTestConfig = {
+  providerName: "OpenAI-Responses",
+
+  endpoint: (agentId) => `/v1/openai-responses/${agentId}/responses`,
+
+  headers: (wiremockStub) => ({
+    Authorization: `Bearer ${wiremockStub}`,
+    "Content-Type": "application/json",
+  }),
+
+  buildRequest: (content, tools) => ({
+    model: "gpt-4o",
+    input: content,
+    tools: tools.map((t) => ({
+      type: "function",
+      name: t.name,
+      description: t.description,
+      parameters: t.parameters,
+    })),
+  }),
+
+  trustedDataPolicyAttributePath: "$.output",
+
+  assertToolCallBlocked: (response) => {
+    expect(response.output).toBeDefined();
+    expect(response.output.length).toBeGreaterThan(0);
+
+    // Find message output with text content
+    const messageOutput = response.output.find(
+      (item: { type: string }) => item.type === "message",
+    );
+    expect(messageOutput).toBeDefined();
+
+    const textContent = messageOutput.content.find(
+      (c: { type: string }) => c.type === "output_text",
+    );
+    expect(textContent).toBeDefined();
+    expect(textContent.text).toContain("read_file");
+    expect(textContent.text).toContain("denied");
+
+    // Verify no function_call items
+    const functionCalls = response.output.filter(
+      (item: { type: string }) => item.type === "function_call",
+    );
+    expect(functionCalls.length).toBe(0);
+  },
+
+  assertToolCallsPresent: (response, expectedTools) => {
+    expect(response.output).toBeDefined();
+    expect(response.output.length).toBeGreaterThan(0);
+
+    const functionCalls = response.output.filter(
+      (item: { type: string }) => item.type === "function_call",
+    );
+    expect(functionCalls.length).toBe(expectedTools.length);
+
+    for (const toolName of expectedTools) {
+      const found = functionCalls.find(
+        (item: { name: string }) => item.name === toolName,
+      );
+      expect(found).toBeDefined();
+    }
+  },
+
+  assertToolArgument: (response, toolName, argName, matcher) => {
+    const functionCalls = response.output.filter(
+      (item: { type: string }) => item.type === "function_call",
+    );
+    const toolCall = functionCalls.find(
+      (item: { name: string }) => item.name === toolName,
+    );
+    const args = JSON.parse(toolCall.arguments);
+    matcher(args[argName]);
+  },
+
+  findInteractionByContent: (interactions, content) =>
+    interactions.find((i) => {
+      const input = i.request?.input;
+      if (typeof input === "string") {
+        return input.includes(content);
+      }
+      if (Array.isArray(input)) {
+        return input.some(
+          (item: { content?: string; type?: string }) =>
+            typeof item.content === "string" && item.content.includes(content),
+        );
+      }
+      return false;
+    }),
+};
+
 // =============================================================================
 // Test Suite
 // =============================================================================
@@ -324,6 +415,7 @@ const testConfigs: ToolInvocationTestConfig[] = [
   openaiConfig,
   anthropicConfig,
   geminiConfig,
+  openaiResponsesConfig,
 ];
 
 for (const config of testConfigs) {
