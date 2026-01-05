@@ -11,7 +11,7 @@ interface TokenCostLimitTestConfig {
   buildRequest: (content: string) => object;
   modelName: string;
   tokenPrice: {
-    provider: "openai" | "anthropic" | "gemini";
+    provider: "openai" | "openai-responses" | "anthropic" | "gemini";
     model: string;
     pricePerMillionInput: string;
     pricePerMillionOutput: string;
@@ -110,6 +110,33 @@ const geminiConfig: TokenCostLimitTestConfig = {
   },
 };
 
+const openaiResponsesConfig: TokenCostLimitTestConfig = {
+  providerName: "OpenAI-Responses",
+
+  endpoint: (profileId) => `/v1/openai-responses/${profileId}/responses`,
+
+  headers: (wiremockStub) => ({
+    Authorization: `Bearer ${wiremockStub}`,
+    "Content-Type": "application/json",
+  }),
+
+  buildRequest: (content) => ({
+    model: "test-gpt-4o-cost-limit",
+    input: content,
+  }),
+
+  modelName: "test-gpt-4o-cost-limit",
+
+  // WireMock returns: input_tokens: 100, output_tokens: 20
+  // Cost = (100 * 20000 + 20 * 30000) / 1,000,000 = $2.60
+  tokenPrice: {
+    provider: "openai-responses",
+    model: "test-gpt-4o-cost-limit",
+    pricePerMillionInput: "20000.00",
+    pricePerMillionOutput: "30000.00",
+  },
+};
+
 // =============================================================================
 // Test Suite
 // =============================================================================
@@ -118,6 +145,7 @@ const testConfigs: TokenCostLimitTestConfig[] = [
   openaiConfig,
   anthropicConfig,
   geminiConfig,
+  openaiResponsesConfig,
 ];
 
 for (const config of testConfigs) {

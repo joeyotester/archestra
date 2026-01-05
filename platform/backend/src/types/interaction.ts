@@ -2,7 +2,7 @@ import { SupportedProvidersDiscriminatorSchema } from "@shared";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { z } from "zod";
 import { schema } from "@/database";
-import { Anthropic, Gemini, OpenAi } from "./llm-providers";
+import { Anthropic, Gemini, OpenAi, OpenAiResponses } from "./llm-providers";
 
 export const UserInfoSchema = z.object({
   id: z.string(),
@@ -15,12 +15,14 @@ export const UserInfoSchema = z.object({
  */
 export const InteractionRequestSchema = z.union([
   OpenAi.API.ChatCompletionRequestSchema,
+  OpenAiResponses.API.ResponsesRequestSchema,
   Gemini.API.GenerateContentRequestSchema,
   Anthropic.API.MessagesRequestSchema,
 ]);
 
 export const InteractionResponseSchema = z.union([
   OpenAi.API.ChatCompletionResponseSchema,
+  OpenAiResponses.API.ResponsesResponseSchema,
   Gemini.API.GenerateContentResponseSchema,
   Anthropic.API.MessagesResponseSchema,
 ]);
@@ -44,6 +46,13 @@ export const SelectInteractionSchema = z.discriminatedUnion("type", [
     processedRequest:
       OpenAi.API.ChatCompletionRequestSchema.nullable().optional(),
     response: OpenAi.API.ChatCompletionResponseSchema,
+  }),
+  BaseSelectInteractionSchema.extend({
+    type: z.enum(["openai-responses:responses"]),
+    request: OpenAiResponses.API.ResponsesRequestSchema,
+    processedRequest:
+      OpenAiResponses.API.ResponsesRequestSchema.nullable().optional(),
+    response: OpenAiResponses.API.ResponsesResponseSchema,
   }),
   BaseSelectInteractionSchema.extend({
     type: z.enum(["gemini:generateContent"]),

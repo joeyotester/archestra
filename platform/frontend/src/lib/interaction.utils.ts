@@ -8,6 +8,7 @@ import type {
 } from "./llmProviders/common";
 import GeminiGenerateContentInteraction from "./llmProviders/gemini";
 import OpenAiChatCompletionInteraction from "./llmProviders/openai";
+import OpenAiResponsesInteraction from "./llmProviders/openai-responses";
 
 export interface CostSavingsInput {
   cost: string | null | undefined;
@@ -114,6 +115,8 @@ export class DynamicInteraction implements InteractionUtils {
   private getInteractionClass(interaction: Interaction): InteractionUtils {
     if (this.type === "openai:chatCompletions") {
       return new OpenAiChatCompletionInteraction(interaction);
+    } else if (this.type === "openai-responses:responses") {
+      return new OpenAiResponsesInteraction(interaction);
     } else if (this.type === "anthropic:messages") {
       return new AnthropicMessagesInteraction(interaction);
     }

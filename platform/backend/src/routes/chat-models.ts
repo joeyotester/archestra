@@ -1,9 +1,4 @@
-import {
-  RouteId,
-  type SupportedProvider,
-  SupportedProviders,
-  TimeInMs,
-} from "@shared";
+import { RouteId, TimeInMs } from "@shared";
 import type { FastifyPluginAsyncZod } from "fastify-type-provider-zod";
 import { z } from "zod";
 import { CacheKey, cacheManager } from "@/cache-manager";
@@ -12,7 +7,12 @@ import logger from "@/logging";
 import { ChatApiKeyModel, TeamModel } from "@/models";
 import { isVertexAiEnabled } from "@/routes/proxy/utils/gemini-client";
 import { getSecretValueForLlmProviderApiKey } from "@/secrets-manager";
-import { constructResponseSchema, SupportedChatProviderSchema } from "@/types";
+import {
+  constructResponseSchema,
+  type SupportedChatProvider,
+  SupportedChatProviderSchema,
+  SupportedChatProviders,
+} from "@/types";
 
 /** TTL for caching chat models from provider APIs */
 const CHAT_MODELS_CACHE_TTL_MS = TimeInMs.Hour * 2;
@@ -29,7 +29,7 @@ const ChatModelSchema = z.object({
 export interface ModelInfo {
   id: string;
   displayName: string;
-  provider: SupportedProvider;
+  provider: SupportedChatProvider;
   createdAt?: string;
 }
 
@@ -181,7 +181,7 @@ async function getProviderApiKey({
   organizationId,
   userId,
 }: {
-  provider: SupportedProvider;
+  provider: SupportedChatProvider;
   organizationId: string;
   userId: string;
 }): Promise<string | null> {
@@ -219,7 +219,7 @@ async function getProviderApiKey({
 
 // We need to make sure that every new provider we support has a model fetcher function
 const modelFetchers: Record<
-  SupportedProvider,
+  SupportedChatProvider,
   (apiKey: string) => Promise<ModelInfo[]>
 > = {
   anthropic: fetchAnthropicModels,
@@ -232,7 +232,7 @@ const modelFetchers: Record<
  * Throws an error if the key is invalid or the provider is unreachable.
  */
 export async function testProviderApiKey(
-  provider: SupportedProvider,
+  provider: SupportedChatProvider,
   apiKey: string,
 ): Promise<void> {
   await modelFetchers[provider](apiKey);
@@ -246,7 +246,7 @@ async function fetchModelsForProvider({
   organizationId,
   userId,
 }: {
-  provider: SupportedProvider;
+  provider: SupportedChatProvider;
   organizationId: string;
   userId: string;
 }): Promise<ModelInfo[]> {
@@ -316,12 +316,12 @@ const chatModelsRoutes: FastifyPluginAsyncZod = async (fastify) => {
     },
     async ({ query, organizationId, user }, reply) => {
       const { provider } = query;
-      const providersToFetch = provider ? [provider] : SupportedProviders;
+      const providersToFetch = provider ? [provider] : SupportedChatProviders;
 
       const results = await Promise.all(
         providersToFetch.map((p) =>
           fetchModelsForProvider({
-            provider: p as SupportedProvider,
+            provider: p as SupportedChatProvider,
             organizationId,
             userId: user.id,
           }),

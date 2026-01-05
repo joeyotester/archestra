@@ -1,0 +1,47 @@
+{
+  "request": {
+    "method": "POST",
+    "urlPath": "/v1/responses",
+    "headers": {
+      "Authorization": {
+        "contains": "openai-responses-compression"
+      }
+    },
+    "bodyPatterns": [
+      {
+        "contains": "files[5]{name,size,type}"
+      }
+    ]
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "jsonBody": {
+      "id": "resp-compression-enabled",
+      "object": "response",
+      "created_at": 1234567890,
+      "status": "completed",
+      "model": "gpt-4o",
+      "output": [
+        {
+          "type": "message",
+          "id": "msg_comp_enabled",
+          "role": "assistant",
+          "content": [
+            {
+              "type": "output_text",
+              "text": "I have processed the TOON-compressed tool result."
+            }
+          ]
+        }
+      ],
+      "usage": {
+        "input_tokens": 100,
+        "output_tokens": 10,
+        "total_tokens": 110
+      }
+    }
+  }
+}

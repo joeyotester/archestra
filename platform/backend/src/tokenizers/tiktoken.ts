@@ -17,7 +17,9 @@ export class TiktokenTokenizer extends BaseTokenizer {
 
   countMessageTokens(message: ProviderMessage): number {
     const text = this.getMessageText(message);
-    const fullText = `${message.role || ""}${text}`;
+    // Some message types (like ItemReference) don't have a role property
+    const role = "role" in message ? message.role : "";
+    const fullText = `${role || ""}${text}`;
 
     const tokens = this.encoding.encode(fullText);
     return tokens.length;

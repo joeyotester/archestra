@@ -42,6 +42,7 @@ interface ModelSelectorProps {
 /** Map our provider names to logo provider names */
 const providerToLogoProvider: Record<SupportedProvider, string> = {
   openai: "openai",
+  "openai-responses": "openai",
   anthropic: "anthropic",
   gemini: "google",
 };

@@ -3740,6 +3740,2140 @@
           "usage"
         ]
       },
+      "OpenAiResponsesRequestInput": {
+        "type": "object",
+        "properties": {
+          "model": {
+            "description": "The model to use",
+            "type": "string"
+          },
+          "input": {
+            "description": "The input to the model",
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "array",
+                "items": {
+                  "anyOf": [
+                    {
+                      "description": "A message in easy input format (similar to chat completions)",
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "type": "string",
+                          "const": "message"
+                        },
+                        "role": {
+                          "type": "string",
+                          "enum": [
+                            "user",
+                            "assistant",
+                            "system",
+                            "developer"
+                          ]
+                        },
+                        "content": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "array",
+                              "items": {
+                                "anyOf": [
+                                  {
+                                    "description": "Text content for input",
+                                    "type": "object",
+                                    "properties": {
+                                      "type": {
+                                        "type": "string",
+                                        "const": "input_text"
+                                      },
+                                      "text": {
+                                        "description": "The text content",
+                                        "type": "string"
+                                      }
+                                    },
+                                    "required": [
+                                      "type",
+                                      "text"
+                                    ]
+                                  },
+                                  {
+                                    "description": "Image content for input",
+                                    "type": "object",
+                                    "properties": {
+                                      "type": {
+                                        "type": "string",
+                                        "const": "input_image"
+                                      },
+                                      "image_url": {
+                                        "description": "URL of the image (can be data: URL for base64)",
+                                        "type": "string"
+                                      },
+                                      "file_id": {
+                                        "description": "File ID of an uploaded image",
+                                        "type": "string"
+                                      },
+                                      "detail": {
+                                        "description": "Detail level for image analysis",
+                                        "type": "string",
+                                        "enum": [
+                                          "auto",
+                                          "low",
+                                          "high"
+                                        ]
+                                      }
+                                    },
+                                    "required": [
+                                      "type"
+                                    ]
+                                  },
+                                  {
+                                    "description": "Audio content for input",
+                                    "type": "object",
+                                    "properties": {
+                                      "type": {
+                                        "type": "string",
+                                        "const": "input_audio"
+                                      },
+                                      "data": {
+                                        "description": "Base64-encoded audio data",
+                                        "type": "string"
+                                      },
+                                      "format": {
+                                        "description": "Audio format",
+                                        "type": "string",
+                                        "enum": [
+                                          "wav",
+                                          "mp3"
+                                        ]
+                                      }
+                                    },
+                                    "required": [
+                                      "type",
+                                      "data",
+                                      "format"
+                                    ]
+                                  },
+                                  {
+                                    "description": "File content for input",
+                                    "type": "object",
+                                    "properties": {
+                                      "type": {
+                                        "type": "string",
+                                        "const": "input_file"
+                                      },
+                                      "file_id": {
+                                        "description": "File ID of an uploaded file",
+                                        "type": "string"
+                                      },
+                                      "file_data": {
+                                        "description": "Base64-encoded file data",
+                                        "type": "string"
+                                      },
+                                      "filename": {
+                                        "description": "Name of the file",
+                                        "type": "string"
+                                      }
+                                    },
+                                    "required": [
+                                      "type"
+                                    ]
+                                  }
+                                ]
+                              }
+                            }
+                          ]
+                        }
+                      },
+                      "required": [
+                        "role",
+                        "content"
+                      ]
+                    },
+                    {
+                      "description": "A message input item",
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "type": "string",
+                          "const": "message"
+                        },
+                        "role": {
+                          "type": "string",
+                          "enum": [
+                            "user",
+                            "assistant",
+                            "system",
+                            "developer"
+                          ]
+                        },
+                        "content": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "array",
+                              "items": {
+                                "anyOf": [
+                                  {
+                                    "description": "Text content for input",
+                                    "type": "object",
+                                    "properties": {
+                                      "type": {
+                                        "type": "string",
+                                        "const": "input_text"
+                                      },
+                                      "text": {
+                                        "description": "The text content",
+                                        "type": "string"
+                                      }
+                                    },
+                                    "required": [
+                                      "type",
+                                      "text"
+                                    ]
+                                  },
+                                  {
+                                    "description": "Image content for input",
+                                    "type": "object",
+                                    "properties": {
+                                      "type": {
+                                        "type": "string",
+                                        "const": "input_image"
+                                      },
+                                      "image_url": {
+                                        "description": "URL of the image (can be data: URL for base64)",
+                                        "type": "string"
+                                      },
+                                      "file_id": {
+                                        "description": "File ID of an uploaded image",
+                                        "type": "string"
+                                      },
+                                      "detail": {
+                                        "description": "Detail level for image analysis",
+                                        "type": "string",
+                                        "enum": [
+                                          "auto",
+                                          "low",
+                                          "high"
+                                        ]
+                                      }
+                                    },
+                                    "required": [
+                                      "type"
+                                    ]
+                                  },
+                                  {
+                                    "description": "Audio content for input",
+                                    "type": "object",
+                                    "properties": {
+                                      "type": {
+                                        "type": "string",
+                                        "const": "input_audio"
+                                      },
+                                      "data": {
+                                        "description": "Base64-encoded audio data",
+                                        "type": "string"
+                                      },
+                                      "format": {
+                                        "description": "Audio format",
+                                        "type": "string",
+                                        "enum": [
+                                          "wav",
+                                          "mp3"
+                                        ]
+                                      }
+                                    },
+                                    "required": [
+                                      "type",
+                                      "data",
+                                      "format"
+                                    ]
+                                  },
+                                  {
+                                    "description": "File content for input",
+                                    "type": "object",
+                                    "properties": {
+                                      "type": {
+                                        "type": "string",
+                                        "const": "input_file"
+                                      },
+                                      "file_id": {
+                                        "description": "File ID of an uploaded file",
+                                        "type": "string"
+                                      },
+                                      "file_data": {
+                                        "description": "Base64-encoded file data",
+                                        "type": "string"
+                                      },
+                                      "filename": {
+                                        "description": "Name of the file",
+                                        "type": "string"
+                                      }
+                                    },
+                                    "required": [
+                                      "type"
+                                    ]
+                                  }
+                                ]
+                              }
+                            }
+                          ]
+                        },
+                        "id": {
+                          "description": "Optional ID for the message",
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "type",
+                        "role",
+                        "content"
+                      ]
+                    },
+                    {
+                      "description": "Reference to a previous item by ID",
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "type": "string",
+                          "const": "item_reference"
+                        },
+                        "id": {
+                          "description": "ID of the item to reference",
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "type",
+                        "id"
+                      ]
+                    },
+                    {
+                      "description": "Output from a function call (for multi-turn conversations)",
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "type": "string",
+                          "const": "function_call_output"
+                        },
+                        "call_id": {
+                          "description": "ID of the function call this is responding to",
+                          "type": "string"
+                        },
+                        "output": {
+                          "description": "The output/result of the function call",
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "type",
+                        "call_id",
+                        "output"
+                      ]
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          "instructions": {
+            "description": "System instructions for the model",
+            "type": "string"
+          },
+          "tools": {
+            "description": "Tools available to the model",
+            "type": "array",
+            "items": {
+              "description": "A tool definition for the Responses API",
+              "anyOf": [
+                {
+                  "description": "A function tool definition for the Responses API",
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "const": "function"
+                    },
+                    "name": {
+                      "description": "The name of the function to call",
+                      "type": "string"
+                    },
+                    "description": {
+                      "description": "A description of what the function does",
+                      "type": "string"
+                    },
+                    "parameters": {
+                      "description": "\n    The parameters the function accepts, described as a JSON Schema object.\n    Omitting parameters defines a function with an empty parameter list.\n  ",
+                      "type": "object",
+                      "additionalProperties": {}
+                    },
+                    "strict": {
+                      "description": "Whether to enable strict schema adherence",
+                      "anyOf": [
+                        {
+                          "type": "boolean"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "name"
+                  ]
+                },
+                {
+                  "description": "Web search tool for searching the internet",
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "const": "web_search"
+                    },
+                    "search_context_size": {
+                      "description": "How much context to include in web search results",
+                      "type": "string",
+                      "enum": [
+                        "low",
+                        "medium",
+                        "high"
+                      ]
+                    },
+                    "user_location": {
+                      "description": "Approximate location of the user for search context",
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "type": "string",
+                          "const": "approximate"
+                        },
+                        "city": {
+                          "type": "string"
+                        },
+                        "country": {
+                          "type": "string"
+                        },
+                        "region": {
+                          "type": "string"
+                        },
+                        "timezone": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "type"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "type"
+                  ]
+                },
+                {
+                  "description": "File search tool for searching vector stores",
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "const": "file_search"
+                    },
+                    "vector_store_ids": {
+                      "description": "IDs of vector stores to search",
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "max_num_results": {
+                      "description": "Maximum number of results to return (1-50)",
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 50
+                    },
+                    "ranking_options": {
+                      "description": "Options for ranking search results",
+                      "type": "object",
+                      "properties": {
+                        "ranker": {
+                          "type": "string",
+                          "enum": [
+                            "auto",
+                            "default_2024_08_21"
+                          ]
+                        },
+                        "score_threshold": {
+                          "type": "number",
+                          "minimum": 0,
+                          "maximum": 1
+                        }
+                      }
+                    },
+                    "filters": {
+                      "description": "Filters to apply to search results",
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "type": "string",
+                          "enum": [
+                            "eq",
+                            "ne",
+                            "gt",
+                            "gte",
+                            "lt",
+                            "lte",
+                            "in",
+                            "nin",
+                            "and",
+                            "or"
+                          ]
+                        },
+                        "key": {
+                          "type": "string"
+                        },
+                        "value": {},
+                        "filters": {
+                          "type": "array",
+                          "items": {}
+                        }
+                      },
+                      "required": [
+                        "type"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "vector_store_ids"
+                  ]
+                },
+                {
+                  "description": "Code interpreter tool for executing code",
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "const": "code_interpreter"
+                    },
+                    "container": {
+                      "description": "Container configuration for code interpreter",
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "type": "string",
+                          "const": "auto"
+                        },
+                        "file_ids": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        }
+                      },
+                      "required": [
+                        "type"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "type"
+                  ]
+                },
+                {
+                  "description": "Computer use tool for controlling a computer",
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "const": "computer_use_preview"
+                    },
+                    "display_width": {
+                      "description": "Width of the display in pixels",
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "display_height": {
+                      "description": "Height of the display in pixels",
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "environment": {
+                      "description": "The environment for computer use",
+                      "type": "string",
+                      "enum": [
+                        "browser",
+                        "mac",
+                        "windows",
+                        "ubuntu"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "display_width",
+                    "display_height",
+                    "environment"
+                  ]
+                },
+                {
+                  "description": "MCP tool for connecting to Model Context Protocol servers",
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "const": "mcp"
+                    },
+                    "server_label": {
+                      "description": "Label for the MCP server",
+                      "type": "string"
+                    },
+                    "server_url": {
+                      "description": "URL of the MCP server",
+                      "type": "string",
+                      "format": "uri"
+                    },
+                    "require_approval": {
+                      "description": "Whether to require approval for tool calls",
+                      "type": "string",
+                      "enum": [
+                        "always",
+                        "never"
+                      ]
+                    },
+                    "allowed_tools": {
+                      "description": "List of allowed tool names from this server",
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "headers": {
+                      "description": "Headers to include in requests to the MCP server",
+                      "type": "object",
+                      "additionalProperties": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "server_label",
+                    "server_url"
+                  ]
+                }
+              ]
+            }
+          },
+          "tool_choice": {
+            "description": "Controls which tools the model can use",
+            "anyOf": [
+              {
+                "description": "Do not use any tools",
+                "type": "string",
+                "const": "none"
+              },
+              {
+                "description": "Let the model decide which tools to use",
+                "type": "string",
+                "const": "auto"
+              },
+              {
+                "description": "Model must use at least one tool",
+                "type": "string",
+                "const": "required"
+              },
+              {
+                "description": "Force the model to call a specific function",
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "const": "function"
+                  },
+                  "name": {
+                    "description": "The name of the function to call",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
+                  "name"
+                ]
+              },
+              {
+                "description": "Force the model to use a specific hosted tool",
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "file_search",
+                      "web_search",
+                      "code_interpreter",
+                      "computer_use_preview"
+                    ]
+                  }
+                },
+                "required": [
+                  "type"
+                ]
+              }
+            ]
+          },
+          "parallel_tool_calls": {
+            "description": "Whether to allow parallel tool calls",
+            "type": "boolean"
+          },
+          "temperature": {
+            "description": "Sampling temperature",
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 2
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "top_p": {
+            "description": "Nucleus sampling parameter",
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "max_output_tokens": {
+            "description": "Maximum tokens in the response",
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "stream": {
+            "description": "Whether to stream the response",
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "previous_response_id": {
+            "description": "ID of a previous response for multi-turn conversations",
+            "type": "string"
+          },
+          "store": {
+            "description": "Whether to store the response for future reference",
+            "type": "boolean"
+          },
+          "text": {
+            "description": "Configuration for text output",
+            "type": "object",
+            "properties": {
+              "format": {
+                "description": "Format for text output",
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "type": {
+                        "type": "string",
+                        "const": "text"
+                      }
+                    },
+                    "required": [
+                      "type"
+                    ]
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "type": {
+                        "type": "string",
+                        "const": "json_schema"
+                      },
+                      "name": {
+                        "type": "string"
+                      },
+                      "schema": {
+                        "type": "object",
+                        "additionalProperties": {}
+                      },
+                      "strict": {
+                        "type": "boolean"
+                      }
+                    },
+                    "required": [
+                      "type",
+                      "name",
+                      "schema"
+                    ]
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "type": {
+                        "type": "string",
+                        "const": "json_object"
+                      }
+                    },
+                    "required": [
+                      "type"
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          "reasoning": {
+            "description": "Configuration for reasoning models",
+            "type": "object",
+            "properties": {
+              "effort": {
+                "description": "Effort level for reasoning",
+                "type": "string",
+                "enum": [
+                  "low",
+                  "medium",
+                  "high"
+                ]
+              },
+              "generate_summary": {
+                "description": "Type of reasoning summary to generate",
+                "type": "string",
+                "enum": [
+                  "auto",
+                  "concise",
+                  "detailed"
+                ]
+              }
+            }
+          },
+          "truncation": {
+            "description": "Truncation strategy for context",
+            "type": "string",
+            "enum": [
+              "auto",
+              "disabled"
+            ]
+          },
+          "metadata": {
+            "description": "Custom metadata for the request",
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "user": {
+            "description": "Unique identifier for the end user",
+            "type": "string"
+          },
+          "service_tier": {
+            "description": "Service tier for the request",
+            "type": "string",
+            "enum": [
+              "auto",
+              "default",
+              "flex"
+            ]
+          }
+        },
+        "required": [
+          "model",
+          "input"
+        ]
+      },
+      "OpenAiResponsesResponseInput": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "description": "Unique ID of the response",
+            "type": "string"
+          },
+          "object": {
+            "description": "Object type",
+            "type": "string",
+            "const": "response"
+          },
+          "created_at": {
+            "description": "Unix timestamp of creation",
+            "type": "number"
+          },
+          "model": {
+            "description": "Model used for the response",
+            "type": "string"
+          },
+          "status": {
+            "description": "Status of the response",
+            "type": "string",
+            "enum": [
+              "completed",
+              "incomplete",
+              "failed",
+              "in_progress",
+              "cancelled"
+            ]
+          },
+          "output": {
+            "description": "Output items from the model",
+            "type": "array",
+            "items": {
+              "anyOf": [
+                {
+                  "description": "A message output from the assistant",
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "const": "message"
+                    },
+                    "id": {
+                      "description": "Unique ID of this output item",
+                      "type": "string"
+                    },
+                    "role": {
+                      "type": "string",
+                      "const": "assistant"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "in_progress",
+                        "completed",
+                        "incomplete"
+                      ]
+                    },
+                    "content": {
+                      "type": "array",
+                      "items": {
+                        "anyOf": [
+                          {
+                            "description": "Text content in output",
+                            "type": "object",
+                            "properties": {
+                              "type": {
+                                "type": "string",
+                                "const": "output_text"
+                              },
+                              "text": {
+                                "description": "The text content",
+                                "type": "string"
+                              },
+                              "annotations": {
+                                "description": "Annotations with citations and references",
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "type": {
+                                      "type": "string",
+                                      "enum": [
+                                        "file_citation",
+                                        "url_citation",
+                                        "file_path"
+                                      ]
+                                    },
+                                    "start_index": {
+                                      "type": "number"
+                                    },
+                                    "end_index": {
+                                      "type": "number"
+                                    },
+                                    "file_citation": {
+                                      "type": "object",
+                                      "properties": {
+                                        "file_id": {
+                                          "type": "string"
+                                        },
+                                        "quote": {
+                                          "type": "string"
+                                        }
+                                      },
+                                      "required": [
+                                        "file_id"
+                                      ]
+                                    },
+                                    "url_citation": {
+                                      "type": "object",
+                                      "properties": {
+                                        "url": {
+                                          "type": "string"
+                                        },
+                                        "title": {
+                                          "type": "string"
+                                        }
+                                      },
+                                      "required": [
+                                        "url"
+                                      ]
+                                    },
+                                    "file_path": {
+                                      "type": "object",
+                                      "properties": {
+                                        "file_id": {
+                                          "type": "string"
+                                        }
+                                      },
+                                      "required": [
+                                        "file_id"
+                                      ]
+                                    }
+                                  },
+                                  "required": [
+                                    "type"
+                                  ]
+                                }
+                              }
+                            },
+                            "required": [
+                              "type",
+                              "text"
+                            ]
+                          },
+                          {
+                            "description": "Refusal content when the model declines to respond",
+                            "type": "object",
+                            "properties": {
+                              "type": {
+                                "type": "string",
+                                "const": "refusal"
+                              },
+                              "refusal": {
+                                "description": "The refusal message",
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "type",
+                              "refusal"
+                            ]
+                          }
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "id",
+                    "role",
+                    "status",
+                    "content"
+                  ]
+                },
+                {
+                  "description": "A function call the model wants to make",
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "const": "function_call"
+                    },
+                    "id": {
+                      "description": "Unique ID of this function call",
+                      "type": "string"
+                    },
+                    "call_id": {
+                      "description": "ID to use when providing function output",
+                      "type": "string"
+                    },
+                    "name": {
+                      "description": "Name of the function to call",
+                      "type": "string"
+                    },
+                    "arguments": {
+                      "description": "JSON string of function arguments",
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "in_progress",
+                        "completed",
+                        "incomplete"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "id",
+                    "call_id",
+                    "name",
+                    "arguments",
+                    "status"
+                  ]
+                },
+                {
+                  "description": "A file search call and its results",
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "const": "file_search_call"
+                    },
+                    "id": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "in_progress",
+                        "completed",
+                        "incomplete",
+                        "searching",
+                        "failed"
+                      ]
+                    },
+                    "queries": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "results": {
+                      "anyOf": [
+                        {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "file_id": {
+                                "type": "string"
+                              },
+                              "filename": {
+                                "type": "string"
+                              },
+                              "score": {
+                                "type": "number"
+                              },
+                              "text": {
+                                "type": "string"
+                              },
+                              "attributes": {
+                                "type": "object",
+                                "additionalProperties": {}
+                              }
+                            },
+                            "required": [
+                              "file_id",
+                              "filename",
+                              "score",
+                              "text"
+                            ]
+                          }
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "id",
+                    "status"
+                  ]
+                },
+                {
+                  "description": "A web search call",
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "const": "web_search_call"
+                    },
+                    "id": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "in_progress",
+                        "completed",
+                        "incomplete",
+                        "searching",
+                        "failed"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "id",
+                    "status"
+                  ]
+                },
+                {
+                  "description": "A code interpreter call and its results",
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "const": "code_interpreter_call"
+                    },
+                    "id": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "in_progress",
+                        "completed",
+                        "incomplete"
+                      ]
+                    },
+                    "code": {
+                      "type": "string"
+                    },
+                    "results": {
+                      "type": "array",
+                      "items": {
+                        "anyOf": [
+                          {
+                            "type": "object",
+                            "properties": {
+                              "type": {
+                                "type": "string",
+                                "const": "logs"
+                              },
+                              "logs": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "type",
+                              "logs"
+                            ]
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "type": {
+                                "type": "string",
+                                "const": "image"
+                              },
+                              "image": {
+                                "type": "object",
+                                "properties": {
+                                  "file_id": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "file_id"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "type",
+                              "image"
+                            ]
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "type": {
+                                "type": "string",
+                                "const": "files"
+                              },
+                              "files": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "file_id": {
+                                      "type": "string"
+                                    },
+                                    "mime_type": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": [
+                                    "file_id"
+                                  ]
+                                }
+                              }
+                            },
+                            "required": [
+                              "type",
+                              "files"
+                            ]
+                          }
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "id",
+                    "status"
+                  ]
+                },
+                {
+                  "description": "A computer use call",
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "const": "computer_call"
+                    },
+                    "id": {
+                      "type": "string"
+                    },
+                    "call_id": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "in_progress",
+                        "completed",
+                        "incomplete"
+                      ]
+                    },
+                    "action": {
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "type": "string",
+                          "enum": [
+                            "click",
+                            "double_click",
+                            "drag",
+                            "keypress",
+                            "move",
+                            "screenshot",
+                            "scroll",
+                            "type",
+                            "wait"
+                          ]
+                        },
+                        "coordinate": {
+                          "type": "array",
+                          "prefixItems": [
+                            {
+                              "type": "number"
+                            },
+                            {
+                              "type": "number"
+                            }
+                          ]
+                        },
+                        "end_coordinate": {
+                          "type": "array",
+                          "prefixItems": [
+                            {
+                              "type": "number"
+                            },
+                            {
+                              "type": "number"
+                            }
+                          ]
+                        },
+                        "button": {
+                          "type": "string",
+                          "enum": [
+                            "left",
+                            "right",
+                            "middle",
+                            "wheel"
+                          ]
+                        },
+                        "keys": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "text": {
+                          "type": "string"
+                        },
+                        "scroll_direction": {
+                          "type": "string",
+                          "enum": [
+                            "up",
+                            "down",
+                            "left",
+                            "right"
+                          ]
+                        },
+                        "scroll_amount": {
+                          "type": "number"
+                        },
+                        "duration": {
+                          "type": "number"
+                        }
+                      },
+                      "required": [
+                        "type"
+                      ]
+                    },
+                    "pending_safety_checks": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "code": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "code",
+                          "message"
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "id",
+                    "call_id",
+                    "status",
+                    "action"
+                  ]
+                },
+                {
+                  "description": "Reasoning output from reasoning models (o1, etc.)",
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "const": "reasoning"
+                    },
+                    "id": {
+                      "type": "string"
+                    },
+                    "summary": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string",
+                            "const": "summary_text"
+                          },
+                          "text": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "text"
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "id",
+                    "summary"
+                  ]
+                },
+                {
+                  "description": "An MCP tool call",
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "const": "mcp_call"
+                    },
+                    "id": {
+                      "type": "string"
+                    },
+                    "approval_request_id": {
+                      "type": "string"
+                    },
+                    "server_label": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "arguments": {
+                      "type": "string"
+                    },
+                    "error": {
+                      "type": "string"
+                    },
+                    "output": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "id",
+                    "server_label",
+                    "name",
+                    "arguments"
+                  ]
+                },
+                {
+                  "description": "List of tools from an MCP server",
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "const": "mcp_list_tools"
+                    },
+                    "id": {
+                      "type": "string"
+                    },
+                    "server_label": {
+                      "type": "string"
+                    },
+                    "tools": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "name": {
+                            "type": "string"
+                          },
+                          "description": {
+                            "type": "string"
+                          },
+                          "input_schema": {
+                            "type": "object",
+                            "additionalProperties": {}
+                          }
+                        },
+                        "required": [
+                          "name",
+                          "input_schema"
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "id",
+                    "server_label",
+                    "tools"
+                  ]
+                },
+                {
+                  "description": "An MCP approval request",
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "const": "mcp_approval_request"
+                    },
+                    "id": {
+                      "type": "string"
+                    },
+                    "server_label": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "arguments": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "id",
+                    "server_label",
+                    "name",
+                    "arguments"
+                  ]
+                }
+              ]
+            }
+          },
+          "usage": {
+            "description": "Token usage",
+            "type": "object",
+            "properties": {
+              "input_tokens": {
+                "description": "Number of input tokens",
+                "type": "number"
+              },
+              "input_tokens_details": {
+                "type": "object",
+                "properties": {
+                  "cached_tokens": {
+                    "type": "number"
+                  },
+                  "text_tokens": {
+                    "type": "number"
+                  },
+                  "image_tokens": {
+                    "type": "number"
+                  },
+                  "audio_tokens": {
+                    "type": "number"
+                  }
+                }
+              },
+              "output_tokens": {
+                "description": "Number of output tokens",
+                "type": "number"
+              },
+              "output_tokens_details": {
+                "type": "object",
+                "properties": {
+                  "text_tokens": {
+                    "type": "number"
+                  },
+                  "audio_tokens": {
+                    "type": "number"
+                  },
+                  "reasoning_tokens": {
+                    "type": "number"
+                  }
+                }
+              },
+              "total_tokens": {
+                "description": "Total tokens (input + output)",
+                "type": "number"
+              }
+            },
+            "required": [
+              "input_tokens",
+              "output_tokens",
+              "total_tokens"
+            ]
+          },
+          "incomplete_details": {
+            "description": "Details about why the response is incomplete",
+            "type": "object",
+            "properties": {
+              "reason": {
+                "type": "string",
+                "enum": [
+                  "max_output_tokens",
+                  "content_filter",
+                  "turn_limit_reached",
+                  "interrupted"
+                ]
+              }
+            },
+            "required": [
+              "reason"
+            ]
+          },
+          "error": {
+            "description": "Error details if status is failed",
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string"
+              },
+              "message": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "code",
+              "message"
+            ]
+          },
+          "metadata": {
+            "description": "Custom metadata from the request",
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "parallel_tool_calls": {
+            "type": "boolean"
+          },
+          "previous_response_id": {
+            "type": "string"
+          },
+          "service_tier": {
+            "type": "string"
+          },
+          "temperature": {
+            "type": "number"
+          },
+          "top_p": {
+            "type": "number"
+          },
+          "max_output_tokens": {
+            "type": "number"
+          },
+          "truncation": {
+            "type": "string"
+          },
+          "text": {
+            "description": "Configuration for text output",
+            "type": "object",
+            "properties": {
+              "format": {
+                "description": "Format for text output",
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "type": {
+                        "type": "string",
+                        "const": "text"
+                      }
+                    },
+                    "required": [
+                      "type"
+                    ]
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "type": {
+                        "type": "string",
+                        "const": "json_schema"
+                      },
+                      "name": {
+                        "type": "string"
+                      },
+                      "schema": {
+                        "type": "object",
+                        "additionalProperties": {}
+                      },
+                      "strict": {
+                        "type": "boolean"
+                      }
+                    },
+                    "required": [
+                      "type",
+                      "name",
+                      "schema"
+                    ]
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "type": {
+                        "type": "string",
+                        "const": "json_object"
+                      }
+                    },
+                    "required": [
+                      "type"
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          "reasoning": {
+            "description": "Configuration for reasoning models",
+            "type": "object",
+            "properties": {
+              "effort": {
+                "description": "Effort level for reasoning",
+                "type": "string",
+                "enum": [
+                  "low",
+                  "medium",
+                  "high"
+                ]
+              },
+              "generate_summary": {
+                "description": "Type of reasoning summary to generate",
+                "type": "string",
+                "enum": [
+                  "auto",
+                  "concise",
+                  "detailed"
+                ]
+              }
+            }
+          },
+          "instructions": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "tools": {
+            "type": "array",
+            "items": {
+              "description": "A tool definition for the Responses API",
+              "anyOf": [
+                {
+                  "description": "A function tool definition for the Responses API",
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "const": "function"
+                    },
+                    "name": {
+                      "description": "The name of the function to call",
+                      "type": "string"
+                    },
+                    "description": {
+                      "description": "A description of what the function does",
+                      "type": "string"
+                    },
+                    "parameters": {
+                      "description": "\n    The parameters the function accepts, described as a JSON Schema object.\n    Omitting parameters defines a function with an empty parameter list.\n  ",
+                      "type": "object",
+                      "additionalProperties": {}
+                    },
+                    "strict": {
+                      "description": "Whether to enable strict schema adherence",
+                      "anyOf": [
+                        {
+                          "type": "boolean"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "name"
+                  ]
+                },
+                {
+                  "description": "Web search tool for searching the internet",
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "const": "web_search"
+                    },
+                    "search_context_size": {
+                      "description": "How much context to include in web search results",
+                      "type": "string",
+                      "enum": [
+                        "low",
+                        "medium",
+                        "high"
+                      ]
+                    },
+                    "user_location": {
+                      "description": "Approximate location of the user for search context",
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "type": "string",
+                          "const": "approximate"
+                        },
+                        "city": {
+                          "type": "string"
+                        },
+                        "country": {
+                          "type": "string"
+                        },
+                        "region": {
+                          "type": "string"
+                        },
+                        "timezone": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "type"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "type"
+                  ]
+                },
+                {
+                  "description": "File search tool for searching vector stores",
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "const": "file_search"
+                    },
+                    "vector_store_ids": {
+                      "description": "IDs of vector stores to search",
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "max_num_results": {
+                      "description": "Maximum number of results to return (1-50)",
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 50
+                    },
+                    "ranking_options": {
+                      "description": "Options for ranking search results",
+                      "type": "object",
+                      "properties": {
+                        "ranker": {
+                          "type": "string",
+                          "enum": [
+                            "auto",
+                            "default_2024_08_21"
+                          ]
+                        },
+                        "score_threshold": {
+                          "type": "number",
+                          "minimum": 0,
+                          "maximum": 1
+                        }
+                      }
+                    },
+                    "filters": {
+                      "description": "Filters to apply to search results",
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "type": "string",
+                          "enum": [
+                            "eq",
+                            "ne",
+                            "gt",
+                            "gte",
+                            "lt",
+                            "lte",
+                            "in",
+                            "nin",
+                            "and",
+                            "or"
+                          ]
+                        },
+                        "key": {
+                          "type": "string"
+                        },
+                        "value": {},
+                        "filters": {
+                          "type": "array",
+                          "items": {}
+                        }
+                      },
+                      "required": [
+                        "type"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "vector_store_ids"
+                  ]
+                },
+                {
+                  "description": "Code interpreter tool for executing code",
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "const": "code_interpreter"
+                    },
+                    "container": {
+                      "description": "Container configuration for code interpreter",
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "type": "string",
+                          "const": "auto"
+                        },
+                        "file_ids": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        }
+                      },
+                      "required": [
+                        "type"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "type"
+                  ]
+                },
+                {
+                  "description": "Computer use tool for controlling a computer",
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "const": "computer_use_preview"
+                    },
+                    "display_width": {
+                      "description": "Width of the display in pixels",
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "display_height": {
+                      "description": "Height of the display in pixels",
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "environment": {
+                      "description": "The environment for computer use",
+                      "type": "string",
+                      "enum": [
+                        "browser",
+                        "mac",
+                        "windows",
+                        "ubuntu"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "display_width",
+                    "display_height",
+                    "environment"
+                  ]
+                },
+                {
+                  "description": "MCP tool for connecting to Model Context Protocol servers",
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "const": "mcp"
+                    },
+                    "server_label": {
+                      "description": "Label for the MCP server",
+                      "type": "string"
+                    },
+                    "server_url": {
+                      "description": "URL of the MCP server",
+                      "type": "string",
+                      "format": "uri"
+                    },
+                    "require_approval": {
+                      "description": "Whether to require approval for tool calls",
+                      "type": "string",
+                      "enum": [
+                        "always",
+                        "never"
+                      ]
+                    },
+                    "allowed_tools": {
+                      "description": "List of allowed tool names from this server",
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "headers": {
+                      "description": "Headers to include in requests to the MCP server",
+                      "type": "object",
+                      "additionalProperties": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "server_label",
+                    "server_url"
+                  ]
+                }
+              ]
+            }
+          },
+          "tool_choice": {
+            "description": "Controls which tools the model can use",
+            "anyOf": [
+              {
+                "description": "Do not use any tools",
+                "type": "string",
+                "const": "none"
+              },
+              {
+                "description": "Let the model decide which tools to use",
+                "type": "string",
+                "const": "auto"
+              },
+              {
+                "description": "Model must use at least one tool",
+                "type": "string",
+                "const": "required"
+              },
+              {
+                "description": "Force the model to call a specific function",
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "const": "function"
+                  },
+                  "name": {
+                    "description": "The name of the function to call",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
+                  "name"
+                ]
+              },
+              {
+                "description": "Force the model to use a specific hosted tool",
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "file_search",
+                      "web_search",
+                      "code_interpreter",
+                      "computer_use_preview"
+                    ]
+                  }
+                },
+                "required": [
+                  "type"
+                ]
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "object",
+          "created_at",
+          "model",
+          "status",
+          "output"
+        ]
+      },
       "WebSocketMessageInput": {
         "oneOf": [
           {
@@ -7650,6 +9784,2219 @@
           "stop_sequence",
           "type",
           "usage"
+        ],
+        "additionalProperties": false
+      },
+      "OpenAiResponsesRequest": {
+        "type": "object",
+        "properties": {
+          "model": {
+            "description": "The model to use",
+            "type": "string"
+          },
+          "input": {
+            "description": "The input to the model",
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "array",
+                "items": {
+                  "anyOf": [
+                    {
+                      "description": "A message in easy input format (similar to chat completions)",
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "type": "string",
+                          "const": "message"
+                        },
+                        "role": {
+                          "type": "string",
+                          "enum": [
+                            "user",
+                            "assistant",
+                            "system",
+                            "developer"
+                          ]
+                        },
+                        "content": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "array",
+                              "items": {
+                                "anyOf": [
+                                  {
+                                    "description": "Text content for input",
+                                    "type": "object",
+                                    "properties": {
+                                      "type": {
+                                        "type": "string",
+                                        "const": "input_text"
+                                      },
+                                      "text": {
+                                        "description": "The text content",
+                                        "type": "string"
+                                      }
+                                    },
+                                    "required": [
+                                      "type",
+                                      "text"
+                                    ],
+                                    "additionalProperties": false
+                                  },
+                                  {
+                                    "description": "Image content for input",
+                                    "type": "object",
+                                    "properties": {
+                                      "type": {
+                                        "type": "string",
+                                        "const": "input_image"
+                                      },
+                                      "image_url": {
+                                        "description": "URL of the image (can be data: URL for base64)",
+                                        "type": "string"
+                                      },
+                                      "file_id": {
+                                        "description": "File ID of an uploaded image",
+                                        "type": "string"
+                                      },
+                                      "detail": {
+                                        "description": "Detail level for image analysis",
+                                        "type": "string",
+                                        "enum": [
+                                          "auto",
+                                          "low",
+                                          "high"
+                                        ]
+                                      }
+                                    },
+                                    "required": [
+                                      "type"
+                                    ],
+                                    "additionalProperties": false
+                                  },
+                                  {
+                                    "description": "Audio content for input",
+                                    "type": "object",
+                                    "properties": {
+                                      "type": {
+                                        "type": "string",
+                                        "const": "input_audio"
+                                      },
+                                      "data": {
+                                        "description": "Base64-encoded audio data",
+                                        "type": "string"
+                                      },
+                                      "format": {
+                                        "description": "Audio format",
+                                        "type": "string",
+                                        "enum": [
+                                          "wav",
+                                          "mp3"
+                                        ]
+                                      }
+                                    },
+                                    "required": [
+                                      "type",
+                                      "data",
+                                      "format"
+                                    ],
+                                    "additionalProperties": false
+                                  },
+                                  {
+                                    "description": "File content for input",
+                                    "type": "object",
+                                    "properties": {
+                                      "type": {
+                                        "type": "string",
+                                        "const": "input_file"
+                                      },
+                                      "file_id": {
+                                        "description": "File ID of an uploaded file",
+                                        "type": "string"
+                                      },
+                                      "file_data": {
+                                        "description": "Base64-encoded file data",
+                                        "type": "string"
+                                      },
+                                      "filename": {
+                                        "description": "Name of the file",
+                                        "type": "string"
+                                      }
+                                    },
+                                    "required": [
+                                      "type"
+                                    ],
+                                    "additionalProperties": false
+                                  }
+                                ]
+                              }
+                            }
+                          ]
+                        }
+                      },
+                      "required": [
+                        "role",
+                        "content"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "description": "A message input item",
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "type": "string",
+                          "const": "message"
+                        },
+                        "role": {
+                          "type": "string",
+                          "enum": [
+                            "user",
+                            "assistant",
+                            "system",
+                            "developer"
+                          ]
+                        },
+                        "content": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "array",
+                              "items": {
+                                "anyOf": [
+                                  {
+                                    "description": "Text content for input",
+                                    "type": "object",
+                                    "properties": {
+                                      "type": {
+                                        "type": "string",
+                                        "const": "input_text"
+                                      },
+                                      "text": {
+                                        "description": "The text content",
+                                        "type": "string"
+                                      }
+                                    },
+                                    "required": [
+                                      "type",
+                                      "text"
+                                    ],
+                                    "additionalProperties": false
+                                  },
+                                  {
+                                    "description": "Image content for input",
+                                    "type": "object",
+                                    "properties": {
+                                      "type": {
+                                        "type": "string",
+                                        "const": "input_image"
+                                      },
+                                      "image_url": {
+                                        "description": "URL of the image (can be data: URL for base64)",
+                                        "type": "string"
+                                      },
+                                      "file_id": {
+                                        "description": "File ID of an uploaded image",
+                                        "type": "string"
+                                      },
+                                      "detail": {
+                                        "description": "Detail level for image analysis",
+                                        "type": "string",
+                                        "enum": [
+                                          "auto",
+                                          "low",
+                                          "high"
+                                        ]
+                                      }
+                                    },
+                                    "required": [
+                                      "type"
+                                    ],
+                                    "additionalProperties": false
+                                  },
+                                  {
+                                    "description": "Audio content for input",
+                                    "type": "object",
+                                    "properties": {
+                                      "type": {
+                                        "type": "string",
+                                        "const": "input_audio"
+                                      },
+                                      "data": {
+                                        "description": "Base64-encoded audio data",
+                                        "type": "string"
+                                      },
+                                      "format": {
+                                        "description": "Audio format",
+                                        "type": "string",
+                                        "enum": [
+                                          "wav",
+                                          "mp3"
+                                        ]
+                                      }
+                                    },
+                                    "required": [
+                                      "type",
+                                      "data",
+                                      "format"
+                                    ],
+                                    "additionalProperties": false
+                                  },
+                                  {
+                                    "description": "File content for input",
+                                    "type": "object",
+                                    "properties": {
+                                      "type": {
+                                        "type": "string",
+                                        "const": "input_file"
+                                      },
+                                      "file_id": {
+                                        "description": "File ID of an uploaded file",
+                                        "type": "string"
+                                      },
+                                      "file_data": {
+                                        "description": "Base64-encoded file data",
+                                        "type": "string"
+                                      },
+                                      "filename": {
+                                        "description": "Name of the file",
+                                        "type": "string"
+                                      }
+                                    },
+                                    "required": [
+                                      "type"
+                                    ],
+                                    "additionalProperties": false
+                                  }
+                                ]
+                              }
+                            }
+                          ]
+                        },
+                        "id": {
+                          "description": "Optional ID for the message",
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "type",
+                        "role",
+                        "content"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "description": "Reference to a previous item by ID",
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "type": "string",
+                          "const": "item_reference"
+                        },
+                        "id": {
+                          "description": "ID of the item to reference",
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "type",
+                        "id"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "description": "Output from a function call (for multi-turn conversations)",
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "type": "string",
+                          "const": "function_call_output"
+                        },
+                        "call_id": {
+                          "description": "ID of the function call this is responding to",
+                          "type": "string"
+                        },
+                        "output": {
+                          "description": "The output/result of the function call",
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "type",
+                        "call_id",
+                        "output"
+                      ],
+                      "additionalProperties": false
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          "instructions": {
+            "description": "System instructions for the model",
+            "type": "string"
+          },
+          "tools": {
+            "description": "Tools available to the model",
+            "type": "array",
+            "items": {
+              "description": "A tool definition for the Responses API",
+              "anyOf": [
+                {
+                  "description": "A function tool definition for the Responses API",
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "const": "function"
+                    },
+                    "name": {
+                      "description": "The name of the function to call",
+                      "type": "string"
+                    },
+                    "description": {
+                      "description": "A description of what the function does",
+                      "type": "string"
+                    },
+                    "parameters": {
+                      "description": "\n    The parameters the function accepts, described as a JSON Schema object.\n    Omitting parameters defines a function with an empty parameter list.\n  ",
+                      "type": "object",
+                      "additionalProperties": {}
+                    },
+                    "strict": {
+                      "description": "Whether to enable strict schema adherence",
+                      "anyOf": [
+                        {
+                          "type": "boolean"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "name"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "description": "Web search tool for searching the internet",
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "const": "web_search"
+                    },
+                    "search_context_size": {
+                      "description": "How much context to include in web search results",
+                      "type": "string",
+                      "enum": [
+                        "low",
+                        "medium",
+                        "high"
+                      ]
+                    },
+                    "user_location": {
+                      "description": "Approximate location of the user for search context",
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "type": "string",
+                          "const": "approximate"
+                        },
+                        "city": {
+                          "type": "string"
+                        },
+                        "country": {
+                          "type": "string"
+                        },
+                        "region": {
+                          "type": "string"
+                        },
+                        "timezone": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "type"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "type"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "description": "File search tool for searching vector stores",
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "const": "file_search"
+                    },
+                    "vector_store_ids": {
+                      "description": "IDs of vector stores to search",
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "max_num_results": {
+                      "description": "Maximum number of results to return (1-50)",
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 50
+                    },
+                    "ranking_options": {
+                      "description": "Options for ranking search results",
+                      "type": "object",
+                      "properties": {
+                        "ranker": {
+                          "type": "string",
+                          "enum": [
+                            "auto",
+                            "default_2024_08_21"
+                          ]
+                        },
+                        "score_threshold": {
+                          "type": "number",
+                          "minimum": 0,
+                          "maximum": 1
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    "filters": {
+                      "description": "Filters to apply to search results",
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "type": "string",
+                          "enum": [
+                            "eq",
+                            "ne",
+                            "gt",
+                            "gte",
+                            "lt",
+                            "lte",
+                            "in",
+                            "nin",
+                            "and",
+                            "or"
+                          ]
+                        },
+                        "key": {
+                          "type": "string"
+                        },
+                        "value": {},
+                        "filters": {
+                          "type": "array",
+                          "items": {}
+                        }
+                      },
+                      "required": [
+                        "type"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "vector_store_ids"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "description": "Code interpreter tool for executing code",
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "const": "code_interpreter"
+                    },
+                    "container": {
+                      "description": "Container configuration for code interpreter",
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "type": "string",
+                          "const": "auto"
+                        },
+                        "file_ids": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        }
+                      },
+                      "required": [
+                        "type"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "type"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "description": "Computer use tool for controlling a computer",
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "const": "computer_use_preview"
+                    },
+                    "display_width": {
+                      "description": "Width of the display in pixels",
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "display_height": {
+                      "description": "Height of the display in pixels",
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "environment": {
+                      "description": "The environment for computer use",
+                      "type": "string",
+                      "enum": [
+                        "browser",
+                        "mac",
+                        "windows",
+                        "ubuntu"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "display_width",
+                    "display_height",
+                    "environment"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "description": "MCP tool for connecting to Model Context Protocol servers",
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "const": "mcp"
+                    },
+                    "server_label": {
+                      "description": "Label for the MCP server",
+                      "type": "string"
+                    },
+                    "server_url": {
+                      "description": "URL of the MCP server",
+                      "type": "string",
+                      "format": "uri"
+                    },
+                    "require_approval": {
+                      "description": "Whether to require approval for tool calls",
+                      "type": "string",
+                      "enum": [
+                        "always",
+                        "never"
+                      ]
+                    },
+                    "allowed_tools": {
+                      "description": "List of allowed tool names from this server",
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "headers": {
+                      "description": "Headers to include in requests to the MCP server",
+                      "type": "object",
+                      "additionalProperties": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "server_label",
+                    "server_url"
+                  ],
+                  "additionalProperties": false
+                }
+              ]
+            }
+          },
+          "tool_choice": {
+            "description": "Controls which tools the model can use",
+            "anyOf": [
+              {
+                "description": "Do not use any tools",
+                "type": "string",
+                "const": "none"
+              },
+              {
+                "description": "Let the model decide which tools to use",
+                "type": "string",
+                "const": "auto"
+              },
+              {
+                "description": "Model must use at least one tool",
+                "type": "string",
+                "const": "required"
+              },
+              {
+                "description": "Force the model to call a specific function",
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "const": "function"
+                  },
+                  "name": {
+                    "description": "The name of the function to call",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
+                  "name"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "description": "Force the model to use a specific hosted tool",
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "file_search",
+                      "web_search",
+                      "code_interpreter",
+                      "computer_use_preview"
+                    ]
+                  }
+                },
+                "required": [
+                  "type"
+                ],
+                "additionalProperties": false
+              }
+            ]
+          },
+          "parallel_tool_calls": {
+            "description": "Whether to allow parallel tool calls",
+            "type": "boolean"
+          },
+          "temperature": {
+            "description": "Sampling temperature",
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 2
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "top_p": {
+            "description": "Nucleus sampling parameter",
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "max_output_tokens": {
+            "description": "Maximum tokens in the response",
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "stream": {
+            "description": "Whether to stream the response",
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "previous_response_id": {
+            "description": "ID of a previous response for multi-turn conversations",
+            "type": "string"
+          },
+          "store": {
+            "description": "Whether to store the response for future reference",
+            "type": "boolean"
+          },
+          "text": {
+            "description": "Configuration for text output",
+            "type": "object",
+            "properties": {
+              "format": {
+                "description": "Format for text output",
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "type": {
+                        "type": "string",
+                        "const": "text"
+                      }
+                    },
+                    "required": [
+                      "type"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "type": {
+                        "type": "string",
+                        "const": "json_schema"
+                      },
+                      "name": {
+                        "type": "string"
+                      },
+                      "schema": {
+                        "type": "object",
+                        "additionalProperties": {}
+                      },
+                      "strict": {
+                        "type": "boolean"
+                      }
+                    },
+                    "required": [
+                      "type",
+                      "name",
+                      "schema"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "type": {
+                        "type": "string",
+                        "const": "json_object"
+                      }
+                    },
+                    "required": [
+                      "type"
+                    ],
+                    "additionalProperties": false
+                  }
+                ]
+              }
+            },
+            "additionalProperties": false
+          },
+          "reasoning": {
+            "description": "Configuration for reasoning models",
+            "type": "object",
+            "properties": {
+              "effort": {
+                "description": "Effort level for reasoning",
+                "type": "string",
+                "enum": [
+                  "low",
+                  "medium",
+                  "high"
+                ]
+              },
+              "generate_summary": {
+                "description": "Type of reasoning summary to generate",
+                "type": "string",
+                "enum": [
+                  "auto",
+                  "concise",
+                  "detailed"
+                ]
+              }
+            },
+            "additionalProperties": false
+          },
+          "truncation": {
+            "description": "Truncation strategy for context",
+            "type": "string",
+            "enum": [
+              "auto",
+              "disabled"
+            ]
+          },
+          "metadata": {
+            "description": "Custom metadata for the request",
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "user": {
+            "description": "Unique identifier for the end user",
+            "type": "string"
+          },
+          "service_tier": {
+            "description": "Service tier for the request",
+            "type": "string",
+            "enum": [
+              "auto",
+              "default",
+              "flex"
+            ]
+          }
+        },
+        "required": [
+          "model",
+          "input"
+        ],
+        "additionalProperties": false
+      },
+      "OpenAiResponsesResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "description": "Unique ID of the response",
+            "type": "string"
+          },
+          "object": {
+            "description": "Object type",
+            "type": "string",
+            "const": "response"
+          },
+          "created_at": {
+            "description": "Unix timestamp of creation",
+            "type": "number"
+          },
+          "model": {
+            "description": "Model used for the response",
+            "type": "string"
+          },
+          "status": {
+            "description": "Status of the response",
+            "type": "string",
+            "enum": [
+              "completed",
+              "incomplete",
+              "failed",
+              "in_progress",
+              "cancelled"
+            ]
+          },
+          "output": {
+            "description": "Output items from the model",
+            "type": "array",
+            "items": {
+              "anyOf": [
+                {
+                  "description": "A message output from the assistant",
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "const": "message"
+                    },
+                    "id": {
+                      "description": "Unique ID of this output item",
+                      "type": "string"
+                    },
+                    "role": {
+                      "type": "string",
+                      "const": "assistant"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "in_progress",
+                        "completed",
+                        "incomplete"
+                      ]
+                    },
+                    "content": {
+                      "type": "array",
+                      "items": {
+                        "anyOf": [
+                          {
+                            "description": "Text content in output",
+                            "type": "object",
+                            "properties": {
+                              "type": {
+                                "type": "string",
+                                "const": "output_text"
+                              },
+                              "text": {
+                                "description": "The text content",
+                                "type": "string"
+                              },
+                              "annotations": {
+                                "description": "Annotations with citations and references",
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "type": {
+                                      "type": "string",
+                                      "enum": [
+                                        "file_citation",
+                                        "url_citation",
+                                        "file_path"
+                                      ]
+                                    },
+                                    "start_index": {
+                                      "type": "number"
+                                    },
+                                    "end_index": {
+                                      "type": "number"
+                                    },
+                                    "file_citation": {
+                                      "type": "object",
+                                      "properties": {
+                                        "file_id": {
+                                          "type": "string"
+                                        },
+                                        "quote": {
+                                          "type": "string"
+                                        }
+                                      },
+                                      "required": [
+                                        "file_id"
+                                      ],
+                                      "additionalProperties": false
+                                    },
+                                    "url_citation": {
+                                      "type": "object",
+                                      "properties": {
+                                        "url": {
+                                          "type": "string"
+                                        },
+                                        "title": {
+                                          "type": "string"
+                                        }
+                                      },
+                                      "required": [
+                                        "url"
+                                      ],
+                                      "additionalProperties": false
+                                    },
+                                    "file_path": {
+                                      "type": "object",
+                                      "properties": {
+                                        "file_id": {
+                                          "type": "string"
+                                        }
+                                      },
+                                      "required": [
+                                        "file_id"
+                                      ],
+                                      "additionalProperties": false
+                                    }
+                                  },
+                                  "required": [
+                                    "type"
+                                  ],
+                                  "additionalProperties": false
+                                }
+                              }
+                            },
+                            "required": [
+                              "type",
+                              "text"
+                            ],
+                            "additionalProperties": false
+                          },
+                          {
+                            "description": "Refusal content when the model declines to respond",
+                            "type": "object",
+                            "properties": {
+                              "type": {
+                                "type": "string",
+                                "const": "refusal"
+                              },
+                              "refusal": {
+                                "description": "The refusal message",
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "type",
+                              "refusal"
+                            ],
+                            "additionalProperties": false
+                          }
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "id",
+                    "role",
+                    "status",
+                    "content"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "description": "A function call the model wants to make",
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "const": "function_call"
+                    },
+                    "id": {
+                      "description": "Unique ID of this function call",
+                      "type": "string"
+                    },
+                    "call_id": {
+                      "description": "ID to use when providing function output",
+                      "type": "string"
+                    },
+                    "name": {
+                      "description": "Name of the function to call",
+                      "type": "string"
+                    },
+                    "arguments": {
+                      "description": "JSON string of function arguments",
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "in_progress",
+                        "completed",
+                        "incomplete"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "id",
+                    "call_id",
+                    "name",
+                    "arguments",
+                    "status"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "description": "A file search call and its results",
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "const": "file_search_call"
+                    },
+                    "id": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "in_progress",
+                        "completed",
+                        "incomplete",
+                        "searching",
+                        "failed"
+                      ]
+                    },
+                    "queries": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "results": {
+                      "anyOf": [
+                        {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "file_id": {
+                                "type": "string"
+                              },
+                              "filename": {
+                                "type": "string"
+                              },
+                              "score": {
+                                "type": "number"
+                              },
+                              "text": {
+                                "type": "string"
+                              },
+                              "attributes": {
+                                "type": "object",
+                                "additionalProperties": {}
+                              }
+                            },
+                            "required": [
+                              "file_id",
+                              "filename",
+                              "score",
+                              "text"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "id",
+                    "status"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "description": "A web search call",
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "const": "web_search_call"
+                    },
+                    "id": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "in_progress",
+                        "completed",
+                        "incomplete",
+                        "searching",
+                        "failed"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "id",
+                    "status"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "description": "A code interpreter call and its results",
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "const": "code_interpreter_call"
+                    },
+                    "id": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "in_progress",
+                        "completed",
+                        "incomplete"
+                      ]
+                    },
+                    "code": {
+                      "type": "string"
+                    },
+                    "results": {
+                      "type": "array",
+                      "items": {
+                        "anyOf": [
+                          {
+                            "type": "object",
+                            "properties": {
+                              "type": {
+                                "type": "string",
+                                "const": "logs"
+                              },
+                              "logs": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "type",
+                              "logs"
+                            ],
+                            "additionalProperties": false
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "type": {
+                                "type": "string",
+                                "const": "image"
+                              },
+                              "image": {
+                                "type": "object",
+                                "properties": {
+                                  "file_id": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "file_id"
+                                ],
+                                "additionalProperties": false
+                              }
+                            },
+                            "required": [
+                              "type",
+                              "image"
+                            ],
+                            "additionalProperties": false
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "type": {
+                                "type": "string",
+                                "const": "files"
+                              },
+                              "files": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "file_id": {
+                                      "type": "string"
+                                    },
+                                    "mime_type": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": [
+                                    "file_id"
+                                  ],
+                                  "additionalProperties": false
+                                }
+                              }
+                            },
+                            "required": [
+                              "type",
+                              "files"
+                            ],
+                            "additionalProperties": false
+                          }
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "id",
+                    "status"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "description": "A computer use call",
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "const": "computer_call"
+                    },
+                    "id": {
+                      "type": "string"
+                    },
+                    "call_id": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "in_progress",
+                        "completed",
+                        "incomplete"
+                      ]
+                    },
+                    "action": {
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "type": "string",
+                          "enum": [
+                            "click",
+                            "double_click",
+                            "drag",
+                            "keypress",
+                            "move",
+                            "screenshot",
+                            "scroll",
+                            "type",
+                            "wait"
+                          ]
+                        },
+                        "coordinate": {
+                          "type": "array",
+                          "prefixItems": [
+                            {
+                              "type": "number"
+                            },
+                            {
+                              "type": "number"
+                            }
+                          ]
+                        },
+                        "end_coordinate": {
+                          "type": "array",
+                          "prefixItems": [
+                            {
+                              "type": "number"
+                            },
+                            {
+                              "type": "number"
+                            }
+                          ]
+                        },
+                        "button": {
+                          "type": "string",
+                          "enum": [
+                            "left",
+                            "right",
+                            "middle",
+                            "wheel"
+                          ]
+                        },
+                        "keys": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "text": {
+                          "type": "string"
+                        },
+                        "scroll_direction": {
+                          "type": "string",
+                          "enum": [
+                            "up",
+                            "down",
+                            "left",
+                            "right"
+                          ]
+                        },
+                        "scroll_amount": {
+                          "type": "number"
+                        },
+                        "duration": {
+                          "type": "number"
+                        }
+                      },
+                      "required": [
+                        "type"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "pending_safety_checks": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "code": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "code",
+                          "message"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "id",
+                    "call_id",
+                    "status",
+                    "action"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "description": "Reasoning output from reasoning models (o1, etc.)",
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "const": "reasoning"
+                    },
+                    "id": {
+                      "type": "string"
+                    },
+                    "summary": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string",
+                            "const": "summary_text"
+                          },
+                          "text": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "text"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "id",
+                    "summary"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "description": "An MCP tool call",
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "const": "mcp_call"
+                    },
+                    "id": {
+                      "type": "string"
+                    },
+                    "approval_request_id": {
+                      "type": "string"
+                    },
+                    "server_label": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "arguments": {
+                      "type": "string"
+                    },
+                    "error": {
+                      "type": "string"
+                    },
+                    "output": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "id",
+                    "server_label",
+                    "name",
+                    "arguments"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "description": "List of tools from an MCP server",
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "const": "mcp_list_tools"
+                    },
+                    "id": {
+                      "type": "string"
+                    },
+                    "server_label": {
+                      "type": "string"
+                    },
+                    "tools": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "name": {
+                            "type": "string"
+                          },
+                          "description": {
+                            "type": "string"
+                          },
+                          "input_schema": {
+                            "type": "object",
+                            "additionalProperties": {}
+                          }
+                        },
+                        "required": [
+                          "name",
+                          "input_schema"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "id",
+                    "server_label",
+                    "tools"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "description": "An MCP approval request",
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "const": "mcp_approval_request"
+                    },
+                    "id": {
+                      "type": "string"
+                    },
+                    "server_label": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "arguments": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "id",
+                    "server_label",
+                    "name",
+                    "arguments"
+                  ],
+                  "additionalProperties": false
+                }
+              ]
+            }
+          },
+          "usage": {
+            "description": "Token usage",
+            "type": "object",
+            "properties": {
+              "input_tokens": {
+                "description": "Number of input tokens",
+                "type": "number"
+              },
+              "input_tokens_details": {
+                "type": "object",
+                "properties": {
+                  "cached_tokens": {
+                    "type": "number"
+                  },
+                  "text_tokens": {
+                    "type": "number"
+                  },
+                  "image_tokens": {
+                    "type": "number"
+                  },
+                  "audio_tokens": {
+                    "type": "number"
+                  }
+                },
+                "additionalProperties": false
+              },
+              "output_tokens": {
+                "description": "Number of output tokens",
+                "type": "number"
+              },
+              "output_tokens_details": {
+                "type": "object",
+                "properties": {
+                  "text_tokens": {
+                    "type": "number"
+                  },
+                  "audio_tokens": {
+                    "type": "number"
+                  },
+                  "reasoning_tokens": {
+                    "type": "number"
+                  }
+                },
+                "additionalProperties": false
+              },
+              "total_tokens": {
+                "description": "Total tokens (input + output)",
+                "type": "number"
+              }
+            },
+            "required": [
+              "input_tokens",
+              "output_tokens",
+              "total_tokens"
+            ],
+            "additionalProperties": false
+          },
+          "incomplete_details": {
+            "description": "Details about why the response is incomplete",
+            "type": "object",
+            "properties": {
+              "reason": {
+                "type": "string",
+                "enum": [
+                  "max_output_tokens",
+                  "content_filter",
+                  "turn_limit_reached",
+                  "interrupted"
+                ]
+              }
+            },
+            "required": [
+              "reason"
+            ],
+            "additionalProperties": false
+          },
+          "error": {
+            "description": "Error details if status is failed",
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string"
+              },
+              "message": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "code",
+              "message"
+            ],
+            "additionalProperties": false
+          },
+          "metadata": {
+            "description": "Custom metadata from the request",
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "parallel_tool_calls": {
+            "type": "boolean"
+          },
+          "previous_response_id": {
+            "type": "string"
+          },
+          "service_tier": {
+            "type": "string"
+          },
+          "temperature": {
+            "type": "number"
+          },
+          "top_p": {
+            "type": "number"
+          },
+          "max_output_tokens": {
+            "type": "number"
+          },
+          "truncation": {
+            "type": "string"
+          },
+          "text": {
+            "description": "Configuration for text output",
+            "type": "object",
+            "properties": {
+              "format": {
+                "description": "Format for text output",
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "type": {
+                        "type": "string",
+                        "const": "text"
+                      }
+                    },
+                    "required": [
+                      "type"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "type": {
+                        "type": "string",
+                        "const": "json_schema"
+                      },
+                      "name": {
+                        "type": "string"
+                      },
+                      "schema": {
+                        "type": "object",
+                        "additionalProperties": {}
+                      },
+                      "strict": {
+                        "type": "boolean"
+                      }
+                    },
+                    "required": [
+                      "type",
+                      "name",
+                      "schema"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "type": {
+                        "type": "string",
+                        "const": "json_object"
+                      }
+                    },
+                    "required": [
+                      "type"
+                    ],
+                    "additionalProperties": false
+                  }
+                ]
+              }
+            },
+            "additionalProperties": false
+          },
+          "reasoning": {
+            "description": "Configuration for reasoning models",
+            "type": "object",
+            "properties": {
+              "effort": {
+                "description": "Effort level for reasoning",
+                "type": "string",
+                "enum": [
+                  "low",
+                  "medium",
+                  "high"
+                ]
+              },
+              "generate_summary": {
+                "description": "Type of reasoning summary to generate",
+                "type": "string",
+                "enum": [
+                  "auto",
+                  "concise",
+                  "detailed"
+                ]
+              }
+            },
+            "additionalProperties": false
+          },
+          "instructions": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "tools": {
+            "type": "array",
+            "items": {
+              "description": "A tool definition for the Responses API",
+              "anyOf": [
+                {
+                  "description": "A function tool definition for the Responses API",
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "const": "function"
+                    },
+                    "name": {
+                      "description": "The name of the function to call",
+                      "type": "string"
+                    },
+                    "description": {
+                      "description": "A description of what the function does",
+                      "type": "string"
+                    },
+                    "parameters": {
+                      "description": "\n    The parameters the function accepts, described as a JSON Schema object.\n    Omitting parameters defines a function with an empty parameter list.\n  ",
+                      "type": "object",
+                      "additionalProperties": {}
+                    },
+                    "strict": {
+                      "description": "Whether to enable strict schema adherence",
+                      "anyOf": [
+                        {
+                          "type": "boolean"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "name"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "description": "Web search tool for searching the internet",
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "const": "web_search"
+                    },
+                    "search_context_size": {
+                      "description": "How much context to include in web search results",
+                      "type": "string",
+                      "enum": [
+                        "low",
+                        "medium",
+                        "high"
+                      ]
+                    },
+                    "user_location": {
+                      "description": "Approximate location of the user for search context",
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "type": "string",
+                          "const": "approximate"
+                        },
+                        "city": {
+                          "type": "string"
+                        },
+                        "country": {
+                          "type": "string"
+                        },
+                        "region": {
+                          "type": "string"
+                        },
+                        "timezone": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "type"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "type"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "description": "File search tool for searching vector stores",
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "const": "file_search"
+                    },
+                    "vector_store_ids": {
+                      "description": "IDs of vector stores to search",
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "max_num_results": {
+                      "description": "Maximum number of results to return (1-50)",
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 50
+                    },
+                    "ranking_options": {
+                      "description": "Options for ranking search results",
+                      "type": "object",
+                      "properties": {
+                        "ranker": {
+                          "type": "string",
+                          "enum": [
+                            "auto",
+                            "default_2024_08_21"
+                          ]
+                        },
+                        "score_threshold": {
+                          "type": "number",
+                          "minimum": 0,
+                          "maximum": 1
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    "filters": {
+                      "description": "Filters to apply to search results",
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "type": "string",
+                          "enum": [
+                            "eq",
+                            "ne",
+                            "gt",
+                            "gte",
+                            "lt",
+                            "lte",
+                            "in",
+                            "nin",
+                            "and",
+                            "or"
+                          ]
+                        },
+                        "key": {
+                          "type": "string"
+                        },
+                        "value": {},
+                        "filters": {
+                          "type": "array",
+                          "items": {}
+                        }
+                      },
+                      "required": [
+                        "type"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "vector_store_ids"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "description": "Code interpreter tool for executing code",
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "const": "code_interpreter"
+                    },
+                    "container": {
+                      "description": "Container configuration for code interpreter",
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "type": "string",
+                          "const": "auto"
+                        },
+                        "file_ids": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        }
+                      },
+                      "required": [
+                        "type"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "type"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "description": "Computer use tool for controlling a computer",
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "const": "computer_use_preview"
+                    },
+                    "display_width": {
+                      "description": "Width of the display in pixels",
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "display_height": {
+                      "description": "Height of the display in pixels",
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "environment": {
+                      "description": "The environment for computer use",
+                      "type": "string",
+                      "enum": [
+                        "browser",
+                        "mac",
+                        "windows",
+                        "ubuntu"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "display_width",
+                    "display_height",
+                    "environment"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "description": "MCP tool for connecting to Model Context Protocol servers",
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "const": "mcp"
+                    },
+                    "server_label": {
+                      "description": "Label for the MCP server",
+                      "type": "string"
+                    },
+                    "server_url": {
+                      "description": "URL of the MCP server",
+                      "type": "string",
+                      "format": "uri"
+                    },
+                    "require_approval": {
+                      "description": "Whether to require approval for tool calls",
+                      "type": "string",
+                      "enum": [
+                        "always",
+                        "never"
+                      ]
+                    },
+                    "allowed_tools": {
+                      "description": "List of allowed tool names from this server",
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "headers": {
+                      "description": "Headers to include in requests to the MCP server",
+                      "type": "object",
+                      "additionalProperties": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "server_label",
+                    "server_url"
+                  ],
+                  "additionalProperties": false
+                }
+              ]
+            }
+          },
+          "tool_choice": {
+            "description": "Controls which tools the model can use",
+            "anyOf": [
+              {
+                "description": "Do not use any tools",
+                "type": "string",
+                "const": "none"
+              },
+              {
+                "description": "Let the model decide which tools to use",
+                "type": "string",
+                "const": "auto"
+              },
+              {
+                "description": "Model must use at least one tool",
+                "type": "string",
+                "const": "required"
+              },
+              {
+                "description": "Force the model to call a specific function",
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "const": "function"
+                  },
+                  "name": {
+                    "description": "The name of the function to call",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
+                  "name"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "description": "Force the model to use a specific hosted tool",
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "file_search",
+                      "web_search",
+                      "code_interpreter",
+                      "computer_use_preview"
+                    ]
+                  }
+                },
+                "required": [
+                  "type"
+                ],
+                "additionalProperties": false
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "object",
+          "created_at",
+          "model",
+          "status",
+          "output"
         ],
         "additionalProperties": false
       },
@@ -27807,6 +32154,112 @@
                                 "type": "string"
                               },
                               "request": {
+                                "$ref": "#/components/schemas/OpenAiResponsesRequest"
+                              },
+                              "processedRequest": {
+                                "nullable": true,
+                                "allOf": [
+                                  {
+                                    "$ref": "#/components/schemas/OpenAiResponsesRequest"
+                                  }
+                                ]
+                              },
+                              "response": {
+                                "$ref": "#/components/schemas/OpenAiResponsesResponse"
+                              },
+                              "type": {
+                                "type": "string",
+                                "enum": [
+                                  "openai-responses:responses"
+                                ]
+                              },
+                              "model": {
+                                "nullable": true,
+                                "type": "string"
+                              },
+                              "inputTokens": {
+                                "nullable": true,
+                                "type": "integer",
+                                "minimum": -2147483648,
+                                "maximum": 2147483647
+                              },
+                              "outputTokens": {
+                                "nullable": true,
+                                "type": "integer",
+                                "minimum": -2147483648,
+                                "maximum": 2147483647
+                              },
+                              "baselineCost": {
+                                "nullable": true,
+                                "type": "string"
+                              },
+                              "cost": {
+                                "nullable": true,
+                                "type": "string"
+                              },
+                              "toonTokensBefore": {
+                                "nullable": true,
+                                "type": "integer",
+                                "minimum": -2147483648,
+                                "maximum": 2147483647
+                              },
+                              "toonTokensAfter": {
+                                "nullable": true,
+                                "type": "integer",
+                                "minimum": -2147483648,
+                                "maximum": 2147483647
+                              },
+                              "toonCostSavings": {
+                                "nullable": true,
+                                "type": "string"
+                              },
+                              "createdAt": {
+                                "type": "string",
+                                "format": "date-time"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "profileId",
+                              "externalAgentId",
+                              "userId",
+                              "request",
+                              "response",
+                              "type",
+                              "model",
+                              "inputTokens",
+                              "outputTokens",
+                              "baselineCost",
+                              "cost",
+                              "toonTokensBefore",
+                              "toonTokensAfter",
+                              "toonCostSavings",
+                              "createdAt"
+                            ],
+                            "additionalProperties": false
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "profileId": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "externalAgentId": {
+                                "nullable": true,
+                                "type": "string"
+                              },
+                              "userId": {
+                                "nullable": true,
+                                "type": "string"
+                              },
+                              "request": {
                                 "$ref": "#/components/schemas/GeminiGenerateContentRequest"
                               },
                               "processedRequest": {
@@ -28809,6 +33262,112 @@
                           "type": "string",
                           "enum": [
                             "openai:chatCompletions"
+                          ]
+                        },
+                        "model": {
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        "inputTokens": {
+                          "nullable": true,
+                          "type": "integer",
+                          "minimum": -2147483648,
+                          "maximum": 2147483647
+                        },
+                        "outputTokens": {
+                          "nullable": true,
+                          "type": "integer",
+                          "minimum": -2147483648,
+                          "maximum": 2147483647
+                        },
+                        "baselineCost": {
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        "cost": {
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        "toonTokensBefore": {
+                          "nullable": true,
+                          "type": "integer",
+                          "minimum": -2147483648,
+                          "maximum": 2147483647
+                        },
+                        "toonTokensAfter": {
+                          "nullable": true,
+                          "type": "integer",
+                          "minimum": -2147483648,
+                          "maximum": 2147483647
+                        },
+                        "toonCostSavings": {
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        "createdAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "profileId",
+                        "externalAgentId",
+                        "userId",
+                        "request",
+                        "response",
+                        "type",
+                        "model",
+                        "inputTokens",
+                        "outputTokens",
+                        "baselineCost",
+                        "cost",
+                        "toonTokensBefore",
+                        "toonTokensAfter",
+                        "toonCostSavings",
+                        "createdAt"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "profileId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "externalAgentId": {
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        "userId": {
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        "request": {
+                          "$ref": "#/components/schemas/OpenAiResponsesRequest"
+                        },
+                        "processedRequest": {
+                          "nullable": true,
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/OpenAiResponsesRequest"
+                            }
+                          ]
+                        },
+                        "response": {
+                          "$ref": "#/components/schemas/OpenAiResponsesResponse"
+                        },
+                        "type": {
+                          "type": "string",
+                          "enum": [
+                            "openai-responses:responses"
                           ]
                         },
                         "model": {
@@ -44547,6 +49106,536 @@
         }
       }
     },
+    "/v1/openai-responses/responses": {
+      "post": {
+        "operationId": "openAiResponsesWithDefaultAgent",
+        "tags": [
+          "llm-proxy"
+        ],
+        "description": "Send a responses request to OpenAI using the default agent",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OpenAiResponsesRequestInput"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "header",
+            "name": "user-agent",
+            "required": false,
+            "description": "The user agent of the client"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "header",
+            "name": "authorization",
+            "required": true,
+            "description": "Bearer token for OpenAI"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpenAiResponsesResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "message": {
+                          "type": "string"
+                        },
+                        "type": {
+                          "type": "string",
+                          "enum": [
+                            "api_validation_error"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "message",
+                        "type"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "message": {
+                          "type": "string"
+                        },
+                        "type": {
+                          "type": "string",
+                          "enum": [
+                            "api_authentication_error"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "message",
+                        "type"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "message": {
+                          "type": "string"
+                        },
+                        "type": {
+                          "type": "string",
+                          "enum": [
+                            "api_authorization_error"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "message",
+                        "type"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "message": {
+                          "type": "string"
+                        },
+                        "type": {
+                          "type": "string",
+                          "enum": [
+                            "api_not_found_error"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "message",
+                        "type"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "message": {
+                          "type": "string"
+                        },
+                        "type": {
+                          "type": "string",
+                          "enum": [
+                            "api_conflict_error"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "message",
+                        "type"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "message": {
+                          "type": "string"
+                        },
+                        "type": {
+                          "type": "string",
+                          "enum": [
+                            "api_internal_server_error"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "message",
+                        "type"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/openai-responses/{agentId}/responses": {
+      "post": {
+        "operationId": "openAiResponsesWithAgent",
+        "tags": [
+          "llm-proxy"
+        ],
+        "description": "Send a responses request to OpenAI using a specific agent",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OpenAiResponsesRequestInput"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$"
+            },
+            "in": "path",
+            "name": "agentId",
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "header",
+            "name": "user-agent",
+            "required": false,
+            "description": "The user agent of the client"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "header",
+            "name": "authorization",
+            "required": true,
+            "description": "Bearer token for OpenAI"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpenAiResponsesResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "message": {
+                          "type": "string"
+                        },
+                        "type": {
+                          "type": "string",
+                          "enum": [
+                            "api_validation_error"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "message",
+                        "type"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "message": {
+                          "type": "string"
+                        },
+                        "type": {
+                          "type": "string",
+                          "enum": [
+                            "api_authentication_error"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "message",
+                        "type"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "message": {
+                          "type": "string"
+                        },
+                        "type": {
+                          "type": "string",
+                          "enum": [
+                            "api_authorization_error"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "message",
+                        "type"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "message": {
+                          "type": "string"
+                        },
+                        "type": {
+                          "type": "string",
+                          "enum": [
+                            "api_not_found_error"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "message",
+                        "type"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "message": {
+                          "type": "string"
+                        },
+                        "type": {
+                          "type": "string",
+                          "enum": [
+                            "api_conflict_error"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "message",
+                        "type"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "message": {
+                          "type": "string"
+                        },
+                        "type": {
+                          "type": "string",
+                          "enum": [
+                            "api_internal_server_error"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "message",
+                        "type"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/optimization-rules": {
       "get": {
         "operationId": "getOptimizationRules",
@@ -44617,6 +49706,7 @@
                         "type": "string",
                         "enum": [
                           "openai",
+                          "openai-responses",
                           "gemini",
                           "anthropic"
                         ]
@@ -44928,6 +50018,7 @@
                     "type": "string",
                     "enum": [
                       "openai",
+                      "openai-responses",
                       "gemini",
                       "anthropic"
                     ]
@@ -45014,6 +50105,7 @@
                       "type": "string",
                       "enum": [
                         "openai",
+                        "openai-responses",
                         "gemini",
                         "anthropic"
                       ]
@@ -45326,6 +50418,7 @@
                     "type": "string",
                     "enum": [
                       "openai",
+                      "openai-responses",
                       "gemini",
                       "anthropic"
                     ]
@@ -45416,6 +50509,7 @@
                       "type": "string",
                       "enum": [
                         "openai",
+                        "openai-responses",
                         "gemini",
                         "anthropic"
                       ]
@@ -56301,6 +61395,7 @@
                         "type": "string",
                         "enum": [
                           "openai",
+                          "openai-responses",
                           "gemini",
                           "anthropic"
                         ]
@@ -56567,6 +61662,7 @@
                     "type": "string",
                     "enum": [
                       "openai",
+                      "openai-responses",
                       "gemini",
                       "anthropic"
                     ]
@@ -56610,6 +61706,7 @@
                       "type": "string",
                       "enum": [
                         "openai",
+                        "openai-responses",
                         "gemini",
                         "anthropic"
                       ]
@@ -56896,6 +61993,7 @@
                       "type": "string",
                       "enum": [
                         "openai",
+                        "openai-responses",
                         "gemini",
                         "anthropic"
                       ]
@@ -57161,6 +62259,7 @@
                     "type": "string",
                     "enum": [
                       "openai",
+                      "openai-responses",
                       "gemini",
                       "anthropic"
                     ]
@@ -57209,6 +62308,7 @@
                       "type": "string",
                       "enum": [
                         "openai",
+                        "openai-responses",
                         "gemini",
                         "anthropic"
                       ]

@@ -262,6 +262,7 @@ class OptimizationRuleModel {
           ...getDefaultModelPrice("gpt-5-mini"),
         },
       ],
+      "openai-responses": [],
       anthropic: [
         {
           provider: "anthropic",
@@ -285,6 +286,7 @@ class OptimizationRuleModel {
             enabled: true,
           },
         ],
+        "openai-responses": [],
         anthropic: [
           {
             entityType: "organization",

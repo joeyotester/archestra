@@ -91,7 +91,9 @@ export const ItemReferenceSchema = z
 export const FunctionCallOutputSchema = z
   .object({
     type: z.literal("function_call_output"),
-    call_id: z.string().describe("ID of the function call this is responding to"),
+    call_id: z
+      .string()
+      .describe("ID of the function call this is responding to"),
     output: z.string().describe("The output/result of the function call"),
   })
   .describe("Output from a function call (for multi-turn conversations)");
@@ -134,7 +136,7 @@ export const OutputTextContentSchema = z
               file_id: z.string(),
             })
             .optional(),
-        })
+        }),
       )
       .optional()
       .describe("Annotations with citations and references"),
@@ -182,7 +184,13 @@ export const FileSearchCallSchema = z
   .object({
     type: z.literal("file_search_call"),
     id: z.string(),
-    status: z.enum(["in_progress", "completed", "incomplete", "searching", "failed"]),
+    status: z.enum([
+      "in_progress",
+      "completed",
+      "incomplete",
+      "searching",
+      "failed",
+    ]),
     queries: z.array(z.string()).optional(),
     results: z
       .array(
@@ -192,7 +200,7 @@ export const FileSearchCallSchema = z
           score: z.number(),
           text: z.string(),
           attributes: z.record(z.string(), z.unknown()).optional(),
-        })
+        }),
       )
       .optional()
       .nullable(),
@@ -203,7 +211,13 @@ export const WebSearchCallSchema = z
   .object({
     type: z.literal("web_search_call"),
     id: z.string(),
-    status: z.enum(["in_progress", "completed", "incomplete", "searching", "failed"]),
+    status: z.enum([
+      "in_progress",
+      "completed",
+      "incomplete",
+      "searching",
+      "failed",
+    ]),
   })
   .describe("A web search call");
 
@@ -232,10 +246,10 @@ export const CodeInterpreterCallSchema = z
               z.object({
                 file_id: z.string(),
                 mime_type: z.string().optional(),
-              })
+              }),
             ),
           }),
-        ])
+        ]),
       )
       .optional(),
   })
@@ -274,7 +288,7 @@ export const ComputerCallSchema = z
           id: z.string(),
           code: z.string(),
           message: z.string(),
-        })
+        }),
       )
       .optional(),
   })
@@ -288,7 +302,7 @@ export const ReasoningSchema = z
       z.object({
         type: z.literal("summary_text"),
         text: z.string(),
-      })
+      }),
     ),
   })
   .describe("Reasoning output from reasoning models (o1, etc.)");
@@ -316,7 +330,7 @@ export const McpListToolsSchema = z
         name: z.string(),
         description: z.string().optional(),
         input_schema: z.record(z.string(), z.unknown()),
-      })
+      }),
     ),
   })
   .describe("List of tools from an MCP server");

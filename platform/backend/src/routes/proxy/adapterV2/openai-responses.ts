@@ -149,7 +149,7 @@ class OpenAIResponsesRequestAdapter
   async applyToonCompression(model: string): Promise<ToonCompressionResult> {
     const { input: compressedInput, stats } = await convertToolResultsToToon(
       this.request.input,
-      model
+      model,
     );
     this.request = {
       ...this.request,
@@ -186,7 +186,7 @@ class OpenAIResponsesRequestAdapter
 
   private findFunctionName(
     input: OpenAiResponses.Types.InputItem[],
-    callId: string
+    callId: string,
   ): string | null {
     // In multi-turn conversations, we might have function_call items from previous responses
     // However, in the input, we typically only have function_call_output items
@@ -195,9 +195,7 @@ class OpenAIResponsesRequestAdapter
     return null;
   }
 
-  private toCommonFormat(
-    input: OpenAiResponsesInput
-  ): CommonMessage[] {
+  private toCommonFormat(input: OpenAiResponsesInput): CommonMessage[] {
     if (typeof input === "string") {
       return [{ role: "user" }];
     }
@@ -239,7 +237,7 @@ class OpenAIResponsesRequestAdapter
 
   private applyUpdates(
     input: OpenAiResponsesInput,
-    updates: Record<string, string>
+    updates: Record<string, string>,
   ): OpenAiResponsesInput {
     if (typeof input === "string") {
       return input;
@@ -256,7 +254,7 @@ class OpenAIResponsesRequestAdapter
         appliedCount++;
         logger.debug(
           { callId: item.call_id },
-          "[OpenAIResponsesAdapter] applyUpdates: applying update to function_call_output"
+          "[OpenAIResponsesAdapter] applyUpdates: applying update to function_call_output",
         );
         return {
           ...item,
@@ -268,7 +266,7 @@ class OpenAIResponsesRequestAdapter
 
     logger.debug(
       { updateCount, appliedCount },
-      "[OpenAIResponsesAdapter] applyUpdates: complete"
+      "[OpenAIResponsesAdapter] applyUpdates: complete",
     );
     return result;
   }
@@ -352,7 +350,7 @@ class OpenAIResponsesResponseAdapter
 
   toRefusalResponse(
     _refusalMessage: string,
-    contentMessage: string
+    contentMessage: string,
   ): OpenAiResponsesResponse {
     return {
       ...this.response,
@@ -379,7 +377,8 @@ class OpenAIResponsesResponseAdapter
 // =============================================================================
 
 class OpenAIResponsesStreamAdapter
-  implements LLMStreamAdapter<OpenAiResponsesStreamEvent, OpenAiResponsesResponse>
+  implements
+    LLMStreamAdapter<OpenAiResponsesStreamEvent, OpenAiResponsesResponse>
 {
   readonly provider = "openai-responses" as const;
   readonly state: StreamAccumulatorState;
@@ -442,7 +441,8 @@ class OpenAIResponsesStreamAdapter
 
       case "response.failed":
       case "response.incomplete":
-        this.state.stopReason = event.type === "response.failed" ? "error" : "incomplete";
+        this.state.stopReason =
+          event.type === "response.failed" ? "error" : "incomplete";
         isFinal = true;
         sseData = `data: ${JSON.stringify(event)}\n\n`;
         break;
@@ -463,7 +463,8 @@ class OpenAIResponsesStreamAdapter
 
       case "response.output_item.done":
         if (event.item.type === "function_call") {
-          const args = this.currentFunctionArgsByOutput.get(event.output_index) ?? "";
+          const args =
+            this.currentFunctionArgsByOutput.get(event.output_index) ?? "";
           this.state.toolCalls.push({
             id: event.item.call_id,
             name: event.item.name,
@@ -477,8 +478,12 @@ class OpenAIResponsesStreamAdapter
 
       case "response.output_text.delta":
         {
-          const currentText = this.currentTextByOutput.get(event.output_index) ?? "";
-          this.currentTextByOutput.set(event.output_index, currentText + event.delta);
+          const currentText =
+            this.currentTextByOutput.get(event.output_index) ?? "";
+          this.currentTextByOutput.set(
+            event.output_index,
+            currentText + event.delta,
+          );
           this.state.text += event.delta;
           sseData = `data: ${JSON.stringify(event)}\n\n`;
         }
@@ -494,7 +499,7 @@ class OpenAIResponsesStreamAdapter
             this.currentFunctionArgsByOutput.get(event.output_index) ?? "";
           this.currentFunctionArgsByOutput.set(
             event.output_index,
-            currentArgs + event.delta
+            currentArgs + event.delta,
           );
           isToolCallChunk = true;
           this.state.rawToolCallEvents.push(event);
@@ -568,7 +573,7 @@ class OpenAIResponsesStreamAdapter
 
   getRawToolCallEvents(): string[] {
     return this.state.rawToolCallEvents.map(
-      (event) => `data: ${JSON.stringify(event)}\n\n`
+      (event) => `data: ${JSON.stringify(event)}\n\n`,
     );
   }
 
@@ -670,7 +675,7 @@ class OpenAIResponsesStreamAdapter
 
   toProviderRefusalResponse(
     _refusalMessage: string,
-    contentMessage: string
+    contentMessage: string,
   ): OpenAiResponsesResponse {
     return {
       id: this.state.responseId,
@@ -710,7 +715,7 @@ class OpenAIResponsesStreamAdapter
 
 async function convertToolResultsToToon(
   input: OpenAiResponsesInput,
-  model: string
+  model: string,
 ): Promise<{
   input: OpenAiResponsesInput;
   stats: CompressionStats;
@@ -739,7 +744,7 @@ async function convertToolResultsToToon(
           contentType: typeof item.output,
           provider: "openai-responses",
         },
-        "convertToolResultsToToon: function_call_output found"
+        "convertToolResultsToToon: function_call_output found",
       );
 
       try {
@@ -769,7 +774,7 @@ async function convertToolResultsToToon(
             toonPreview: compressed.substring(0, 150),
             provider: "openai-responses",
           },
-          "convertToolResultsToToon: compressed"
+          "convertToolResultsToToon: compressed",
         );
 
         return {
@@ -782,7 +787,7 @@ async function convertToolResultsToToon(
             callId: item.call_id,
             contentPreview: item.output.substring(0, 100),
           },
-          "Skipping TOON conversion - content is not JSON"
+          "Skipping TOON conversion - content is not JSON",
         );
         return item;
       }
@@ -793,7 +798,7 @@ async function convertToolResultsToToon(
 
   logger.info(
     { itemCount: input.length, toolResultCount },
-    "convertToolResultsToToon completed"
+    "convertToolResultsToToon completed",
   );
 
   let toonCostSavings: number | null = null;
@@ -834,13 +839,13 @@ export const openaiResponsesAdapterFactory: LLMProvider<
   interactionType: "openai-responses:responses",
 
   createRequestAdapter(
-    request: OpenAiResponsesRequest
+    request: OpenAiResponsesRequest,
   ): LLMRequestAdapter<OpenAiResponsesRequest, OpenAiResponsesInput> {
     return new OpenAIResponsesRequestAdapter(request);
   },
 
   createResponseAdapter(
-    response: OpenAiResponsesResponse
+    response: OpenAiResponsesResponse,
   ): LLMResponseAdapter<OpenAiResponsesResponse> {
     return new OpenAIResponsesResponseAdapter(response);
   },
@@ -868,7 +873,7 @@ export const openaiResponsesAdapterFactory: LLMProvider<
 
   createClient(
     apiKey: string | undefined,
-    options?: CreateClientOptions
+    options?: CreateClientOptions,
   ): OpenAIProvider {
     if (options?.mockMode) {
       return new MockOpenAIClient() as unknown as OpenAIProvider;
@@ -876,7 +881,11 @@ export const openaiResponsesAdapterFactory: LLMProvider<
 
     // Use observable fetch for request duration metrics if agent is provided
     const customFetch = options?.agent
-      ? getObservableFetch("openai-responses", options.agent, options.externalAgentId)
+      ? getObservableFetch(
+          "openai-responses",
+          options.agent,
+          options.externalAgentId,
+        )
       : undefined;
 
     return new OpenAIProvider({
@@ -888,12 +897,14 @@ export const openaiResponsesAdapterFactory: LLMProvider<
 
   async execute(
     client: unknown,
-    request: OpenAiResponsesRequest
+    request: OpenAiResponsesRequest,
   ): Promise<OpenAiResponsesResponse> {
     const openaiClient = client as OpenAIProvider;
     // The OpenAI SDK's responses.create returns a Response object
+    // We use type assertion because our Zod schema matches the API spec but
+    // has slight type differences from the SDK's internal types
     const response = await openaiClient.responses.create({
-      ...request,
+      ...(request as Parameters<typeof openaiClient.responses.create>[0]),
       stream: false,
     });
     return response as unknown as OpenAiResponsesResponse;
@@ -901,11 +912,13 @@ export const openaiResponsesAdapterFactory: LLMProvider<
 
   async executeStream(
     client: unknown,
-    request: OpenAiResponsesRequest
+    request: OpenAiResponsesRequest,
   ): Promise<AsyncIterable<OpenAiResponsesStreamEvent>> {
     const openaiClient = client as OpenAIProvider;
+    // We use type assertion because our Zod schema matches the API spec but
+    // has slight type differences from the SDK's internal types
     const stream = await openaiClient.responses.create({
-      ...request,
+      ...(request as Parameters<typeof openaiClient.responses.create>[0]),
       stream: true,
     });
 

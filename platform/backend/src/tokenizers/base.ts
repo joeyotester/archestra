@@ -1,7 +1,8 @@
-import type { Anthropic, Gemini, OpenAi } from "@/types";
+import type { Anthropic, Gemini, OpenAi, OpenAiResponses } from "@/types";
 
 export type ProviderMessage =
   | OpenAi.Types.ChatCompletionsRequest["messages"][number]
+  | OpenAiResponses.Types.InputItem
   | Anthropic.Types.MessagesRequest["messages"][number]
   | Gemini.Types.GenerateContentRequest["contents"][number];
 
@@ -11,9 +12,10 @@ export type ProviderMessage =
  */
 export interface Tokenizer {
   /**
-   * Count tokens in messages (array or single message)
+   * Count tokens in messages (array, single message, or string)
+   * String input is supported for OpenAI Responses API
    */
-  countTokens(messages: ProviderMessage[] | ProviderMessage): number;
+  countTokens(messages: ProviderMessage[] | ProviderMessage | string): number;
 }
 
 /**
@@ -29,7 +31,12 @@ export abstract class BaseTokenizer implements Tokenizer {
     return Math.ceil(text.length / 4);
   }
 
-  countTokens(messages: ProviderMessage[] | ProviderMessage): number {
+  countTokens(messages: ProviderMessage[] | ProviderMessage | string): number {
+    // Handle string input (OpenAI Responses API supports string input)
+    if (typeof messages === "string") {
+      return Math.ceil(messages.length / 4);
+    }
+
     if (Array.isArray(messages)) {
       const total = messages.reduce((sum, message) => {
         return sum + this.countMessageTokens(message);
@@ -60,6 +67,11 @@ export abstract class BaseTokenizer implements Tokenizer {
 
         return text;
       }
+    }
+
+    // OpenAI Responses API: function_call_output format (has output instead of content)
+    if ("output" in message && typeof message.output === "string") {
+      return message.output;
     }
 
     // Gemini format: parts property

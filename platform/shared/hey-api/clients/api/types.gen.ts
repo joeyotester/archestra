@@ -1363,6 +1363,738 @@ export type AnthropicMessagesResponseInput = {
     };
 };
 
+export type OpenAiResponsesRequestInput = {
+    /**
+     * The model to use
+     */
+    model: string;
+    /**
+     * The input to the model
+     */
+    input: string | Array<{
+        type?: string;
+        role: 'user' | 'assistant' | 'system' | 'developer';
+        content: string | Array<{
+            type: string;
+            /**
+             * The text content
+             */
+            text: string;
+        } | {
+            type: string;
+            /**
+             * URL of the image (can be data: URL for base64)
+             */
+            image_url?: string;
+            /**
+             * File ID of an uploaded image
+             */
+            file_id?: string;
+            /**
+             * Detail level for image analysis
+             */
+            detail?: 'auto' | 'low' | 'high';
+        } | {
+            type: string;
+            /**
+             * Base64-encoded audio data
+             */
+            data: string;
+            /**
+             * Audio format
+             */
+            format: 'wav' | 'mp3';
+        } | {
+            type: string;
+            /**
+             * File ID of an uploaded file
+             */
+            file_id?: string;
+            /**
+             * Base64-encoded file data
+             */
+            file_data?: string;
+            /**
+             * Name of the file
+             */
+            filename?: string;
+        }>;
+    } | {
+        type: string;
+        role: 'user' | 'assistant' | 'system' | 'developer';
+        content: string | Array<{
+            type: string;
+            /**
+             * The text content
+             */
+            text: string;
+        } | {
+            type: string;
+            /**
+             * URL of the image (can be data: URL for base64)
+             */
+            image_url?: string;
+            /**
+             * File ID of an uploaded image
+             */
+            file_id?: string;
+            /**
+             * Detail level for image analysis
+             */
+            detail?: 'auto' | 'low' | 'high';
+        } | {
+            type: string;
+            /**
+             * Base64-encoded audio data
+             */
+            data: string;
+            /**
+             * Audio format
+             */
+            format: 'wav' | 'mp3';
+        } | {
+            type: string;
+            /**
+             * File ID of an uploaded file
+             */
+            file_id?: string;
+            /**
+             * Base64-encoded file data
+             */
+            file_data?: string;
+            /**
+             * Name of the file
+             */
+            filename?: string;
+        }>;
+        /**
+         * Optional ID for the message
+         */
+        id?: string;
+    } | {
+        type: string;
+        /**
+         * ID of the item to reference
+         */
+        id: string;
+    } | {
+        type: string;
+        /**
+         * ID of the function call this is responding to
+         */
+        call_id: string;
+        /**
+         * The output/result of the function call
+         */
+        output: string;
+    }>;
+    /**
+     * System instructions for the model
+     */
+    instructions?: string;
+    /**
+     * A tool definition for the Responses API
+     */
+    tools?: Array<{
+        type: string;
+        /**
+         * The name of the function to call
+         */
+        name: string;
+        /**
+         * A description of what the function does
+         */
+        description?: string;
+        /**
+         *
+         * The parameters the function accepts, described as a JSON Schema object.
+         * Omitting parameters defines a function with an empty parameter list.
+         *
+         */
+        parameters?: {
+            [key: string]: unknown;
+        };
+        /**
+         * Whether to enable strict schema adherence
+         */
+        strict?: boolean | unknown;
+    } | {
+        type: string;
+        /**
+         * How much context to include in web search results
+         */
+        search_context_size?: 'low' | 'medium' | 'high';
+        /**
+         * Approximate location of the user for search context
+         */
+        user_location?: {
+            type: string;
+            city?: string;
+            country?: string;
+            region?: string;
+            timezone?: string;
+        };
+    } | {
+        type: string;
+        /**
+         * IDs of vector stores to search
+         */
+        vector_store_ids: Array<string>;
+        /**
+         * Maximum number of results to return (1-50)
+         */
+        max_num_results?: number;
+        /**
+         * Options for ranking search results
+         */
+        ranking_options?: {
+            ranker?: 'auto' | 'default_2024_08_21';
+            score_threshold?: number;
+        };
+        /**
+         * Filters to apply to search results
+         */
+        filters?: {
+            type: 'eq' | 'ne' | 'gt' | 'gte' | 'lt' | 'lte' | 'in' | 'nin' | 'and' | 'or';
+            key?: string;
+            value?: unknown;
+            filters?: Array<unknown>;
+        };
+    } | {
+        type: string;
+        /**
+         * Container configuration for code interpreter
+         */
+        container?: {
+            type: string;
+            file_ids?: Array<string>;
+        };
+    } | {
+        type: string;
+        /**
+         * Width of the display in pixels
+         */
+        display_width: number;
+        /**
+         * Height of the display in pixels
+         */
+        display_height: number;
+        /**
+         * The environment for computer use
+         */
+        environment: 'browser' | 'mac' | 'windows' | 'ubuntu';
+    } | {
+        type: string;
+        /**
+         * Label for the MCP server
+         */
+        server_label: string;
+        /**
+         * URL of the MCP server
+         */
+        server_url: string;
+        /**
+         * Whether to require approval for tool calls
+         */
+        require_approval?: 'always' | 'never';
+        /**
+         * List of allowed tool names from this server
+         */
+        allowed_tools?: Array<string>;
+        /**
+         * Headers to include in requests to the MCP server
+         */
+        headers?: {
+            [key: string]: string;
+        };
+    }>;
+    /**
+     * Controls which tools the model can use
+     */
+    tool_choice?: string | {
+        type: string;
+        /**
+         * The name of the function to call
+         */
+        name: string;
+    } | {
+        type: 'file_search' | 'web_search' | 'code_interpreter' | 'computer_use_preview';
+    };
+    /**
+     * Whether to allow parallel tool calls
+     */
+    parallel_tool_calls?: boolean;
+    /**
+     * Sampling temperature
+     */
+    temperature?: number | unknown;
+    /**
+     * Nucleus sampling parameter
+     */
+    top_p?: number | unknown;
+    /**
+     * Maximum tokens in the response
+     */
+    max_output_tokens?: number | unknown;
+    /**
+     * Whether to stream the response
+     */
+    stream?: boolean | unknown;
+    /**
+     * ID of a previous response for multi-turn conversations
+     */
+    previous_response_id?: string;
+    /**
+     * Whether to store the response for future reference
+     */
+    store?: boolean;
+    /**
+     * Configuration for text output
+     */
+    text?: {
+        /**
+         * Format for text output
+         */
+        format?: {
+            type: string;
+        } | {
+            type: string;
+            name: string;
+            schema: {
+                [key: string]: unknown;
+            };
+            strict?: boolean;
+        } | {
+            type: string;
+        };
+    };
+    /**
+     * Configuration for reasoning models
+     */
+    reasoning?: {
+        /**
+         * Effort level for reasoning
+         */
+        effort?: 'low' | 'medium' | 'high';
+        /**
+         * Type of reasoning summary to generate
+         */
+        generate_summary?: 'auto' | 'concise' | 'detailed';
+    };
+    /**
+     * Truncation strategy for context
+     */
+    truncation?: 'auto' | 'disabled';
+    /**
+     * Custom metadata for the request
+     */
+    metadata?: {
+        [key: string]: string;
+    };
+    /**
+     * Unique identifier for the end user
+     */
+    user?: string;
+    /**
+     * Service tier for the request
+     */
+    service_tier?: 'auto' | 'default' | 'flex';
+};
+
+export type OpenAiResponsesResponseInput = {
+    /**
+     * Unique ID of the response
+     */
+    id: string;
+    /**
+     * Object type
+     */
+    object: string;
+    /**
+     * Unix timestamp of creation
+     */
+    created_at: number;
+    /**
+     * Model used for the response
+     */
+    model: string;
+    /**
+     * Status of the response
+     */
+    status: 'completed' | 'incomplete' | 'failed' | 'in_progress' | 'cancelled';
+    /**
+     * Output items from the model
+     */
+    output: Array<{
+        type: string;
+        /**
+         * Unique ID of this output item
+         */
+        id: string;
+        role: string;
+        status: 'in_progress' | 'completed' | 'incomplete';
+        content: Array<{
+            type: string;
+            /**
+             * The text content
+             */
+            text: string;
+            /**
+             * Annotations with citations and references
+             */
+            annotations?: Array<{
+                type: 'file_citation' | 'url_citation' | 'file_path';
+                start_index?: number;
+                end_index?: number;
+                file_citation?: {
+                    file_id: string;
+                    quote?: string;
+                };
+                url_citation?: {
+                    url: string;
+                    title?: string;
+                };
+                file_path?: {
+                    file_id: string;
+                };
+            }>;
+        } | {
+            type: string;
+            /**
+             * The refusal message
+             */
+            refusal: string;
+        }>;
+    } | {
+        type: string;
+        /**
+         * Unique ID of this function call
+         */
+        id: string;
+        /**
+         * ID to use when providing function output
+         */
+        call_id: string;
+        /**
+         * Name of the function to call
+         */
+        name: string;
+        /**
+         * JSON string of function arguments
+         */
+        arguments: string;
+        status: 'in_progress' | 'completed' | 'incomplete';
+    } | {
+        type: string;
+        id: string;
+        status: 'in_progress' | 'completed' | 'incomplete' | 'searching' | 'failed';
+        queries?: Array<string>;
+        results?: Array<{
+            file_id: string;
+            filename: string;
+            score: number;
+            text: string;
+            attributes?: {
+                [key: string]: unknown;
+            };
+        }> | unknown;
+    } | {
+        type: string;
+        id: string;
+        status: 'in_progress' | 'completed' | 'incomplete' | 'searching' | 'failed';
+    } | {
+        type: string;
+        id: string;
+        status: 'in_progress' | 'completed' | 'incomplete';
+        code?: string;
+        results?: Array<{
+            type: string;
+            logs: string;
+        } | {
+            type: string;
+            image: {
+                file_id: string;
+            };
+        } | {
+            type: string;
+            files: Array<{
+                file_id: string;
+                mime_type?: string;
+            }>;
+        }>;
+    } | {
+        type: string;
+        id: string;
+        call_id: string;
+        status: 'in_progress' | 'completed' | 'incomplete';
+        action: {
+            type: 'click' | 'double_click' | 'drag' | 'keypress' | 'move' | 'screenshot' | 'scroll' | 'type' | 'wait';
+            coordinate?: Array<unknown>;
+            end_coordinate?: Array<unknown>;
+            button?: 'left' | 'right' | 'middle' | 'wheel';
+            keys?: Array<string>;
+            text?: string;
+            scroll_direction?: 'up' | 'down' | 'left' | 'right';
+            scroll_amount?: number;
+            duration?: number;
+        };
+        pending_safety_checks?: Array<{
+            id: string;
+            code: string;
+            message: string;
+        }>;
+    } | {
+        type: string;
+        id: string;
+        summary: Array<{
+            type: string;
+            text: string;
+        }>;
+    } | {
+        type: string;
+        id: string;
+        approval_request_id?: string;
+        server_label: string;
+        name: string;
+        arguments: string;
+        error?: string;
+        output?: string;
+    } | {
+        type: string;
+        id: string;
+        server_label: string;
+        tools: Array<{
+            name: string;
+            description?: string;
+            input_schema: {
+                [key: string]: unknown;
+            };
+        }>;
+    } | {
+        type: string;
+        id: string;
+        server_label: string;
+        name: string;
+        arguments: string;
+    }>;
+    /**
+     * Token usage
+     */
+    usage?: {
+        /**
+         * Number of input tokens
+         */
+        input_tokens: number;
+        input_tokens_details?: {
+            cached_tokens?: number;
+            text_tokens?: number;
+            image_tokens?: number;
+            audio_tokens?: number;
+        };
+        /**
+         * Number of output tokens
+         */
+        output_tokens: number;
+        output_tokens_details?: {
+            text_tokens?: number;
+            audio_tokens?: number;
+            reasoning_tokens?: number;
+        };
+        /**
+         * Total tokens (input + output)
+         */
+        total_tokens: number;
+    };
+    /**
+     * Details about why the response is incomplete
+     */
+    incomplete_details?: {
+        reason: 'max_output_tokens' | 'content_filter' | 'turn_limit_reached' | 'interrupted';
+    };
+    /**
+     * Error details if status is failed
+     */
+    error?: {
+        code: string;
+        message: string;
+    };
+    /**
+     * Custom metadata from the request
+     */
+    metadata?: {
+        [key: string]: string;
+    };
+    parallel_tool_calls?: boolean;
+    previous_response_id?: string;
+    service_tier?: string;
+    temperature?: number;
+    top_p?: number;
+    max_output_tokens?: number;
+    truncation?: string;
+    /**
+     * Configuration for text output
+     */
+    text?: {
+        /**
+         * Format for text output
+         */
+        format?: {
+            type: string;
+        } | {
+            type: string;
+            name: string;
+            schema: {
+                [key: string]: unknown;
+            };
+            strict?: boolean;
+        } | {
+            type: string;
+        };
+    };
+    /**
+     * Configuration for reasoning models
+     */
+    reasoning?: {
+        /**
+         * Effort level for reasoning
+         */
+        effort?: 'low' | 'medium' | 'high';
+        /**
+         * Type of reasoning summary to generate
+         */
+        generate_summary?: 'auto' | 'concise' | 'detailed';
+    };
+    instructions?: string | unknown;
+    /**
+     * A tool definition for the Responses API
+     */
+    tools?: Array<{
+        type: string;
+        /**
+         * The name of the function to call
+         */
+        name: string;
+        /**
+         * A description of what the function does
+         */
+        description?: string;
+        /**
+         *
+         * The parameters the function accepts, described as a JSON Schema object.
+         * Omitting parameters defines a function with an empty parameter list.
+         *
+         */
+        parameters?: {
+            [key: string]: unknown;
+        };
+        /**
+         * Whether to enable strict schema adherence
+         */
+        strict?: boolean | unknown;
+    } | {
+        type: string;
+        /**
+         * How much context to include in web search results
+         */
+        search_context_size?: 'low' | 'medium' | 'high';
+        /**
+         * Approximate location of the user for search context
+         */
+        user_location?: {
+            type: string;
+            city?: string;
+            country?: string;
+            region?: string;
+            timezone?: string;
+        };
+    } | {
+        type: string;
+        /**
+         * IDs of vector stores to search
+         */
+        vector_store_ids: Array<string>;
+        /**
+         * Maximum number of results to return (1-50)
+         */
+        max_num_results?: number;
+        /**
+         * Options for ranking search results
+         */
+        ranking_options?: {
+            ranker?: 'auto' | 'default_2024_08_21';
+            score_threshold?: number;
+        };
+        /**
+         * Filters to apply to search results
+         */
+        filters?: {
+            type: 'eq' | 'ne' | 'gt' | 'gte' | 'lt' | 'lte' | 'in' | 'nin' | 'and' | 'or';
+            key?: string;
+            value?: unknown;
+            filters?: Array<unknown>;
+        };
+    } | {
+        type: string;
+        /**
+         * Container configuration for code interpreter
+         */
+        container?: {
+            type: string;
+            file_ids?: Array<string>;
+        };
+    } | {
+        type: string;
+        /**
+         * Width of the display in pixels
+         */
+        display_width: number;
+        /**
+         * Height of the display in pixels
+         */
+        display_height: number;
+        /**
+         * The environment for computer use
+         */
+        environment: 'browser' | 'mac' | 'windows' | 'ubuntu';
+    } | {
+        type: string;
+        /**
+         * Label for the MCP server
+         */
+        server_label: string;
+        /**
+         * URL of the MCP server
+         */
+        server_url: string;
+        /**
+         * Whether to require approval for tool calls
+         */
+        require_approval?: 'always' | 'never';
+        /**
+         * List of allowed tool names from this server
+         */
+        allowed_tools?: Array<string>;
+        /**
+         * Headers to include in requests to the MCP server
+         */
+        headers?: {
+            [key: string]: string;
+        };
+    }>;
+    /**
+     * Controls which tools the model can use
+     */
+    tool_choice?: string | {
+        type: string;
+        /**
+         * The name of the function to call
+         */
+        name: string;
+    } | {
+        type: 'file_search' | 'web_search' | 'code_interpreter' | 'computer_use_preview';
+    };
+};
+
 export type WebSocketMessageInput = {
     type: 'hello-world';
     payload: {
@@ -2726,6 +3458,738 @@ export type AnthropicMessagesResponse = {
     usage: {
         input_tokens: number;
         output_tokens: number;
+    };
+};
+
+export type OpenAiResponsesRequest = {
+    /**
+     * The model to use
+     */
+    model: string;
+    /**
+     * The input to the model
+     */
+    input: string | Array<{
+        type?: string;
+        role: 'user' | 'assistant' | 'system' | 'developer';
+        content: string | Array<{
+            type: string;
+            /**
+             * The text content
+             */
+            text: string;
+        } | {
+            type: string;
+            /**
+             * URL of the image (can be data: URL for base64)
+             */
+            image_url?: string;
+            /**
+             * File ID of an uploaded image
+             */
+            file_id?: string;
+            /**
+             * Detail level for image analysis
+             */
+            detail?: 'auto' | 'low' | 'high';
+        } | {
+            type: string;
+            /**
+             * Base64-encoded audio data
+             */
+            data: string;
+            /**
+             * Audio format
+             */
+            format: 'wav' | 'mp3';
+        } | {
+            type: string;
+            /**
+             * File ID of an uploaded file
+             */
+            file_id?: string;
+            /**
+             * Base64-encoded file data
+             */
+            file_data?: string;
+            /**
+             * Name of the file
+             */
+            filename?: string;
+        }>;
+    } | {
+        type: string;
+        role: 'user' | 'assistant' | 'system' | 'developer';
+        content: string | Array<{
+            type: string;
+            /**
+             * The text content
+             */
+            text: string;
+        } | {
+            type: string;
+            /**
+             * URL of the image (can be data: URL for base64)
+             */
+            image_url?: string;
+            /**
+             * File ID of an uploaded image
+             */
+            file_id?: string;
+            /**
+             * Detail level for image analysis
+             */
+            detail?: 'auto' | 'low' | 'high';
+        } | {
+            type: string;
+            /**
+             * Base64-encoded audio data
+             */
+            data: string;
+            /**
+             * Audio format
+             */
+            format: 'wav' | 'mp3';
+        } | {
+            type: string;
+            /**
+             * File ID of an uploaded file
+             */
+            file_id?: string;
+            /**
+             * Base64-encoded file data
+             */
+            file_data?: string;
+            /**
+             * Name of the file
+             */
+            filename?: string;
+        }>;
+        /**
+         * Optional ID for the message
+         */
+        id?: string;
+    } | {
+        type: string;
+        /**
+         * ID of the item to reference
+         */
+        id: string;
+    } | {
+        type: string;
+        /**
+         * ID of the function call this is responding to
+         */
+        call_id: string;
+        /**
+         * The output/result of the function call
+         */
+        output: string;
+    }>;
+    /**
+     * System instructions for the model
+     */
+    instructions?: string;
+    /**
+     * A tool definition for the Responses API
+     */
+    tools?: Array<{
+        type: string;
+        /**
+         * The name of the function to call
+         */
+        name: string;
+        /**
+         * A description of what the function does
+         */
+        description?: string;
+        /**
+         *
+         * The parameters the function accepts, described as a JSON Schema object.
+         * Omitting parameters defines a function with an empty parameter list.
+         *
+         */
+        parameters?: {
+            [key: string]: unknown;
+        };
+        /**
+         * Whether to enable strict schema adherence
+         */
+        strict?: boolean | unknown;
+    } | {
+        type: string;
+        /**
+         * How much context to include in web search results
+         */
+        search_context_size?: 'low' | 'medium' | 'high';
+        /**
+         * Approximate location of the user for search context
+         */
+        user_location?: {
+            type: string;
+            city?: string;
+            country?: string;
+            region?: string;
+            timezone?: string;
+        };
+    } | {
+        type: string;
+        /**
+         * IDs of vector stores to search
+         */
+        vector_store_ids: Array<string>;
+        /**
+         * Maximum number of results to return (1-50)
+         */
+        max_num_results?: number;
+        /**
+         * Options for ranking search results
+         */
+        ranking_options?: {
+            ranker?: 'auto' | 'default_2024_08_21';
+            score_threshold?: number;
+        };
+        /**
+         * Filters to apply to search results
+         */
+        filters?: {
+            type: 'eq' | 'ne' | 'gt' | 'gte' | 'lt' | 'lte' | 'in' | 'nin' | 'and' | 'or';
+            key?: string;
+            value?: unknown;
+            filters?: Array<unknown>;
+        };
+    } | {
+        type: string;
+        /**
+         * Container configuration for code interpreter
+         */
+        container?: {
+            type: string;
+            file_ids?: Array<string>;
+        };
+    } | {
+        type: string;
+        /**
+         * Width of the display in pixels
+         */
+        display_width: number;
+        /**
+         * Height of the display in pixels
+         */
+        display_height: number;
+        /**
+         * The environment for computer use
+         */
+        environment: 'browser' | 'mac' | 'windows' | 'ubuntu';
+    } | {
+        type: string;
+        /**
+         * Label for the MCP server
+         */
+        server_label: string;
+        /**
+         * URL of the MCP server
+         */
+        server_url: string;
+        /**
+         * Whether to require approval for tool calls
+         */
+        require_approval?: 'always' | 'never';
+        /**
+         * List of allowed tool names from this server
+         */
+        allowed_tools?: Array<string>;
+        /**
+         * Headers to include in requests to the MCP server
+         */
+        headers?: {
+            [key: string]: string;
+        };
+    }>;
+    /**
+     * Controls which tools the model can use
+     */
+    tool_choice?: string | {
+        type: string;
+        /**
+         * The name of the function to call
+         */
+        name: string;
+    } | {
+        type: 'file_search' | 'web_search' | 'code_interpreter' | 'computer_use_preview';
+    };
+    /**
+     * Whether to allow parallel tool calls
+     */
+    parallel_tool_calls?: boolean;
+    /**
+     * Sampling temperature
+     */
+    temperature?: number | unknown;
+    /**
+     * Nucleus sampling parameter
+     */
+    top_p?: number | unknown;
+    /**
+     * Maximum tokens in the response
+     */
+    max_output_tokens?: number | unknown;
+    /**
+     * Whether to stream the response
+     */
+    stream?: boolean | unknown;
+    /**
+     * ID of a previous response for multi-turn conversations
+     */
+    previous_response_id?: string;
+    /**
+     * Whether to store the response for future reference
+     */
+    store?: boolean;
+    /**
+     * Configuration for text output
+     */
+    text?: {
+        /**
+         * Format for text output
+         */
+        format?: {
+            type: string;
+        } | {
+            type: string;
+            name: string;
+            schema: {
+                [key: string]: unknown;
+            };
+            strict?: boolean;
+        } | {
+            type: string;
+        };
+    };
+    /**
+     * Configuration for reasoning models
+     */
+    reasoning?: {
+        /**
+         * Effort level for reasoning
+         */
+        effort?: 'low' | 'medium' | 'high';
+        /**
+         * Type of reasoning summary to generate
+         */
+        generate_summary?: 'auto' | 'concise' | 'detailed';
+    };
+    /**
+     * Truncation strategy for context
+     */
+    truncation?: 'auto' | 'disabled';
+    /**
+     * Custom metadata for the request
+     */
+    metadata?: {
+        [key: string]: string;
+    };
+    /**
+     * Unique identifier for the end user
+     */
+    user?: string;
+    /**
+     * Service tier for the request
+     */
+    service_tier?: 'auto' | 'default' | 'flex';
+};
+
+export type OpenAiResponsesResponse = {
+    /**
+     * Unique ID of the response
+     */
+    id: string;
+    /**
+     * Object type
+     */
+    object: string;
+    /**
+     * Unix timestamp of creation
+     */
+    created_at: number;
+    /**
+     * Model used for the response
+     */
+    model: string;
+    /**
+     * Status of the response
+     */
+    status: 'completed' | 'incomplete' | 'failed' | 'in_progress' | 'cancelled';
+    /**
+     * Output items from the model
+     */
+    output: Array<{
+        type: string;
+        /**
+         * Unique ID of this output item
+         */
+        id: string;
+        role: string;
+        status: 'in_progress' | 'completed' | 'incomplete';
+        content: Array<{
+            type: string;
+            /**
+             * The text content
+             */
+            text: string;
+            /**
+             * Annotations with citations and references
+             */
+            annotations?: Array<{
+                type: 'file_citation' | 'url_citation' | 'file_path';
+                start_index?: number;
+                end_index?: number;
+                file_citation?: {
+                    file_id: string;
+                    quote?: string;
+                };
+                url_citation?: {
+                    url: string;
+                    title?: string;
+                };
+                file_path?: {
+                    file_id: string;
+                };
+            }>;
+        } | {
+            type: string;
+            /**
+             * The refusal message
+             */
+            refusal: string;
+        }>;
+    } | {
+        type: string;
+        /**
+         * Unique ID of this function call
+         */
+        id: string;
+        /**
+         * ID to use when providing function output
+         */
+        call_id: string;
+        /**
+         * Name of the function to call
+         */
+        name: string;
+        /**
+         * JSON string of function arguments
+         */
+        arguments: string;
+        status: 'in_progress' | 'completed' | 'incomplete';
+    } | {
+        type: string;
+        id: string;
+        status: 'in_progress' | 'completed' | 'incomplete' | 'searching' | 'failed';
+        queries?: Array<string>;
+        results?: Array<{
+            file_id: string;
+            filename: string;
+            score: number;
+            text: string;
+            attributes?: {
+                [key: string]: unknown;
+            };
+        }> | unknown;
+    } | {
+        type: string;
+        id: string;
+        status: 'in_progress' | 'completed' | 'incomplete' | 'searching' | 'failed';
+    } | {
+        type: string;
+        id: string;
+        status: 'in_progress' | 'completed' | 'incomplete';
+        code?: string;
+        results?: Array<{
+            type: string;
+            logs: string;
+        } | {
+            type: string;
+            image: {
+                file_id: string;
+            };
+        } | {
+            type: string;
+            files: Array<{
+                file_id: string;
+                mime_type?: string;
+            }>;
+        }>;
+    } | {
+        type: string;
+        id: string;
+        call_id: string;
+        status: 'in_progress' | 'completed' | 'incomplete';
+        action: {
+            type: 'click' | 'double_click' | 'drag' | 'keypress' | 'move' | 'screenshot' | 'scroll' | 'type' | 'wait';
+            coordinate?: Array<unknown>;
+            end_coordinate?: Array<unknown>;
+            button?: 'left' | 'right' | 'middle' | 'wheel';
+            keys?: Array<string>;
+            text?: string;
+            scroll_direction?: 'up' | 'down' | 'left' | 'right';
+            scroll_amount?: number;
+            duration?: number;
+        };
+        pending_safety_checks?: Array<{
+            id: string;
+            code: string;
+            message: string;
+        }>;
+    } | {
+        type: string;
+        id: string;
+        summary: Array<{
+            type: string;
+            text: string;
+        }>;
+    } | {
+        type: string;
+        id: string;
+        approval_request_id?: string;
+        server_label: string;
+        name: string;
+        arguments: string;
+        error?: string;
+        output?: string;
+    } | {
+        type: string;
+        id: string;
+        server_label: string;
+        tools: Array<{
+            name: string;
+            description?: string;
+            input_schema: {
+                [key: string]: unknown;
+            };
+        }>;
+    } | {
+        type: string;
+        id: string;
+        server_label: string;
+        name: string;
+        arguments: string;
+    }>;
+    /**
+     * Token usage
+     */
+    usage?: {
+        /**
+         * Number of input tokens
+         */
+        input_tokens: number;
+        input_tokens_details?: {
+            cached_tokens?: number;
+            text_tokens?: number;
+            image_tokens?: number;
+            audio_tokens?: number;
+        };
+        /**
+         * Number of output tokens
+         */
+        output_tokens: number;
+        output_tokens_details?: {
+            text_tokens?: number;
+            audio_tokens?: number;
+            reasoning_tokens?: number;
+        };
+        /**
+         * Total tokens (input + output)
+         */
+        total_tokens: number;
+    };
+    /**
+     * Details about why the response is incomplete
+     */
+    incomplete_details?: {
+        reason: 'max_output_tokens' | 'content_filter' | 'turn_limit_reached' | 'interrupted';
+    };
+    /**
+     * Error details if status is failed
+     */
+    error?: {
+        code: string;
+        message: string;
+    };
+    /**
+     * Custom metadata from the request
+     */
+    metadata?: {
+        [key: string]: string;
+    };
+    parallel_tool_calls?: boolean;
+    previous_response_id?: string;
+    service_tier?: string;
+    temperature?: number;
+    top_p?: number;
+    max_output_tokens?: number;
+    truncation?: string;
+    /**
+     * Configuration for text output
+     */
+    text?: {
+        /**
+         * Format for text output
+         */
+        format?: {
+            type: string;
+        } | {
+            type: string;
+            name: string;
+            schema: {
+                [key: string]: unknown;
+            };
+            strict?: boolean;
+        } | {
+            type: string;
+        };
+    };
+    /**
+     * Configuration for reasoning models
+     */
+    reasoning?: {
+        /**
+         * Effort level for reasoning
+         */
+        effort?: 'low' | 'medium' | 'high';
+        /**
+         * Type of reasoning summary to generate
+         */
+        generate_summary?: 'auto' | 'concise' | 'detailed';
+    };
+    instructions?: string | unknown;
+    /**
+     * A tool definition for the Responses API
+     */
+    tools?: Array<{
+        type: string;
+        /**
+         * The name of the function to call
+         */
+        name: string;
+        /**
+         * A description of what the function does
+         */
+        description?: string;
+        /**
+         *
+         * The parameters the function accepts, described as a JSON Schema object.
+         * Omitting parameters defines a function with an empty parameter list.
+         *
+         */
+        parameters?: {
+            [key: string]: unknown;
+        };
+        /**
+         * Whether to enable strict schema adherence
+         */
+        strict?: boolean | unknown;
+    } | {
+        type: string;
+        /**
+         * How much context to include in web search results
+         */
+        search_context_size?: 'low' | 'medium' | 'high';
+        /**
+         * Approximate location of the user for search context
+         */
+        user_location?: {
+            type: string;
+            city?: string;
+            country?: string;
+            region?: string;
+            timezone?: string;
+        };
+    } | {
+        type: string;
+        /**
+         * IDs of vector stores to search
+         */
+        vector_store_ids: Array<string>;
+        /**
+         * Maximum number of results to return (1-50)
+         */
+        max_num_results?: number;
+        /**
+         * Options for ranking search results
+         */
+        ranking_options?: {
+            ranker?: 'auto' | 'default_2024_08_21';
+            score_threshold?: number;
+        };
+        /**
+         * Filters to apply to search results
+         */
+        filters?: {
+            type: 'eq' | 'ne' | 'gt' | 'gte' | 'lt' | 'lte' | 'in' | 'nin' | 'and' | 'or';
+            key?: string;
+            value?: unknown;
+            filters?: Array<unknown>;
+        };
+    } | {
+        type: string;
+        /**
+         * Container configuration for code interpreter
+         */
+        container?: {
+            type: string;
+            file_ids?: Array<string>;
+        };
+    } | {
+        type: string;
+        /**
+         * Width of the display in pixels
+         */
+        display_width: number;
+        /**
+         * Height of the display in pixels
+         */
+        display_height: number;
+        /**
+         * The environment for computer use
+         */
+        environment: 'browser' | 'mac' | 'windows' | 'ubuntu';
+    } | {
+        type: string;
+        /**
+         * Label for the MCP server
+         */
+        server_label: string;
+        /**
+         * URL of the MCP server
+         */
+        server_url: string;
+        /**
+         * Whether to require approval for tool calls
+         */
+        require_approval?: 'always' | 'never';
+        /**
+         * List of allowed tool names from this server
+         */
+        allowed_tools?: Array<string>;
+        /**
+         * Headers to include in requests to the MCP server
+         */
+        headers?: {
+            [key: string]: string;
+        };
+    }>;
+    /**
+     * Controls which tools the model can use
+     */
+    tool_choice?: string | {
+        type: string;
+        /**
+         * The name of the function to call
+         */
+        name: string;
+    } | {
+        type: 'file_search' | 'web_search' | 'code_interpreter' | 'computer_use_preview';
     };
 };
 
@@ -8691,6 +10155,24 @@ export type GetInteractionsResponses = {
             profileId: string;
             externalAgentId: string | null;
             userId: string | null;
+            request: OpenAiResponsesRequest;
+            processedRequest?: OpenAiResponsesRequest | null;
+            response: OpenAiResponsesResponse;
+            type: 'openai-responses:responses';
+            model: string | null;
+            inputTokens: number | null;
+            outputTokens: number | null;
+            baselineCost: string | null;
+            cost: string | null;
+            toonTokensBefore: number | null;
+            toonTokensAfter: number | null;
+            toonCostSavings: string | null;
+            createdAt: string;
+        } | {
+            id: string;
+            profileId: string;
+            externalAgentId: string | null;
+            userId: string | null;
             request: GeminiGenerateContentRequest;
             processedRequest?: GeminiGenerateContentRequest | null;
             response: GeminiGenerateContentResponse;
@@ -8970,6 +10452,24 @@ export type GetInteractionResponses = {
         processedRequest?: OpenAiChatCompletionRequest | null;
         response: OpenAiChatCompletionResponse;
         type: 'openai:chatCompletions';
+        model: string | null;
+        inputTokens: number | null;
+        outputTokens: number | null;
+        baselineCost: string | null;
+        cost: string | null;
+        toonTokensBefore: number | null;
+        toonTokensAfter: number | null;
+        toonCostSavings: string | null;
+        createdAt: string;
+    } | {
+        id: string;
+        profileId: string;
+        externalAgentId: string | null;
+        userId: string | null;
+        request: OpenAiResponsesRequest;
+        processedRequest?: OpenAiResponsesRequest | null;
+        response: OpenAiResponsesResponse;
+        type: 'openai-responses:responses';
         model: string | null;
         inputTokens: number | null;
         outputTokens: number | null;
@@ -13251,6 +14751,178 @@ export type OpenAiChatCompletionsWithAgentResponses = {
 
 export type OpenAiChatCompletionsWithAgentResponse = OpenAiChatCompletionsWithAgentResponses[keyof OpenAiChatCompletionsWithAgentResponses];
 
+export type OpenAiResponsesWithDefaultAgentData = {
+    body?: OpenAiResponsesRequestInput;
+    headers: {
+        /**
+         * The user agent of the client
+         */
+        'user-agent'?: string;
+        /**
+         * Bearer token for OpenAI
+         */
+        authorization: string;
+    };
+    path?: never;
+    query?: never;
+    url: '/v1/openai-responses/responses';
+};
+
+export type OpenAiResponsesWithDefaultAgentErrors = {
+    /**
+     * Default Response
+     */
+    400: {
+        error: {
+            message: string;
+            type: 'api_validation_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    401: {
+        error: {
+            message: string;
+            type: 'api_authentication_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    403: {
+        error: {
+            message: string;
+            type: 'api_authorization_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    404: {
+        error: {
+            message: string;
+            type: 'api_not_found_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    409: {
+        error: {
+            message: string;
+            type: 'api_conflict_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    500: {
+        error: {
+            message: string;
+            type: 'api_internal_server_error';
+        };
+    };
+};
+
+export type OpenAiResponsesWithDefaultAgentError = OpenAiResponsesWithDefaultAgentErrors[keyof OpenAiResponsesWithDefaultAgentErrors];
+
+export type OpenAiResponsesWithDefaultAgentResponses = {
+    /**
+     * Default Response
+     */
+    200: OpenAiResponsesResponse;
+};
+
+export type OpenAiResponsesWithDefaultAgentResponse = OpenAiResponsesWithDefaultAgentResponses[keyof OpenAiResponsesWithDefaultAgentResponses];
+
+export type OpenAiResponsesWithAgentData = {
+    body?: OpenAiResponsesRequestInput;
+    headers: {
+        /**
+         * The user agent of the client
+         */
+        'user-agent'?: string;
+        /**
+         * Bearer token for OpenAI
+         */
+        authorization: string;
+    };
+    path: {
+        agentId: string;
+    };
+    query?: never;
+    url: '/v1/openai-responses/{agentId}/responses';
+};
+
+export type OpenAiResponsesWithAgentErrors = {
+    /**
+     * Default Response
+     */
+    400: {
+        error: {
+            message: string;
+            type: 'api_validation_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    401: {
+        error: {
+            message: string;
+            type: 'api_authentication_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    403: {
+        error: {
+            message: string;
+            type: 'api_authorization_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    404: {
+        error: {
+            message: string;
+            type: 'api_not_found_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    409: {
+        error: {
+            message: string;
+            type: 'api_conflict_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    500: {
+        error: {
+            message: string;
+            type: 'api_internal_server_error';
+        };
+    };
+};
+
+export type OpenAiResponsesWithAgentError = OpenAiResponsesWithAgentErrors[keyof OpenAiResponsesWithAgentErrors];
+
+export type OpenAiResponsesWithAgentResponses = {
+    /**
+     * Default Response
+     */
+    200: OpenAiResponsesResponse;
+};
+
+export type OpenAiResponsesWithAgentResponse = OpenAiResponsesWithAgentResponses[keyof OpenAiResponsesWithAgentResponses];
+
 export type GetOptimizationRulesData = {
     body?: never;
     path?: never;
@@ -13330,7 +15002,7 @@ export type GetOptimizationRulesResponses = {
         } | {
             hasTools: boolean;
         }>;
-        provider: 'openai' | 'gemini' | 'anthropic';
+        provider: 'openai' | 'openai-responses' | 'gemini' | 'anthropic';
         targetModel: string;
         enabled: boolean;
         createdAt: string;
@@ -13350,7 +15022,7 @@ export type CreateOptimizationRuleData = {
         } | {
             hasTools: boolean;
         }>;
-        provider: 'openai' | 'gemini' | 'anthropic';
+        provider: 'openai' | 'openai-responses' | 'gemini' | 'anthropic';
         targetModel: string;
         enabled?: boolean;
         createdAt?: unknown;
@@ -13433,7 +15105,7 @@ export type CreateOptimizationRuleResponses = {
         } | {
             hasTools: boolean;
         }>;
-        provider: 'openai' | 'gemini' | 'anthropic';
+        provider: 'openai' | 'openai-responses' | 'gemini' | 'anthropic';
         targetModel: string;
         enabled: boolean;
         createdAt: string;
@@ -13532,7 +15204,7 @@ export type UpdateOptimizationRuleData = {
         } | {
             hasTools: boolean;
         }>;
-        provider?: 'openai' | 'gemini' | 'anthropic';
+        provider?: 'openai' | 'openai-responses' | 'gemini' | 'anthropic';
         targetModel?: string;
         enabled?: boolean;
         createdAt?: unknown;
@@ -13617,7 +15289,7 @@ export type UpdateOptimizationRuleResponses = {
         } | {
             hasTools: boolean;
         }>;
-        provider: 'openai' | 'gemini' | 'anthropic';
+        provider: 'openai' | 'openai-responses' | 'gemini' | 'anthropic';
         targetModel: string;
         enabled: boolean;
         createdAt: string;
@@ -16737,7 +18409,7 @@ export type GetTokenPricesResponses = {
      */
     200: Array<{
         id: string;
-        provider: 'openai' | 'gemini' | 'anthropic';
+        provider: 'openai' | 'openai-responses' | 'gemini' | 'anthropic';
         model: string;
         pricePerMillionInput: string;
         pricePerMillionOutput: string;
@@ -16750,7 +18422,7 @@ export type GetTokenPricesResponse = GetTokenPricesResponses[keyof GetTokenPrice
 
 export type CreateTokenPriceData = {
     body: {
-        provider: 'openai' | 'gemini' | 'anthropic';
+        provider: 'openai' | 'openai-responses' | 'gemini' | 'anthropic';
         model: string;
         pricePerMillionInput: string;
         pricePerMillionOutput: string;
@@ -16825,7 +18497,7 @@ export type CreateTokenPriceResponses = {
      */
     200: {
         id: string;
-        provider: 'openai' | 'gemini' | 'anthropic';
+        provider: 'openai' | 'openai-responses' | 'gemini' | 'anthropic';
         model: string;
         pricePerMillionInput: string;
         pricePerMillionOutput: string;
@@ -16989,7 +18661,7 @@ export type GetTokenPriceResponses = {
      */
     200: {
         id: string;
-        provider: 'openai' | 'gemini' | 'anthropic';
+        provider: 'openai' | 'openai-responses' | 'gemini' | 'anthropic';
         model: string;
         pricePerMillionInput: string;
         pricePerMillionOutput: string;
@@ -17002,7 +18674,7 @@ export type GetTokenPriceResponse = GetTokenPriceResponses[keyof GetTokenPriceRe
 
 export type UpdateTokenPriceData = {
     body?: {
-        provider?: 'openai' | 'gemini' | 'anthropic';
+        provider?: 'openai' | 'openai-responses' | 'gemini' | 'anthropic';
         model?: string;
         pricePerMillionInput?: string;
         pricePerMillionOutput?: string;
@@ -17079,7 +18751,7 @@ export type UpdateTokenPriceResponses = {
      */
     200: {
         id: string;
-        provider: 'openai' | 'gemini' | 'anthropic';
+        provider: 'openai' | 'openai-responses' | 'gemini' | 'anthropic';
         model: string;
         pricePerMillionInput: string;
         pricePerMillionOutput: string;

@@ -4,7 +4,11 @@ import type { FastifyPluginAsyncZod } from "fastify-type-provider-zod";
 import { z } from "zod";
 import config from "@/config";
 import logger from "@/logging";
-import { constructResponseSchema, OpenAiResponses, UuidIdSchema } from "@/types";
+import {
+  constructResponseSchema,
+  OpenAiResponses,
+  UuidIdSchema,
+} from "@/types";
 import { openaiResponsesAdapterFactory } from "../adapterV2";
 import { PROXY_API_PREFIX, PROXY_BODY_LIMIT } from "../common";
 import { handleLLMProxy } from "../llm-proxy-handler";
@@ -21,10 +25,7 @@ const openAiResponsesProxyRoutesV2: FastifyPluginAsyncZod = async (fastify) => {
     prefix: API_PREFIX,
     rewritePrefix: "",
     preHandler: (request, _reply, next) => {
-      if (
-        request.method === "POST" &&
-        request.url.includes(RESPONSES_SUFFIX)
-      ) {
+      if (request.method === "POST" && request.url.includes(RESPONSES_SUFFIX)) {
         logger.info(
           {
             method: request.method,
@@ -32,7 +33,7 @@ const openAiResponsesProxyRoutesV2: FastifyPluginAsyncZod = async (fastify) => {
             action: "skip-proxy",
             reason: "handled-by-custom-handler",
           },
-          "OpenAI Responses proxy preHandler: skipping responses route"
+          "OpenAI Responses proxy preHandler: skipping responses route",
         );
         next(new Error("skip"));
         return;
@@ -40,7 +41,7 @@ const openAiResponsesProxyRoutesV2: FastifyPluginAsyncZod = async (fastify) => {
 
       const pathAfterPrefix = request.url.replace(API_PREFIX, "");
       const uuidMatch = pathAfterPrefix.match(
-        /^\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})(\/.*)?$/i
+        /^\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})(\/.*)?$/i,
       );
 
       if (uuidMatch) {
@@ -56,7 +57,7 @@ const openAiResponsesProxyRoutesV2: FastifyPluginAsyncZod = async (fastify) => {
             upstream: config.llm.openai.baseUrl,
             finalProxyUrl: `${config.llm.openai.baseUrl}/v1${remainingPath}`,
           },
-          "OpenAI Responses proxy preHandler: URL rewritten (UUID stripped)"
+          "OpenAI Responses proxy preHandler: URL rewritten (UUID stripped)",
         );
       } else {
         logger.info(
@@ -66,7 +67,7 @@ const openAiResponsesProxyRoutesV2: FastifyPluginAsyncZod = async (fastify) => {
             upstream: config.llm.openai.baseUrl,
             finalProxyUrl: `${config.llm.openai.baseUrl}/v1${pathAfterPrefix}`,
           },
-          "OpenAI Responses proxy preHandler: proxying request"
+          "OpenAI Responses proxy preHandler: proxying request",
         );
       }
 
@@ -86,17 +87,17 @@ const openAiResponsesProxyRoutesV2: FastifyPluginAsyncZod = async (fastify) => {
         body: OpenAiResponses.API.ResponsesRequestSchema,
         headers: OpenAiResponses.API.ResponsesHeadersSchema,
         response: constructResponseSchema(
-          OpenAiResponses.API.ResponsesResponseSchema
+          OpenAiResponses.API.ResponsesResponseSchema,
         ),
       },
     },
     async (request, reply) => {
       logger.debug(
         { url: request.url },
-        "[UnifiedProxy] Handling OpenAI Responses request (default agent)"
+        "[UnifiedProxy] Handling OpenAI Responses request (default agent)",
       );
       const externalAgentId = utils.externalAgentId.getExternalAgentId(
-        request.headers
+        request.headers,
       );
       const userId = await utils.userId.getUserId(request.headers);
       return handleLLMProxy(
@@ -109,9 +110,9 @@ const openAiResponsesProxyRoutesV2: FastifyPluginAsyncZod = async (fastify) => {
           agentId: undefined,
           externalAgentId,
           userId,
-        }
+        },
       );
-    }
+    },
   );
 
   fastify.post(
@@ -129,17 +130,17 @@ const openAiResponsesProxyRoutesV2: FastifyPluginAsyncZod = async (fastify) => {
         body: OpenAiResponses.API.ResponsesRequestSchema,
         headers: OpenAiResponses.API.ResponsesHeadersSchema,
         response: constructResponseSchema(
-          OpenAiResponses.API.ResponsesResponseSchema
+          OpenAiResponses.API.ResponsesResponseSchema,
         ),
       },
     },
     async (request, reply) => {
       logger.debug(
         { url: request.url, agentId: request.params.agentId },
-        "[UnifiedProxy] Handling OpenAI Responses request (with agent)"
+        "[UnifiedProxy] Handling OpenAI Responses request (with agent)",
       );
       const externalAgentId = utils.externalAgentId.getExternalAgentId(
-        request.headers
+        request.headers,
       );
       const userId = await utils.userId.getUserId(request.headers);
       return handleLLMProxy(
@@ -152,9 +153,9 @@ const openAiResponsesProxyRoutesV2: FastifyPluginAsyncZod = async (fastify) => {
           agentId: request.params.agentId,
           externalAgentId,
           userId,
-        }
+        },
       );
-    }
+    },
   );
 };
 

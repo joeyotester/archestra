@@ -1,5 +1,5 @@
 import { createAnthropic } from "@ai-sdk/anthropic";
-import { type ChatErrorResponse, RouteId, SupportedProviders } from "@shared";
+import { type ChatErrorResponse, RouteId } from "@shared";
 import {
   convertToModelMessages,
   generateText,
@@ -38,6 +38,7 @@ import {
   ErrorResponsesSchema,
   InsertConversationSchema,
   SelectConversationSchema,
+  SupportedChatProviders,
   UpdateConversationSchema,
   UuidIdSchema,
 } from "@/types";
@@ -58,7 +59,7 @@ async function getSmartDefaultModel(
    * Check what API keys are available using the new scope-based resolution
    * Try to find an available API key in order of preference
    */
-  for (const provider of SupportedProviders) {
+  for (const provider of SupportedChatProviders) {
     const resolvedKey = await ChatApiKeyModel.getCurrentApiKey({
       organizationId: organizationId,
       userId: userId,

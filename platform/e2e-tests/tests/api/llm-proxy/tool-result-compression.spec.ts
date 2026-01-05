@@ -164,6 +164,34 @@ const geminiConfig: CompressionTestConfig = {
   }),
 };
 
+const openaiResponsesConfig: CompressionTestConfig = {
+  providerName: "OpenAI-Responses",
+
+  endpoint: (profileId) => `/v1/openai-responses/${profileId}/responses`,
+
+  headers: (wiremockStub) => ({
+    Authorization: `Bearer ${wiremockStub}`,
+    "Content-Type": "application/json",
+  }),
+
+  // OpenAI Responses format: tool results are function_call_output items in input array
+  buildRequestWithToolResult: () => ({
+    model: "gpt-4o",
+    input: [
+      {
+        type: "message",
+        role: "user",
+        content: "What files are in the current directory?",
+      },
+      {
+        type: "function_call_output",
+        call_id: "call_123",
+        output: JSON.stringify(TOOL_RESULT_DATA),
+      },
+    ],
+  }),
+};
+
 // =============================================================================
 // Test Suite
 // =============================================================================
@@ -172,6 +200,7 @@ const testConfigs: CompressionTestConfig[] = [
   openaiConfig,
   anthropicConfig,
   geminiConfig,
+  openaiResponsesConfig,
 ];
 
 for (const config of testConfigs) {

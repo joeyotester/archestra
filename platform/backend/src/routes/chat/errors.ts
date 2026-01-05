@@ -7,10 +7,10 @@ import {
   GeminiErrorReasons,
   OpenAIErrorTypes,
   RetryableErrorCodes,
-  type SupportedProvider,
 } from "@shared";
 import { APICallError } from "ai";
 import logger from "@/logging";
+import type { SupportedChatProvider } from "@/types";
 
 // =============================================================================
 // Safe Serialization
@@ -667,10 +667,10 @@ function mapGeminiErrorWrapper(
 
 /**
  * Registry of provider-specific error parsers.
- * Using Record<SupportedProvider, ...> ensures TypeScript will error
- * if a new provider is added to SupportedProvider without updating this map.
+ * Using Record<SupportedChatProvider, ...> ensures TypeScript will error
+ * if a new provider is added to SupportedChatProvider without updating this map.
  */
-const providerParsers: Record<SupportedProvider, ErrorParser> = {
+const providerParsers: Record<SupportedChatProvider, ErrorParser> = {
   openai: parseOpenAIError,
   anthropic: parseAnthropicError,
   gemini: parseGeminiError,
@@ -678,10 +678,10 @@ const providerParsers: Record<SupportedProvider, ErrorParser> = {
 
 /**
  * Registry of provider-specific error mappers.
- * Using Record<SupportedProvider, ...> ensures TypeScript will error
- * if a new provider is added to SupportedProvider without updating this map.
+ * Using Record<SupportedChatProvider, ...> ensures TypeScript will error
+ * if a new provider is added to SupportedChatProvider without updating this map.
  */
-const providerMappers: Record<SupportedProvider, ErrorMapper> = {
+const providerMappers: Record<SupportedChatProvider, ErrorMapper> = {
   openai: mapOpenAIErrorWrapper,
   anthropic: mapAnthropicErrorWrapper,
   gemini: mapGeminiErrorWrapper,
@@ -787,7 +787,7 @@ function extractErrorMessage(
  */
 function createErrorResponse(
   code: ChatErrorCode,
-  provider: SupportedProvider,
+  provider: SupportedChatProvider,
   status: number | undefined,
   originalMessage: string,
   errorType: string | undefined,
@@ -817,7 +817,7 @@ function createErrorResponse(
  */
 export function mapProviderError(
   error: unknown,
-  provider: SupportedProvider,
+  provider: SupportedChatProvider,
 ): ChatErrorResponse {
   logger.debug({ error, provider }, "[ChatErrorMapper] Mapping provider error");
 

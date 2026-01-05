@@ -8,6 +8,8 @@ import { BaseTokenizer, type ProviderMessage } from "./base";
 export class AnthropicTokenizer extends BaseTokenizer {
   countMessageTokens(message: ProviderMessage): number {
     const text = this.getMessageText(message);
-    return countTokens(`${message.role || ""}${text}`);
+    // Some message types (like ItemReference) don't have a role property
+    const role = "role" in message ? message.role : "";
+    return countTokens(`${role || ""}${text}`);
   }
 }

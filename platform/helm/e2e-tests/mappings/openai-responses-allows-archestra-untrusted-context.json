@@ -1,0 +1,45 @@
+{
+  "request": {
+    "method": "POST",
+    "urlPath": "/v1/responses",
+    "headers": {
+      "Authorization": {
+        "contains": "openai-responses-allows-archestra-untrusted-context"
+      }
+    }
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "jsonBody": {
+      "id": "resp-allows-archestra-test",
+      "object": "response",
+      "created_at": 1234567890,
+      "status": "completed",
+      "model": "gpt-4o",
+      "output": [
+        {
+          "type": "function_call",
+          "id": "call_read_file",
+          "call_id": "call_read_file",
+          "name": "read_file",
+          "arguments": "{\"file_path\":\"/etc/passwd\"}"
+        },
+        {
+          "type": "function_call",
+          "id": "call_whoami",
+          "call_id": "call_whoami",
+          "name": "archestra__whoami",
+          "arguments": "{}"
+        }
+      ],
+      "usage": {
+        "input_tokens": 100,
+        "output_tokens": 30,
+        "total_tokens": 130
+      }
+    }
+  }
+}

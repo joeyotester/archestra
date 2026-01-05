@@ -7,12 +7,13 @@ import { z } from "zod";
 import { schema } from "@/database";
 import { SecretStorageTypeSchema } from "./mcp-server";
 
-// Supported chat providers
-export const SupportedChatProviderSchema = z.enum([
+// Supported chat providers (excludes openai-responses which is only for LLM Proxy)
+export const SupportedChatProviders = [
   "anthropic",
   "openai",
   "gemini",
-]);
+] as const;
+export const SupportedChatProviderSchema = z.enum(SupportedChatProviders);
 export type SupportedChatProvider = z.infer<typeof SupportedChatProviderSchema>;
 
 // Chat API Key scope

@@ -1,0 +1,42 @@
+{
+  "request": {
+    "method": "POST",
+    "urlPath": "/v1/responses",
+    "headers": {
+      "Authorization": {
+        "contains": "openai-responses-token-cost-limit-test"
+      }
+    }
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "jsonBody": {
+      "id": "resp-token-limit-test",
+      "object": "response",
+      "created_at": 1234567890,
+      "status": "completed",
+      "model": "test-gpt-4o-cost-limit",
+      "output": [
+        {
+          "type": "message",
+          "id": "msg_token_limit",
+          "role": "assistant",
+          "content": [
+            {
+              "type": "output_text",
+              "text": "Hello! I'm here to help."
+            }
+          ]
+        }
+      ],
+      "usage": {
+        "input_tokens": 100,
+        "output_tokens": 20,
+        "total_tokens": 120
+      }
+    }
+  }
+}

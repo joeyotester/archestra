@@ -47,6 +47,7 @@ function sortModelsByPrice(tokenPrices: TokenPrices): TokenPrices {
 
 const providerDictionary: Record<SupportedProvider, string> = {
   openai: "OpenAI",
+  "openai-responses": "OpenAI Responses",
   anthropic: "Anthropic",
   gemini: "Gemini",
 };

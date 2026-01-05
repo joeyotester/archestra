@@ -84,7 +84,18 @@ export const FileSearchToolSchema = z
       .describe("Options for ranking search results"),
     filters: z
       .object({
-        type: z.enum(["eq", "ne", "gt", "gte", "lt", "lte", "in", "nin", "and", "or"]),
+        type: z.enum([
+          "eq",
+          "ne",
+          "gt",
+          "gte",
+          "lt",
+          "lte",
+          "in",
+          "nin",
+          "and",
+          "or",
+        ]),
         key: z.string().optional(),
         value: z.unknown().optional(),
         filters: z.array(z.lazy(() => z.unknown())).optional(),
@@ -111,7 +122,10 @@ export const ComputerUseToolSchema = z
   .object({
     type: z.literal("computer_use_preview"),
     display_width: z.number().int().describe("Width of the display in pixels"),
-    display_height: z.number().int().describe("Height of the display in pixels"),
+    display_height: z
+      .number()
+      .int()
+      .describe("Height of the display in pixels"),
     environment: z
       .enum(["browser", "mac", "windows", "ubuntu"])
       .describe("The environment for computer use"),
