@@ -49,6 +49,8 @@ export const providerBaseMap: Partial<
  * Variant providers (like "openai-responses") are mapped to their base ("openai").
  * Base providers are returned unchanged.
  */
-export function getBaseProvider(provider: SupportedProvider): SupportedProvider {
+export function getBaseProvider(
+  provider: SupportedProvider,
+): SupportedProvider {
   return providerBaseMap[provider] ?? provider;
 }
