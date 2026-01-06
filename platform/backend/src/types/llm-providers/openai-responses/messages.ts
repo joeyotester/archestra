@@ -98,11 +98,56 @@ export const FunctionCallOutputSchema = z
   })
   .describe("Output from a function call (for multi-turn conversations)");
 
+export const McpCallOutputSchema = z
+  .object({
+    type: z.literal("mcp_call_output"),
+    id: z.string().describe("ID of the MCP call this is responding to"),
+    output: z.string().describe("The output/result of the MCP call"),
+  })
+  .describe("Output from an MCP call (for multi-turn conversations)");
+
+export const McpApprovalResponseSchema = z
+  .object({
+    type: z.literal("mcp_approval_response"),
+    approval_request_id: z.string().describe("ID of the approval request"),
+    approve: z.boolean().describe("Whether to approve the request"),
+    reason: z.string().optional().describe("Optional reason for the decision"),
+  })
+  .describe("Response to an MCP approval request");
+
+export const ComputerCallOutputSchema = z
+  .object({
+    type: z.literal("computer_call_output"),
+    call_id: z.string().describe("ID of the computer call this is responding to"),
+    output: z.object({
+      type: z.literal("computer_screenshot"),
+      image_url: z.string().describe("Base64 data URL of the screenshot"),
+    }),
+    acknowledged_safety_checks: z
+      .array(
+        z.object({
+          id: z.string(),
+          code: z.string(),
+          message: z.string(),
+        }),
+      )
+      .optional(),
+  })
+  .describe("Output from a computer use call");
+
+// Input items with passthrough to allow additional properties
 export const InputItemSchema = z.union([
-  EasyInputMessageSchema,
-  InputMessageSchema,
-  ItemReferenceSchema,
-  FunctionCallOutputSchema,
+  EasyInputMessageSchema.passthrough(),
+  InputMessageSchema.passthrough(),
+  ItemReferenceSchema.passthrough(),
+  FunctionCallOutputSchema.passthrough(),
+  McpCallOutputSchema.passthrough(),
+  McpApprovalResponseSchema.passthrough(),
+  ComputerCallOutputSchema.passthrough(),
+  // Fallback for any object with a type field (forward compatibility)
+  z.object({ type: z.string() }).passthrough(),
+  // Fallback for any object without a type field (e.g., easy input format variations)
+  z.object({}).passthrough(),
 ]);
 
 // =============================================================================

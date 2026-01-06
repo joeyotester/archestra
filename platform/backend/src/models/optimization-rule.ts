@@ -262,6 +262,8 @@ class OptimizationRuleModel {
           ...getDefaultModelPrice("gpt-5-mini"),
         },
       ],
+      // We don't default prices rules for openai-responses models,
+      // openai handling working with it.
       "openai-responses": [],
       anthropic: [
         {
@@ -286,6 +288,8 @@ class OptimizationRuleModel {
             enabled: true,
           },
         ],
+        // We don't default optimizarion rules for openai-responses providers,
+        // open ai rules working with it.
         "openai-responses": [],
         anthropic: [
           {

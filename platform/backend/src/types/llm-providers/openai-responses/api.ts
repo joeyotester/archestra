@@ -69,10 +69,12 @@ export const ReasoningConfigSchema = z
   .object({
     effort: z
       .enum(["low", "medium", "high"])
+      .nullable()
       .optional()
       .describe("Effort level for reasoning"),
     generate_summary: z
       .enum(["auto", "concise", "detailed"])
+      .nullable()
       .optional()
       .describe("Type of reasoning summary to generate"),
   })

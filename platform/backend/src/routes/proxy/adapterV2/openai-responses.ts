@@ -36,6 +36,26 @@ type OpenAiResponsesInput = OpenAiResponses.Types.Input;
 type OpenAiResponsesHeaders = OpenAiResponses.Types.ResponsesHeaders;
 type OpenAiResponsesStreamEvent = OpenAiResponses.Types.ResponseStreamEvent;
 
+// Type guard for function_call_output items
+interface FunctionCallOutputItem {
+  type: "function_call_output";
+  call_id: string;
+  output: string;
+}
+
+function isFunctionCallOutput(item: unknown): item is FunctionCallOutputItem {
+  return (
+    typeof item === "object" &&
+    item !== null &&
+    "type" in item &&
+    (item as { type: unknown }).type === "function_call_output" &&
+    "call_id" in item &&
+    typeof (item as { call_id: unknown }).call_id === "string" &&
+    "output" in item &&
+    typeof (item as { output: unknown }).output === "string"
+  );
+}
+
 // =============================================================================
 // REQUEST ADAPTER
 // =============================================================================
@@ -77,7 +97,7 @@ class OpenAIResponsesRequestAdapter
     }
 
     for (const item of input) {
-      if (item.type === "function_call_output") {
+      if (isFunctionCallOutput(item)) {
         // Find the function name from previous items or context
         const functionName = this.findFunctionName(input, item.call_id);
 
@@ -209,7 +229,7 @@ class OpenAIResponsesRequestAdapter
         commonMessages.push({
           role: role as CommonMessage["role"],
         });
-      } else if (item.type === "function_call_output") {
+      } else if (isFunctionCallOutput(item)) {
         const functionName = this.findFunctionName(input, item.call_id);
         let toolResult: unknown;
         try {
@@ -250,7 +270,7 @@ class OpenAIResponsesRequestAdapter
 
     let appliedCount = 0;
     const result = input.map((item) => {
-      if (item.type === "function_call_output" && updates[item.call_id]) {
+      if (isFunctionCallOutput(item) && updates[item.call_id]) {
         appliedCount++;
         logger.debug(
           { callId: item.call_id },
@@ -737,7 +757,7 @@ async function convertToolResultsToToon(
   let totalTokensAfter = 0;
 
   const result = input.map((item) => {
-    if (item.type === "function_call_output") {
+    if (isFunctionCallOutput(item)) {
       logger.info(
         {
           callId: item.call_id,
@@ -828,6 +848,9 @@ async function convertToolResultsToToon(
 // ADAPTER FACTORY
 // =============================================================================
 
+// openaiResponsesAdapterFactory is a synthetic provider to support OpenAI Responses API.
+// It's not a real provider, but needed to support the OpenAI Responses API.
+// All logs, optimizations, etc. should feel in UX as openai provider.
 export const openaiResponsesAdapterFactory: LLMProvider<
   OpenAiResponsesRequest,
   OpenAiResponsesResponse,
@@ -882,7 +905,7 @@ export const openaiResponsesAdapterFactory: LLMProvider<
     // Use observable fetch for request duration metrics if agent is provided
     const customFetch = options?.agent
       ? getObservableFetch(
-          "openai-responses",
+          "openai",
           options.agent,
           options.externalAgentId,
           (data) =>
