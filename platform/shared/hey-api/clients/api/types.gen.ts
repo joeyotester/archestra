@@ -6703,6 +6703,7 @@ export type GetChatConversationsResponses = {
             [key: string]: unknown;
         } | Array<unknown> | null;
         artifact: string | null;
+        isShared: boolean;
         createdAt: string;
         updatedAt: string;
         agent: {
@@ -6807,6 +6808,7 @@ export type CreateChatConversationResponses = {
             [key: string]: unknown;
         } | Array<unknown> | null;
         artifact: string | null;
+        isShared: boolean;
         createdAt: string;
         updatedAt: string;
         agent: {
@@ -6985,6 +6987,7 @@ export type GetChatConversationResponses = {
             [key: string]: unknown;
         } | Array<unknown> | null;
         artifact: string | null;
+        isShared: boolean;
         createdAt: string;
         updatedAt: string;
         agent: {
@@ -7091,6 +7094,7 @@ export type UpdateChatConversationResponses = {
             [key: string]: unknown;
         } | Array<unknown> | null;
         artifact: string | null;
+        isShared: boolean;
         createdAt: string;
         updatedAt: string;
         agent: {
@@ -7186,6 +7190,101 @@ export type GetChatAgentMcpToolsResponses = {
 
 export type GetChatAgentMcpToolsResponse = GetChatAgentMcpToolsResponses[keyof GetChatAgentMcpToolsResponses];
 
+export type ShareChatConversationData = {
+    body: {
+        isShared: boolean;
+    };
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/chat/conversations/{id}/share';
+};
+
+export type ShareChatConversationErrors = {
+    /**
+     * Default Response
+     */
+    400: {
+        error: {
+            message: string;
+            type: 'api_validation_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    401: {
+        error: {
+            message: string;
+            type: 'api_authentication_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    403: {
+        error: {
+            message: string;
+            type: 'api_authorization_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    404: {
+        error: {
+            message: string;
+            type: 'api_not_found_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    500: {
+        error: {
+            message: string;
+            type: 'api_internal_server_error';
+        };
+    };
+};
+
+export type ShareChatConversationError = ShareChatConversationErrors[keyof ShareChatConversationErrors];
+
+export type ShareChatConversationResponses = {
+    /**
+     * Default Response
+     */
+    200: {
+        id: string;
+        userId: string;
+        organizationId: string;
+        agentId: string;
+        promptId: string | null;
+        chatApiKeyId: string | null;
+        title: string | null;
+        selectedModel: string;
+        selectedProvider: 'openai' | 'anthropic' | 'gemini' | null;
+        hasCustomToolSelection: boolean;
+        todoList: Array<{
+            id: number;
+            content: string;
+            status: 'pending' | 'in_progress' | 'completed';
+        }> | null;
+        artifact: string | null;
+        isShared: boolean;
+        createdAt: string;
+        updatedAt: string;
+        agent: {
+            id: string;
+            name: string;
+        };
+        messages: Array<unknown>;
+    };
+};
+
+export type ShareChatConversationResponse = ShareChatConversationResponses[keyof ShareChatConversationResponses];
+
 export type GenerateChatConversationTitleData = {
     body?: {
         /**
@@ -7278,6 +7377,7 @@ export type GenerateChatConversationTitleResponses = {
             [key: string]: unknown;
         } | Array<unknown> | null;
         artifact: string | null;
+        isShared: boolean;
         createdAt: string;
         updatedAt: string;
         agent: {

@@ -9,6 +9,7 @@ const {
   createChatConversation,
   updateChatConversation,
   deleteChatConversation,
+  shareChatConversation,
   generateChatConversationTitle,
   getConversationEnabledTools,
   updateConversationEnabledTools,
@@ -313,5 +314,46 @@ export function usePromptTools(promptId: string | undefined) {
     enabled: !!promptId,
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 10 * 60 * 1000,
+  });
+}
+
+/**
+ * Share or unshare a conversation with the organization
+ * Only the owner can share/unshare
+ */
+export function useShareConversation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      id,
+      isShared,
+    }: {
+      id: string;
+      isShared: boolean;
+    }) => {
+      const { data, error } = await shareChatConversation({
+        path: { id },
+        body: { isShared },
+      });
+      if (error) throw new Error("Failed to share conversation");
+      return data;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["conversations"] });
+      queryClient.invalidateQueries({
+        queryKey: ["conversation", variables.id],
+      });
+      toast.success(
+        variables.isShared
+          ? "Conversation shared with organization"
+          : "Conversation is now private",
+      );
+    },
+    onError: (error) => {
+      toast.error(
+        `Failed to share conversation: ${error instanceof Error ? error.message : "Unknown error"}`,
+      );
+    },
   });
 }

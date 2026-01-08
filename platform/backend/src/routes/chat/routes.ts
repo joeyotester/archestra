@@ -402,11 +402,20 @@ const chatRoutes: FastifyPluginAsyncZod = async (fastify) => {
       },
     },
     async ({ params: { id }, user, organizationId }, reply) => {
-      const conversation = await ConversationModel.findById({
+      // First try to find the conversation owned by the user
+      let conversation = await ConversationModel.findById({
         id: id,
         userId: user.id,
         organizationId: organizationId,
       });
+
+      // If not found, check if it's a shared conversation in the same org
+      if (!conversation) {
+        conversation = await ConversationModel.findSharedById({
+          id: id,
+          organizationId: organizationId,
+        });
+      }
 
       if (!conversation) {
         throw new ApiError(404, "Conversation not found");
@@ -650,6 +659,37 @@ const chatRoutes: FastifyPluginAsyncZod = async (fastify) => {
     async ({ params: { id }, user, organizationId }, reply) => {
       await ConversationModel.delete(id, user.id, organizationId);
       return reply.send({ success: true });
+    },
+  );
+
+  fastify.post(
+    "/api/chat/conversations/:id/share",
+    {
+      schema: {
+        operationId: RouteId.ShareChatConversation,
+        description:
+          "Toggle sharing for a conversation. Only the owner can share/unshare.",
+        tags: ["Chat"],
+        params: z.object({ id: UuidIdSchema }),
+        body: z.object({
+          isShared: z.boolean(),
+        }),
+        response: constructResponseSchema(SelectConversationSchema),
+      },
+    },
+    async ({ params: { id }, body: { isShared }, user, organizationId }, reply) => {
+      const conversation = await ConversationModel.setShared(
+        id,
+        user.id,
+        organizationId,
+        isShared,
+      );
+
+      if (!conversation) {
+        throw new ApiError(404, "Conversation not found or you are not the owner");
+      }
+
+      return reply.send(conversation);
     },
   );
 

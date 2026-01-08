@@ -42,6 +42,7 @@ export const UpdateConversationSchema = createUpdateSchema(
   chatApiKeyId: true,
   agentId: true,
   artifact: true,
+  isShared: true,
 });
 
 export type Conversation = z.infer<typeof SelectConversationSchema>;

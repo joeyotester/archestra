@@ -39,6 +39,7 @@ const conversationsTable = pgTable("conversations", {
       }>
     >(),
   artifact: text("artifact"),
+  isShared: boolean("is_shared").notNull().default(false),
   createdAt: timestamp("created_at", { mode: "date" }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { mode: "date" })
     .notNull()

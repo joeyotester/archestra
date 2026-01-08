@@ -1,7 +1,7 @@
 "use client";
 
 import type { UIMessage } from "@ai-sdk/react";
-import { Eye, EyeOff, FileText, Plus } from "lucide-react";
+import { Eye, EyeOff, FileText, Plus, Share2, Users } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
@@ -28,6 +28,11 @@ import { PromptVersionHistoryDialog } from "@/components/chat/prompt-version-his
 import { StreamTimeoutWarning } from "@/components/chat/stream-timeout-warning";
 import { Button } from "@/components/ui/button";
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
   Card,
   CardContent,
   CardDescription,
@@ -37,10 +42,11 @@ import {
 import { Version } from "@/components/version";
 import { useChatSession } from "@/contexts/global-chat-context";
 import { useProfiles } from "@/lib/agent.query";
-import { useHasPermissions } from "@/lib/auth.query";
+import { useHasPermissions, useSession } from "@/lib/auth.query";
 import {
   useConversation,
   useCreateConversation,
+  useShareConversation,
   useUpdateConversation,
   useUpdateConversationEnabledTools,
 } from "@/lib/chat.query";
@@ -68,6 +74,7 @@ export default function ChatPage() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const { data: session } = useSession();
 
   const [conversationId, setConversationId] = useState<string | undefined>(
     () => searchParams.get(CONVERSATION_QUERY_PARAM) || undefined,
@@ -344,6 +351,9 @@ export default function ChatPage() {
 
   // Create conversation mutation (requires agentId)
   const createConversationMutation = useCreateConversation();
+
+  // Share conversation mutation
+  const shareConversationMutation = useShareConversation();
 
   // Update enabled tools mutation (for applying pending actions)
   const updateEnabledToolsMutation = useUpdateConversationEnabledTools();
@@ -766,6 +776,46 @@ export default function ChatPage() {
               )}
             </div>
             <div className="flex gap-2 items-center">
+              {/* Share button - only show for existing conversations owned by the current user */}
+              {conversationId && conversation?.userId === session?.user?.id && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant={conversation?.isShared ? "secondary" : "ghost"}
+                      size="sm"
+                      onClick={() => {
+                        if (conversationId) {
+                          shareConversationMutation.mutate({
+                            id: conversationId,
+                            isShared: !conversation?.isShared,
+                          });
+                        }
+                      }}
+                      disabled={shareConversationMutation.isPending}
+                      className="text-xs"
+                    >
+                      {conversation?.isShared ? (
+                        <>
+                          <Users className="h-3 w-3 mr-1" />
+                          Shared
+                        </>
+                      ) : (
+                        <>
+                          <Share2 className="h-3 w-3 mr-1" />
+                          Share
+                        </>
+                      )}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom">
+                    <p className="max-w-xs">
+                      {conversation?.isShared
+                        ? "This conversation is shared with your organization. Click to make it private."
+                        : "Share this conversation with your organization. Only you can send messages."}
+                    </p>
+                  </TooltipContent>
+                </Tooltip>
+              )}
               {!isArtifactOpen && (
                 <Button
                   variant="ghost"

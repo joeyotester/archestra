@@ -33,6 +33,7 @@ export {
   deleteAgent,
   deleteChatApiKey,
   deleteChatConversation,
+  shareChatConversation,
   deleteConversationEnabledTools,
   deleteDualLlmConfig,
   deleteInternalMcpCatalogItem,

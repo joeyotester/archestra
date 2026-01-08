@@ -229,6 +229,92 @@ class ConversationModel {
         ),
       );
   }
+
+  static async findSharedById({
+    id,
+    organizationId,
+  }: {
+    id: string;
+    organizationId: string;
+  }): Promise<Conversation | null> {
+    const rows = await db
+      .select({
+        conversation: getTableColumns(schema.conversationsTable),
+        message: getTableColumns(schema.messagesTable),
+        agent: {
+          id: schema.agentsTable.id,
+          name: schema.agentsTable.name,
+        },
+      })
+      .from(schema.conversationsTable)
+      .innerJoin(
+        schema.agentsTable,
+        eq(schema.conversationsTable.agentId, schema.agentsTable.id),
+      )
+      .leftJoin(
+        schema.messagesTable,
+        eq(schema.conversationsTable.id, schema.messagesTable.conversationId),
+      )
+      .where(
+        and(
+          eq(schema.conversationsTable.id, id),
+          eq(schema.conversationsTable.organizationId, organizationId),
+          eq(schema.conversationsTable.isShared, true),
+        ),
+      )
+      .orderBy(schema.messagesTable.createdAt);
+
+    if (rows.length === 0) {
+      return null;
+    }
+
+    const firstRow = rows[0];
+    const messages = [];
+
+    for (const row of rows) {
+      if (row.message?.content) {
+        messages.push({
+          ...row.message.content,
+          id: row.message.id,
+        });
+      }
+    }
+
+    return {
+      ...firstRow.conversation,
+      agent: firstRow.agent,
+      messages,
+    };
+  }
+
+  static async setShared(
+    id: string,
+    userId: string,
+    organizationId: string,
+    isShared: boolean,
+  ): Promise<Conversation | null> {
+    const [updated] = await db
+      .update(schema.conversationsTable)
+      .set({ isShared })
+      .where(
+        and(
+          eq(schema.conversationsTable.id, id),
+          eq(schema.conversationsTable.userId, userId),
+          eq(schema.conversationsTable.organizationId, organizationId),
+        ),
+      )
+      .returning();
+
+    if (!updated) {
+      return null;
+    }
+
+    return ConversationModel.findById({
+      id: updated.id,
+      userId,
+      organizationId,
+    });
+  }
 }
 
 export default ConversationModel;

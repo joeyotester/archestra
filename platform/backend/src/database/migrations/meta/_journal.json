@@ -771,6 +771,13 @@
       "when": 1767884255010,
       "tag": "0109_remove_block_always_default",
       "breakpoints": true
+    },
+    {
+      "idx": 110,
+      "version": "7",
+      "when": 1736380800000,
+      "tag": "0110_add_conversation_is_shared",
+      "breakpoints": true
     }
   ]
 }
