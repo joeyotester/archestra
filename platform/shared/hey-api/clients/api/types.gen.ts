@@ -6703,8 +6703,7 @@ export type GetChatConversationsResponses = {
             [key: string]: unknown;
         } | Array<unknown> | null;
         artifact: string | null;
-        shareMode: 'private' | 'organization' | 'public';
-        publicShareToken: string | null;
+        shareMode: 'private' | 'organization';
         createdAt: string;
         updatedAt: string;
         agent: {
@@ -6809,8 +6808,7 @@ export type CreateChatConversationResponses = {
             [key: string]: unknown;
         } | Array<unknown> | null;
         artifact: string | null;
-        shareMode: 'private' | 'organization' | 'public';
-        publicShareToken: string | null;
+        shareMode: 'private' | 'organization';
         createdAt: string;
         updatedAt: string;
         agent: {
@@ -6989,8 +6987,7 @@ export type GetChatConversationResponses = {
             [key: string]: unknown;
         } | Array<unknown> | null;
         artifact: string | null;
-        shareMode: 'private' | 'organization' | 'public';
-        publicShareToken: string | null;
+        shareMode: 'private' | 'organization';
         createdAt: string;
         updatedAt: string;
         agent: {
@@ -7097,8 +7094,7 @@ export type UpdateChatConversationResponses = {
             [key: string]: unknown;
         } | Array<unknown> | null;
         artifact: string | null;
-        shareMode: 'private' | 'organization' | 'public';
-        publicShareToken: string | null;
+        shareMode: 'private' | 'organization';
         createdAt: string;
         updatedAt: string;
         agent: {
@@ -7196,7 +7192,7 @@ export type GetChatAgentMcpToolsResponse = GetChatAgentMcpToolsResponses[keyof G
 
 export type ShareChatConversationData = {
     body: {
-        shareMode: 'private' | 'organization' | 'public';
+        shareMode: 'private' | 'organization';
     };
     path: {
         id: string;
@@ -7276,8 +7272,7 @@ export type ShareChatConversationResponses = {
             status: 'pending' | 'in_progress' | 'completed';
         }> | null;
         artifact: string | null;
-        shareMode: 'private' | 'organization' | 'public';
-        publicShareToken: string | null;
+        shareMode: 'private' | 'organization';
         createdAt: string;
         updatedAt: string;
         agent: {
@@ -7341,8 +7336,7 @@ export type GetPublicChatConversationResponses = {
             [key: string]: unknown;
         } | Array<unknown> | null;
         artifact: string | null;
-        shareMode: 'private' | 'organization' | 'public';
-        publicShareToken: string | null;
+        shareMode: 'private' | 'organization';
         createdAt: string;
         updatedAt: string;
         agent: {
@@ -7447,8 +7441,7 @@ export type GenerateChatConversationTitleResponses = {
             [key: string]: unknown;
         } | Array<unknown> | null;
         artifact: string | null;
-        shareMode: 'private' | 'organization' | 'public';
-        publicShareToken: string | null;
+        shareMode: 'private' | 'organization';
         createdAt: string;
         updatedAt: string;
         agent: {

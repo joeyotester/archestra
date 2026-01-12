@@ -1,8 +1,5 @@
--- Add shareMode column (private, organization, public)
+-- Add shareMode column (private, organization)
 ALTER TABLE "conversations" ADD COLUMN "share_mode" text DEFAULT 'private' NOT NULL;
-
--- Add publicShareToken for public sharing
-ALTER TABLE "conversations" ADD COLUMN "public_share_token" uuid;
 
 -- Migrate existing is_shared data if the column exists
 DO $$

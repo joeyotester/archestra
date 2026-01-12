@@ -317,7 +317,7 @@ export function usePromptTools(promptId: string | undefined) {
   });
 }
 
-export type ShareMode = "private" | "organization" | "public";
+export type ShareMode = "private" | "organization";
 
 /**
  * Set sharing mode for a conversation
@@ -349,7 +349,6 @@ export function useShareConversation() {
       const messages: Record<ShareMode, string> = {
         private: "Conversation is now private",
         organization: "Conversation shared with organization",
-        public: "Conversation is now public",
       };
       toast.success(messages[variables.shareMode]);
     },

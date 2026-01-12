@@ -1,7 +1,7 @@
 "use client";
 
 import type { UIMessage } from "@ai-sdk/react";
-import { Eye, EyeOff, FileText, Globe, Lock, Plus, Share2, Users } from "lucide-react";
+import { Eye, EyeOff, FileText, Plus, Share2, Users } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
@@ -782,17 +782,12 @@ export default function ChatPage() {
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button
-                      variant={conversation?.shareMode !== "private" ? "secondary" : "ghost"}
+                      variant={conversation?.shareMode === "organization" ? "secondary" : "ghost"}
                       size="sm"
                       onClick={() => setIsShareDialogOpen(true)}
                       className="text-xs"
                     >
-                      {conversation?.shareMode === "public" ? (
-                        <>
-                          <Globe className="h-3 w-3 mr-1" />
-                          Public
-                        </>
-                      ) : conversation?.shareMode === "organization" ? (
+                      {conversation?.shareMode === "organization" ? (
                         <>
                           <Users className="h-3 w-3 mr-1" />
                           Shared
@@ -807,11 +802,9 @@ export default function ChatPage() {
                   </TooltipTrigger>
                   <TooltipContent side="bottom">
                     <p className="max-w-xs">
-                      {conversation?.shareMode === "public"
-                        ? "Anyone with the link can view this conversation."
-                        : conversation?.shareMode === "organization"
-                          ? "Organization members can view this conversation."
-                          : "Share this conversation. Only you can send messages."}
+                      {conversation?.shareMode === "organization"
+                        ? "Organization members can view this conversation."
+                        : "Share this conversation with your organization. Only you can send messages."}
                     </p>
                   </TooltipContent>
                 </Tooltip>
@@ -1133,7 +1126,6 @@ export default function ChatPage() {
           onOpenChange={setIsShareDialogOpen}
           conversationId={conversationId}
           currentShareMode={(conversation.shareMode as ShareMode) ?? "private"}
-          publicShareToken={conversation.publicShareToken ?? null}
         />
       )}
     </div>

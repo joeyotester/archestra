@@ -7,7 +7,7 @@ import { z } from "zod";
 import { schema } from "@/database";
 import { SupportedChatProviderSchema } from "./chat-api-key";
 
-export const ShareModeSchema = z.enum(["private", "organization", "public"]);
+export const ShareModeSchema = z.enum(["private", "organization"]);
 
 export const SelectConversationSchema = createSelectSchema(
   schema.conversationsTable,

@@ -390,33 +390,6 @@ const chatRoutes: FastifyPluginAsyncZod = async (fastify) => {
     },
   );
 
-  /**
-   * Public endpoint for accessing publicly shared conversations.
-   * No authentication required - uses publicShareToken for access.
-   */
-  fastify.get(
-    "/api/chat/conversations/public/:token",
-    {
-      schema: {
-        operationId: RouteId.GetPublicChatConversation,
-        description:
-          "Get a publicly shared conversation by its share token. No authentication required.",
-        tags: ["Chat"],
-        params: z.object({ token: UuidIdSchema }),
-        response: constructResponseSchema(SelectConversationSchema),
-      },
-    },
-    async ({ params: { token } }, reply) => {
-      const conversation = await ConversationModel.findByPublicToken(token);
-
-      if (!conversation) {
-        throw new ApiError(404, "Conversation not found or not publicly shared");
-      }
-
-      return reply.send(conversation);
-    },
-  );
-
   fastify.get(
     "/api/chat/conversations/:id",
     {
@@ -699,7 +672,7 @@ const chatRoutes: FastifyPluginAsyncZod = async (fastify) => {
         tags: ["Chat"],
         params: z.object({ id: UuidIdSchema }),
         body: z.object({
-          shareMode: z.enum(["private", "organization", "public"]),
+          shareMode: z.enum(["private", "organization"]),
         }),
         response: constructResponseSchema(SelectConversationSchema),
       },
