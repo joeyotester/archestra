@@ -1,5 +1,9 @@
+import { UnauthorizedError } from "@modelcontextprotocol/sdk/client/auth.js";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
-import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
+import {
+  StreamableHTTPClientTransport,
+  StreamableHTTPError,
+} from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import type { Transport } from "@modelcontextprotocol/sdk/shared/transport.js";
 import type { Tool } from "@modelcontextprotocol/sdk/types.js";
 import config from "@/config";
@@ -202,12 +206,11 @@ class McpClient {
         const errorMessage =
           error instanceof Error ? error.message : String(error);
 
-        // Check if this is an authentication error (401) and we can attempt refresh
+        // Check if this is an authentication error (401/403) and we can attempt refresh
         const isAuthError =
-          errorMessage.includes("401") ||
-          errorMessage.includes("Unauthorized") ||
-          errorMessage.includes("authentication") ||
-          errorMessage.includes("invalid_token");
+          error instanceof UnauthorizedError ||
+          (error instanceof StreamableHTTPError &&
+            (error.code === 401 || error.code === 403));
 
         const hasRefreshCapability =
           secretId &&
