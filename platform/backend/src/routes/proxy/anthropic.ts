@@ -1,3 +1,13 @@
+/**
+ * @deprecated LEGACY V1 ROUTE - LLM Proxy v2 is now the default
+ *
+ * This is the legacy v1 Anthropic proxy route handler.
+ *
+ * The new unified LLM proxy handler (./llm-proxy-handler.ts) is now the default.
+ * V2 routes are located at: ./routesv2/anthropic.ts
+ *
+ * This file should be removed after full migration to v2 routes.
+ */
 import AnthropicProvider from "@anthropic-ai/sdk";
 import fastifyHttpProxy from "@fastify/http-proxy";
 import { RouteId } from "@shared";
@@ -112,6 +122,8 @@ const anthropicProxyRoutes: FastifyPluginAsyncZod = async (fastify) => {
     agentId?: string,
     externalAgentId?: string,
     userId?: string,
+    sessionId?: string | null,
+    sessionSource?: string | null,
   ) => {
     const { tools, stream } = body;
 
@@ -235,6 +247,10 @@ const anthropicProxyRoutes: FastifyPluginAsyncZod = async (fastify) => {
       }
       logger.debug({ resolvedAgentId }, "[AnthropicProxy] Limit check passed");
 
+      // Get global tool policy from organization (with fallback)
+      const globalToolPolicy =
+        await utils.toolInvocation.getGlobalToolPolicy(resolvedAgentId);
+
       // Persist non-MCP tools declared by client for tracking
       if (tools) {
         logger.debug(
@@ -350,6 +366,7 @@ const anthropicProxyRoutes: FastifyPluginAsyncZod = async (fastify) => {
         {
           resolvedAgentId,
           considerContextUntrusted: resolvedAgent.considerContextUntrusted,
+          globalToolPolicy,
         },
         "[AnthropicProxy] Evaluating trusted data policies",
       );
@@ -360,6 +377,7 @@ const anthropicProxyRoutes: FastifyPluginAsyncZod = async (fastify) => {
           anthropicApiKey,
           "anthropic",
           resolvedAgent.considerContextUntrusted,
+          globalToolPolicy,
           stream
             ? () => {
                 // Send initial indicator when dual LLM starts (streaming only)
@@ -379,10 +397,14 @@ const anthropicProxyRoutes: FastifyPluginAsyncZod = async (fastify) => {
               }
             : undefined,
           stream
-            ? (progress) => {
+            ? (progress: {
+                question: string;
+                options: string[];
+                answer: string;
+              }) => {
                 // Stream Q&A progress with options
                 const optionsText = progress.options
-                  .map((opt, idx) => `  ${idx}: ${opt}`)
+                  .map((opt: string, idx: number) => `  ${idx}: ${opt}`)
                   .join("\n");
                 const progressEvent = {
                   type: "content_block_delta",
@@ -618,6 +640,7 @@ const anthropicProxyRoutes: FastifyPluginAsyncZod = async (fastify) => {
               resolvedAgentId,
               contextIsTrusted,
               enabledToolNames,
+              globalToolPolicy,
             );
             fastify.log.info(
               { refused: !!toolInvocationRefusal },
@@ -889,6 +912,8 @@ const anthropicProxyRoutes: FastifyPluginAsyncZod = async (fastify) => {
               profileId: resolvedAgentId,
               externalAgentId,
               userId,
+              sessionId,
+              sessionSource,
               type: "anthropic:messages",
               request: body,
               processedRequest: {
@@ -961,6 +986,7 @@ const anthropicProxyRoutes: FastifyPluginAsyncZod = async (fastify) => {
               resolvedAgentId,
               contextIsTrusted,
               enabledToolNames,
+              globalToolPolicy,
             );
 
           if (toolInvocationRefusal) {
@@ -1014,6 +1040,8 @@ const anthropicProxyRoutes: FastifyPluginAsyncZod = async (fastify) => {
               profileId: resolvedAgentId,
               externalAgentId,
               userId,
+              sessionId,
+              sessionSource,
               type: "anthropic:messages",
               request: body,
               processedRequest: {
@@ -1069,6 +1097,8 @@ const anthropicProxyRoutes: FastifyPluginAsyncZod = async (fastify) => {
           profileId: resolvedAgentId,
           externalAgentId,
           userId,
+          sessionId,
+          sessionSource,
           type: "anthropic:messages",
           request: body,
           processedRequest: {
@@ -1177,6 +1207,11 @@ const anthropicProxyRoutes: FastifyPluginAsyncZod = async (fastify) => {
         request.headers,
       );
       const userId = await utils.userId.getUserId(request.headers);
+      // Extract metadata for session info - handles null/undefined difference
+      const { sessionId, sessionSource } = utils.sessionId.extractSessionInfo(
+        request.headers,
+        { metadata: request.body.metadata },
+      );
       return handleMessages(
         request.body,
         request.headers,
@@ -1185,6 +1220,8 @@ const anthropicProxyRoutes: FastifyPluginAsyncZod = async (fastify) => {
         undefined,
         externalAgentId,
         userId,
+        sessionId,
+        sessionSource,
       );
     },
   );
@@ -1217,6 +1254,11 @@ const anthropicProxyRoutes: FastifyPluginAsyncZod = async (fastify) => {
         request.headers,
       );
       const userId = await utils.userId.getUserId(request.headers);
+      // Extract metadata for session info - handles null/undefined difference
+      const { sessionId, sessionSource } = utils.sessionId.extractSessionInfo(
+        request.headers,
+        { metadata: request.body.metadata },
+      );
       return handleMessages(
         request.body,
         request.headers,
@@ -1225,6 +1267,8 @@ const anthropicProxyRoutes: FastifyPluginAsyncZod = async (fastify) => {
         request.params.agentId,
         externalAgentId,
         userId,
+        sessionId,
+        sessionSource,
       );
     },
   );

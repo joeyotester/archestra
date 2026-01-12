@@ -27,8 +27,8 @@ export default function SettingsLayout({
   const tabs = [
     { label: "Your Account", href: "/settings/account" },
     { label: "Dual LLM", href: "/settings/dual-llm" },
-    { label: "Chat", href: "/settings/chat" },
-    { label: "Policy Config Subagent", href: "/settings/auto-policy" },
+    { label: "LLM API Keys", href: "/settings/llm-api-keys" },
+    { label: "Security", href: "/settings/security" },
     ...(userCanReadOrganization
       ? [
           { label: "Members", href: "/settings/members" },

@@ -6,10 +6,10 @@ import {
   Copy,
   Eye,
   EyeOff,
+  Layers,
   Loader2,
   Package,
   Server,
-  User,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -97,6 +97,21 @@ export function McpConnectionInstructions({
 
     return counts;
   }, [selectedProfile, mcpServers]);
+
+  const getToolsCountForProfile = useCallback(
+    (profile: (typeof profiles)[number]) => {
+      return profile.tools.reduce((acc, curr) => {
+        if (curr.mcpServerId) {
+          const server = mcpServers?.find((s) => s.id === curr.mcpServerId);
+          if (server) {
+            acc++;
+          }
+        }
+        return acc;
+      }, 0);
+    },
+    [mcpServers],
+  );
 
   // Use the new URL format with selected profile ID
   const mcpUrl = `${apiBaseUrl}/mcp/${selectedProfileId}`;
@@ -293,10 +308,10 @@ export function McpConnectionInstructions({
             <SelectValue placeholder="Select a profile">
               {selectedProfile && (
                 <div className="flex items-center gap-2">
-                  <User className="h-4 w-4" />
+                  <Layers className="h-4 w-4" />
                   <span>{selectedProfile.name}</span>
                   <span className="text-muted-foreground ml-auto">
-                    {selectedProfile.tools.length} tools
+                    {getToolsCountForProfile(selectedProfile)} tools
                   </span>
                 </div>
               )}
@@ -307,11 +322,11 @@ export function McpConnectionInstructions({
               <SelectItem key={profile.id} value={profile.id}>
                 <div className="flex items-center justify-between w-full">
                   <div className="flex items-center gap-2">
-                    <User className="h-4 w-4" />
+                    <Layers className="h-4 w-4" />
                     <span>{profile.name}</span>
                   </div>
                   <span className="text-sm text-muted-foreground ml-4">
-                    {profile.tools.length} tools
+                    {getToolsCountForProfile(profile)} tools
                   </span>
                 </div>
               </SelectItem>

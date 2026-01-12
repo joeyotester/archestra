@@ -1,3 +1,7 @@
+import {
+  TOOL_ARTIFACT_WRITE_FULL_NAME,
+  TOOL_TODO_WRITE_FULL_NAME,
+} from "@shared";
 import { and, desc, eq, getTableColumns } from "drizzle-orm";
 import db, { schema } from "@/database";
 import type {
@@ -38,8 +42,8 @@ class ConversationModel {
       .filter(
         (tool) =>
           !tool.name.startsWith("archestra__") ||
-          tool.name === "archestra__todo_write" ||
-          tool.name === "archestra__artifact_write",
+          tool.name === TOOL_TODO_WRITE_FULL_NAME ||
+          tool.name === TOOL_ARTIFACT_WRITE_FULL_NAME,
       )
       .map((tool) => tool.id);
 
@@ -224,6 +228,44 @@ class ConversationModel {
           eq(schema.conversationsTable.organizationId, organizationId),
         ),
       );
+  }
+
+  /**
+   * Get the agentId for a conversation (without user context checks)
+   * Used by internal services that need to look up conversation -> agent mapping
+   */
+  static async getAgentId(conversationId: string): Promise<string | null> {
+    const result = await db
+      .select({ agentId: schema.conversationsTable.agentId })
+      .from(schema.conversationsTable)
+      .where(eq(schema.conversationsTable.id, conversationId))
+      .limit(1);
+
+    return result[0]?.agentId ?? null;
+  }
+
+  /**
+   * Get the agentId for a conversation scoped to a specific user and organization.
+   * Returns null when the conversation does not belong to the provided user/org.
+   */
+  static async getAgentIdForUser(
+    conversationId: string,
+    userId: string,
+    organizationId: string,
+  ): Promise<string | null> {
+    const result = await db
+      .select({ agentId: schema.conversationsTable.agentId })
+      .from(schema.conversationsTable)
+      .where(
+        and(
+          eq(schema.conversationsTable.id, conversationId),
+          eq(schema.conversationsTable.userId, userId),
+          eq(schema.conversationsTable.organizationId, organizationId),
+        ),
+      )
+      .limit(1);
+
+    return result[0]?.agentId ?? null;
   }
 }
 

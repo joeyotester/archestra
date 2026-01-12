@@ -16,6 +16,7 @@
 6. **Documentation Updates** - For any feature or system changes, audit `../docs/pages` to determine if existing content needs modification/updates or if new documentation should be added. Follow the writing guidelines in `../docs/docs_writer_prompt.md`
 7. **Always Add Tests** - When working on any feature, ALWAYS add or modify appropriate test cases (unit tests, integration tests, or e2e tests under `platform/e2e-tests/tests`)
 8. **Enterprise Edition Imports** - NEVER directly import from `.ee.ts` files unless the importing file is itself an `.ee.ts` file. Use runtime conditional logic with `config.enterpriseLicenseActivated` checks instead to avoid bundling enterprise code into free builds
+9. **No Auto Commits** - Never commit or push changes without explicit user approval. Always ask before running git commit or git push
 
 ## Docs
 
@@ -136,11 +137,6 @@ ANTHROPIC_API_KEY=your-api-key-here
 ARCHESTRA_OPENAI_BASE_URL=https://api.openai.com/v1
 ARCHESTRA_ANTHROPIC_BASE_URL=https://api.anthropic.com
 
-# LLM Proxy Route Selection (optional)
-ARCHESTRA_OPENAI_USE_V2_ROUTES=false  # Set to true to use unified V2 OpenAI routes instead of legacy V1 handler
-ARCHESTRA_ANTHROPIC_USE_V2_ROUTES=false  # Set to true to use unified V2 Anthropic routes instead of legacy V1 handler
-ARCHESTRA_GEMINI_USE_V2_ROUTES=false  # Set to true to use unified V2 Gemini routes instead of legacy V1 handler
-
 # Analytics (optional - disabled for local dev and e2e tests)
 ARCHESTRA_ANALYTICS=disabled  # Set to "disabled" to disable PostHog analytics
 
@@ -158,6 +154,7 @@ ARCHESTRA_AUTH_DISABLE_INVITATIONS=false  # Set to true to disable user invitati
 # Chat Feature Configuration (n8n automation expert)
 ARCHESTRA_CHAT_ANTHROPIC_API_KEY=your-api-key-here  # Required for chat (direct Anthropic API)
 ARCHESTRA_CHAT_DEFAULT_MODEL=claude-opus-4-1-20250805  # Optional, defaults to claude-opus-4-1-20250805
+ARCHESTRA_CHAT_DEFAULT_PROVIDER=anthropic  # Optional, defaults to anthropic. Options: anthropic, openai, gemini
 
 # Kubernetes (for MCP server runtime)
 # Local MCP servers require EITHER ARCHESTRA_ORCHESTRATOR_KUBECONFIG OR ARCHESTRA_ORCHESTRATOR_LOAD_KUBECONFIG_FROM_CURRENT_CLUSTER
@@ -308,7 +305,7 @@ pnpm rebuild <package-name>  # Enable scripts for specific package
 - Table exports: Use plural names with "Table" suffix (e.g., `profileLabelsTable`, `sessionsTable`)
 - Colocate test files with source (`.test.ts`)
 - Flat file structure, avoid barrel files
-- Route permissions: Add to `requiredEndpointPermissionsMap` in `shared/access-control.ee.ts`
+- **Route permissions (IMPORTANT)**: When adding new API endpoints, you MUST add the route to `requiredEndpointPermissionsMap` in `shared/access-control.ee.ts` or requests will return 403 Forbidden. Match permissions with similar existing routes (e.g., interaction endpoints use `interaction: ["read"]`).
 - Only export public APIs
 - Use the `logger` instance from `@/logging` for all logging (replaces console.log/error/warn/info)
 - **Backend Testing Best Practices**: Never mock database interfaces in backend tests - use the existing `backend/src/test/setup.ts` PGlite setup for real database testing, and use model methods to create/manipulate test data for integration-focused testing
