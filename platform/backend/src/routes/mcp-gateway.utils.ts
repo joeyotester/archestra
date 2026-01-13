@@ -7,6 +7,7 @@ import {
   type Tool,
 } from "@modelcontextprotocol/sdk/types.js";
 import {
+  AGENT_TOOL_PREFIX,
   ARCHESTRA_MCP_SERVER_NAME,
   MCP_SERVER_TOOL_NAME_SEPARATOR,
 } from "@shared";
@@ -177,20 +178,32 @@ export async function createAgentServer(
     CallToolRequestSchema,
     async ({ params: { name, arguments: args } }) => {
       try {
-        // Check if this is an Archestra tool
+        // Check if this is an Archestra tool or agent delegation tool
         const archestraToolPrefix = `${ARCHESTRA_MCP_SERVER_NAME}${MCP_SERVER_TOOL_NAME_SEPARATOR}`;
-        if (name.startsWith(archestraToolPrefix)) {
+        if (name.startsWith(archestraToolPrefix) || name.startsWith(AGENT_TOOL_PREFIX)) {
           logger.info(
             {
               agentId,
               toolName: name,
+              isAgentTool: name.startsWith(AGENT_TOOL_PREFIX),
             },
-            "Archestra MCP tool call received",
+            "Archestra/Agent MCP tool call received",
           );
 
-          // Handle Archestra tools directly
+          // Handle Archestra and agent delegation tools directly
+          // Pass tokenAuth for user access validation and organizationId resolution
           const archestraResponse = await executeArchestraTool(name, args, {
             profile: { id: agent.id, name: agent.name },
+            tokenAuth: tokenAuth
+              ? {
+                  tokenId: tokenAuth.tokenId,
+                  teamId: tokenAuth.teamId,
+                  isOrganizationToken: tokenAuth.isOrganizationToken,
+                  organizationId: tokenAuth.organizationId,
+                  isUserToken: tokenAuth.isUserToken,
+                  userId: tokenAuth.userId,
+                }
+              : undefined,
           });
 
           logger.info(
@@ -198,7 +211,7 @@ export async function createAgentServer(
               agentId,
               toolName: name,
             },
-            "Archestra MCP tool call completed",
+            "Archestra/Agent MCP tool call completed",
           );
 
           return archestraResponse;

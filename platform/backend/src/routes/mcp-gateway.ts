@@ -387,6 +387,7 @@ export const legacyMcpGatewayRoutes: FastifyPluginAsyncZod = async (
             tokenId: orgToken.id,
             teamId: null,
             isOrganizationToken: true,
+            organizationId: orgToken.organizationId,
           }
         : undefined;
 
@@ -562,6 +563,7 @@ export const newMcpGatewayRoutes: FastifyPluginAsyncZod = async (fastify) => {
         tokenId: tokenAuth.tokenId,
         teamId: tokenAuth.teamId,
         isOrganizationToken: tokenAuth.isOrganizationToken,
+        organizationId: tokenAuth.organizationId,
         ...(tokenAuth.isUserToken && { isUserToken: true }),
         ...(tokenAuth.userId && { userId: tokenAuth.userId }),
       };

@@ -47,6 +47,8 @@ export type TokenAuthContext = {
   tokenId: string;
   teamId: string | null;
   isOrganizationToken: boolean;
+  /** Organization ID the token belongs to */
+  organizationId: string;
   /** True if this is a personal user token */
   isUserToken?: boolean;
   /** Optional user ID for user-owned server priority (set when called from chat or from user token) */

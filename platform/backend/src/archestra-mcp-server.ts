@@ -143,52 +143,97 @@ export async function executeArchestraTool(
       };
     }
 
-    if (!promptId) {
-      return {
-        content: [
-          { type: "text", text: "Error: No prompt context available." },
-        ],
-        isError: true,
-      };
-    }
-
-    if (!organizationId) {
-      return {
-        content: [
-          { type: "text", text: "Error: Organization context not available." },
-        ],
-        isError: true,
-      };
-    }
-
     // Extract agent slug from tool name
     const agentSlug = toolName.replace(AGENT_TOOL_PREFIX, "");
 
-    // Get all agents configured for this prompt
-    const allAgents =
-      await PromptAgentModel.findByPromptIdWithDetails(promptId);
-
-    // Find matching agent by slug
-    const agent = allAgents.find((a) => slugify(a.name) === agentSlug);
-
-    if (!agent) {
-      return {
-        content: [
-          {
-            type: "text",
-            text: `Error: Agent not found or not configured for this prompt.`,
-          },
-        ],
-        isError: true,
-      };
-    }
-
     // Check user has access if user token is being used
     const userId = tokenAuth?.userId;
+
+    // Variables to hold the target agent info
+    let targetAgentPromptId: string;
+    let targetAgentName: string;
+    let targetProfileId: string;
+    let effectiveOrganizationId: string;
+
+    // Try prompt-based lookup first (for internal agents with prompt context)
+    if (promptId) {
+      if (!organizationId) {
+        return {
+          content: [
+            { type: "text", text: "Error: Organization context not available." },
+          ],
+          isError: true,
+        };
+      }
+
+      // Get all agents configured for this prompt
+      const allAgents =
+        await PromptAgentModel.findByPromptIdWithDetails(promptId);
+
+      // Find matching agent by slug
+      const agent = allAgents.find((a) => slugify(a.name) === agentSlug);
+
+      if (!agent) {
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Error: Agent not found or not configured for this prompt.`,
+            },
+          ],
+          isError: true,
+        };
+      }
+
+      targetAgentPromptId = agent.agentPromptId;
+      targetAgentName = agent.name;
+      targetProfileId = agent.profileId;
+      effectiveOrganizationId = organizationId;
+    } else {
+      // MCP Gateway context: Look up the tool directly by name
+      // This allows external agents to call delegation tools assigned to their profile
+      const tool = await ToolModel.findByName(toolName);
+
+      if (!tool || !tool.promptAgentId) {
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Error: Agent delegation tool not found.`,
+            },
+          ],
+          isError: true,
+        };
+      }
+
+      // Get the prompt_agent details including target prompt and organization
+      const promptAgentDetails = await PromptAgentModel.findByIdWithDetails(
+        tool.promptAgentId,
+      );
+
+      if (!promptAgentDetails) {
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Error: Agent delegation configuration not found.`,
+            },
+          ],
+          isError: true,
+        };
+      }
+
+      targetAgentPromptId = promptAgentDetails.agentPromptId;
+      targetAgentName = promptAgentDetails.agentPromptName;
+      targetProfileId = promptAgentDetails.profileId;
+      effectiveOrganizationId = promptAgentDetails.organizationId;
+    }
+
+    // Check user has access to the target agent
     if (userId) {
       const userAccessibleAgentIds =
         await AgentTeamModel.getUserAccessibleAgentIds(userId, false);
-      if (!userAccessibleAgentIds.includes(agent.profileId)) {
+      if (!userAccessibleAgentIds.includes(targetProfileId)) {
         return {
           content: [
             {
@@ -207,10 +252,10 @@ export async function executeArchestraTool(
 
       logger.info(
         {
-          promptId,
-          agentPromptId: agent.agentPromptId,
-          agentName: agent.name,
-          organizationId,
+          promptId: promptId || "mcp-gateway",
+          agentPromptId: targetAgentPromptId,
+          agentName: targetAgentName,
+          organizationId: effectiveOrganizationId,
           userId: userId || "system",
           sessionId,
         },
@@ -218,13 +263,13 @@ export async function executeArchestraTool(
       );
 
       const result = await executeA2AMessage({
-        promptId: agent.agentPromptId,
+        promptId: targetAgentPromptId,
         message,
-        organizationId,
+        organizationId: effectiveOrganizationId,
         userId: userId || "system",
         sessionId,
         // Pass the current delegation chain so the child can extend it
-        parentDelegationChain: context.delegationChain || context.promptId,
+        parentDelegationChain: context.delegationChain || context.promptId || profile.id,
       });
 
       return {
@@ -233,7 +278,7 @@ export async function executeArchestraTool(
       };
     } catch (error) {
       logger.error(
-        { error, promptId, agentPromptId: agent.agentPromptId },
+        { error, promptId, agentPromptId: targetAgentPromptId },
         "Agent tool execution failed",
       );
       return {

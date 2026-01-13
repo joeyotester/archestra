@@ -1293,10 +1293,13 @@ class ToolModel {
       .where(
         and(
           toolWhereClause,
-          // Only tools with at least one assignment
-          sql`EXISTS (
-            SELECT 1 FROM ${schema.agentToolsTable}
-            WHERE ${assignmentConditions}
+          // Tools with at least one assignment OR agent delegation tools
+          sql`(
+            EXISTS (
+              SELECT 1 FROM ${schema.agentToolsTable}
+              WHERE ${assignmentConditions}
+            )
+            OR ${schema.toolsTable.promptAgentId} IS NOT NULL
           )`,
         ),
       )
@@ -1311,9 +1314,13 @@ class ToolModel {
       .where(
         and(
           toolWhereClause,
-          sql`EXISTS (
-            SELECT 1 FROM ${schema.agentToolsTable}
-            WHERE ${assignmentConditions}
+          // Tools with at least one assignment OR agent delegation tools
+          sql`(
+            EXISTS (
+              SELECT 1 FROM ${schema.agentToolsTable}
+              WHERE ${assignmentConditions}
+            )
+            OR ${schema.toolsTable.promptAgentId} IS NOT NULL
           )`,
         ),
       );

@@ -99,6 +99,7 @@ async function selectMCPGatewayToken(
   tokenId: string;
   teamId: string | null;
   isOrganizationToken: boolean;
+  organizationId: string;
   isUserToken?: boolean;
 } | null> {
   // Get user's team IDs and profile's team IDs (needed for access check)
@@ -131,6 +132,7 @@ async function selectMCPGatewayToken(
             tokenId: userToken.id,
             teamId: null,
             isOrganizationToken: false,
+            organizationId: team.organizationId,
             isUserToken: true,
           };
         }
@@ -160,6 +162,7 @@ async function selectMCPGatewayToken(
           tokenId: orgToken.id,
           teamId: null,
           isOrganizationToken: true,
+          organizationId: orgToken.organizationId,
         };
       }
     }
@@ -185,6 +188,7 @@ async function selectMCPGatewayToken(
             tokenId: token.id,
             teamId: token.teamId,
             isOrganizationToken: false,
+            organizationId: token.organizationId,
           };
         }
       }
@@ -659,6 +663,7 @@ export async function getChatMcpTools({
                   tokenId: mcpGwToken.tokenId,
                   teamId: mcpGwToken.teamId,
                   isOrganizationToken: mcpGwToken.isOrganizationToken,
+                  organizationId: mcpGwToken.organizationId,
                   userId, // Pass userId for user-owned server priority
                 },
               );
@@ -667,7 +672,20 @@ export async function getChatMcpTools({
               // When isError is true, throw to signal AI SDK that tool execution failed
               // This allows AI SDK to create a tool-error part and continue the conversation
               if (result.isError) {
-                throw new Error(result.error || "Tool execution failed");
+                // Extract error message from content (where MCP server puts the error details)
+                // Content can be an array (from MCP server response) or null (from internal errors)
+                const extractedError = Array.isArray(result.content)
+                  ? result.content
+                      .map((item: { type: string; text?: string }) =>
+                        item.type === "text" && item.text
+                          ? item.text
+                          : JSON.stringify(item),
+                      )
+                      .join("\n")
+                  : null;
+                const errorMessage =
+                  extractedError || result.error || "Tool execution failed";
+                throw new Error(errorMessage);
               }
 
               // Convert MCP content to string for AI SDK
@@ -732,7 +750,7 @@ export async function getChatMcpTools({
                 tokenId: mcpGwToken.tokenId,
                 teamId: mcpGwToken.teamId,
                 isOrganizationToken: mcpGwToken.isOrganizationToken,
-                organizationId,
+                organizationId: mcpGwToken.organizationId,
                 isUserToken: mcpGwToken.isUserToken,
                 userId: mcpGwToken.isUserToken ? userId : undefined,
               }

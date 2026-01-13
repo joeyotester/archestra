@@ -356,6 +356,48 @@ class PromptAgentModel {
   }
 
   /**
+   * Find a prompt_agent by its ID with full details
+   * Used for MCP gateway context where we have the tool but no promptId
+   */
+  static async findByIdWithDetails(id: string): Promise<{
+    id: string;
+    promptId: string;
+    agentPromptId: string;
+    agentPromptName: string;
+    agentPromptSystemPrompt: string | null;
+    profileId: string;
+    profileName: string;
+    organizationId: string;
+  } | null> {
+    const [result] = await db
+      .select({
+        id: schema.promptAgentsTable.id,
+        promptId: schema.promptAgentsTable.promptId,
+        agentPromptId: schema.promptAgentsTable.agentPromptId,
+        // Target prompt details
+        agentPromptName: schema.promptsTable.name,
+        agentPromptSystemPrompt: schema.promptsTable.systemPrompt,
+        organizationId: schema.promptsTable.organizationId,
+        // Target prompt's profile details
+        profileId: schema.agentsTable.id,
+        profileName: schema.agentsTable.name,
+      })
+      .from(schema.promptAgentsTable)
+      .innerJoin(
+        schema.promptsTable,
+        eq(schema.promptAgentsTable.agentPromptId, schema.promptsTable.id),
+      )
+      .innerJoin(
+        schema.agentsTable,
+        eq(schema.promptsTable.agentId, schema.agentsTable.id),
+      )
+      .where(eq(schema.promptAgentsTable.id, id))
+      .limit(1);
+
+    return result || null;
+  }
+
+  /**
    * Check if a prompt has a specific agent assigned
    */
   static async hasAgent(params: {
