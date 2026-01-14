@@ -164,6 +164,10 @@ export const RouteId = {
     "zhipuaiChatCompletionsWithDefaultAgent",
   ZhipuaiChatCompletionsWithAgent: "zhipuaiChatCompletionsWithAgent",
 
+  // Proxy Routes - Bedrock
+  BedrockConverseWithDefaultAgent: "bedrockConverseWithDefaultAgent",
+  BedrockConverseWithAgent: "bedrockConverseWithAgent",
+
   // Chat Routes
   StreamChat: "streamChat",
   GetChatConversations: "getChatConversations",

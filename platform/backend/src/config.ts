@@ -370,6 +370,13 @@ export default {
         process.env.ARCHESTRA_ZHIPUAI_BASE_URL ||
         "https://api.z.ai/api/paas/v4",
     },
+    bedrock: {
+      enabled:
+        Boolean(process.env.ARCHESTRA_BEDROCK_ACCESS_KEY_ID) ||
+        Boolean(process.env.AWS_ACCESS_KEY_ID),
+      region: process.env.ARCHESTRA_BEDROCK_REGION || "us-east-1",
+      useV2Routes: process.env.ARCHESTRA_BEDROCK_USE_V2_ROUTES !== "false",
+    },
   },
   chat: {
     openai: {
@@ -398,6 +405,30 @@ export default {
       baseUrl:
         process.env.ARCHESTRA_CHAT_ZHIPUAI_BASE_URL ||
         "https://api.z.ai/api/paas/v4",
+    },
+    bedrock: {
+      // Bedrock uses AWS credentials instead of API key
+      // Format: accessKeyId:secretAccessKey or use AWS default credentials chain
+      accessKeyId:
+        process.env.ARCHESTRA_CHAT_BEDROCK_ACCESS_KEY_ID ||
+        process.env.ARCHESTRA_BEDROCK_ACCESS_KEY_ID ||
+        process.env.AWS_ACCESS_KEY_ID ||
+        "",
+      secretAccessKey:
+        process.env.ARCHESTRA_CHAT_BEDROCK_SECRET_ACCESS_KEY ||
+        process.env.ARCHESTRA_BEDROCK_SECRET_ACCESS_KEY ||
+        process.env.AWS_SECRET_ACCESS_KEY ||
+        "",
+      sessionToken:
+        process.env.ARCHESTRA_CHAT_BEDROCK_SESSION_TOKEN ||
+        process.env.ARCHESTRA_BEDROCK_SESSION_TOKEN ||
+        process.env.AWS_SESSION_TOKEN ||
+        "",
+      region:
+        process.env.ARCHESTRA_CHAT_BEDROCK_REGION ||
+        process.env.ARCHESTRA_BEDROCK_REGION ||
+        process.env.AWS_REGION ||
+        "us-east-1",
     },
     mcp: {
       remoteServerUrl: process.env.ARCHESTRA_CHAT_MCP_SERVER_URL || "",

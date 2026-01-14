@@ -932,6 +932,7 @@ const providerParsers: Record<SupportedProvider, ErrorParser> = {
   vllm: parseVllmError,
   ollama: parseOllamaError,
   zhipuai: parseZhipuaiError,
+  bedrock: parseAnthropicError, // Bedrock Claude models use Anthropic-like error format
 };
 
 /**
@@ -947,6 +948,7 @@ const providerMappers: Record<SupportedProvider, ErrorMapper> = {
   vllm: mapVllmErrorWrapper,
   ollama: mapOllamaErrorWrapper,
   zhipuai: mapZhipuaiErrorWrapper,
+  bedrock: mapAnthropicErrorWrapper, // Bedrock Claude models use Anthropic-like error format
 };
 
 // =============================================================================
