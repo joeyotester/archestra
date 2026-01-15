@@ -278,6 +278,44 @@ const ollamaConfig: CompressionTestConfig = {
   }),
 };
 
+const bedrockConfig: CompressionTestConfig = {
+  providerName: "Bedrock",
+
+  endpoint: (profileId) => `/v1/bedrock/${profileId}/chat/completions`,
+
+  headers: (wiremockStub) => ({
+    Authorization: `Bearer ${wiremockStub}`,
+    "Content-Type": "application/json",
+  }),
+
+  // Bedrock uses OpenAI-compatible format: tool results are sent as separate "tool" role messages
+  buildRequestWithToolResult: () => ({
+    model: "anthropic.claude-3-5-sonnet-20241022-v2:0",
+    messages: [
+      { role: "user", content: "What files are in the current directory?" },
+      {
+        role: "assistant",
+        content: null,
+        tool_calls: [
+          {
+            id: "call_123",
+            type: "function",
+            function: {
+              name: "list_files",
+              arguments: '{"directory": "."}',
+            },
+          },
+        ],
+      },
+      {
+        role: "tool",
+        tool_call_id: "call_123",
+        content: JSON.stringify(TOOL_RESULT_DATA),
+      },
+    ],
+  }),
+};
+
 // =============================================================================
 // Test Suite
 // =============================================================================
@@ -289,6 +327,7 @@ const testConfigs: CompressionTestConfig[] = [
   cerebrasConfig,
   vllmConfig,
   ollamaConfig,
+  bedrockConfig,
 ];
 
 for (const config of testConfigs) {

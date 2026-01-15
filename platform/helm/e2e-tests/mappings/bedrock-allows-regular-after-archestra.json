@@ -1,0 +1,58 @@
+{
+  "request": {
+    "method": "POST",
+    "urlPath": "/bedrock/v1/chat/completions",
+    "headers": {
+      "Authorization": {
+        "contains": "bedrock-allows-regular-after-archestra"
+      }
+    }
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "jsonBody": {
+      "id": "chatcmpl-bedrock-sequence-123",
+      "object": "chat.completion",
+      "created": 1234567890,
+      "model": "anthropic.claude-3-5-sonnet-20241022-v2:0",
+      "choices": [
+        {
+          "index": 0,
+          "message": {
+            "role": "assistant",
+            "content": null,
+            "refusal": null,
+            "tool_calls": [
+              {
+                "id": "call_whoami_123",
+                "type": "function",
+                "function": {
+                  "name": "archestra__whoami",
+                  "arguments": "{}"
+                }
+              },
+              {
+                "id": "call_read_file_123",
+                "type": "function",
+                "function": {
+                  "name": "read_file",
+                  "arguments": "{\"file_path\":\"/home/user/document.txt\"}"
+                }
+              }
+            ]
+          },
+          "finish_reason": "tool_calls",
+          "logprobs": null
+        }
+      ],
+      "usage": {
+        "prompt_tokens": 150,
+        "completion_tokens": 30,
+        "total_tokens": 180
+      }
+    }
+  }
+}
