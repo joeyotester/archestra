@@ -97,7 +97,8 @@ const PromptInputContent = ({
   return (
     <PromptInput globalDrop multiple onSubmit={onSubmit}>
       <PromptInputHeader className="pt-3">
-        {agentId && (
+        {/* Only show ProfileSelector and ChatToolsDisplay when no agent is selected (no promptId) */}
+        {agentId && !promptId && (
           <div className="flex flex-wrap items-center gap-2">
             <ProfileSelector
               currentAgentId={agentId}

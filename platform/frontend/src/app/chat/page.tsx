@@ -888,7 +888,7 @@ export default function ChatPage() {
 
           <div className="sticky top-0 z-10 bg-background border-b p-2 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              {/* Agent/Profile selector */}
+              {/* Agent/Profile selector - always show */}
               {conversationId ? (
                 <AgentSelector
                   currentPromptId={conversation?.promptId ?? null}
@@ -903,7 +903,7 @@ export default function ChatPage() {
                 />
               )}
 
-              {/* Agent tools display - pending actions stored in localStorage until first message */}
+              {/* Agent tools display - only show when agent is selected */}
               {(conversationId ? conversation?.promptId : initialPromptId) && (
                 <>
                   <AgentToolsDisplay
