@@ -7,6 +7,7 @@ import {
   TOOL_CREATE_MCP_SERVER_INSTALLATION_REQUEST_FULL_NAME,
   TOOL_TODO_WRITE_FULL_NAME,
 } from "@shared";
+import { executeA2AMessage } from "@/agents/a2a-executor";
 import { userHasPermission } from "@/auth/utils";
 import logger from "@/logging";
 import {
@@ -23,7 +24,6 @@ import {
 } from "@/models";
 import { assignToolToAgent } from "@/routes/agent-tool";
 import type { TokenAuthResult } from "@/routes/mcp-gateway.utils";
-import { executeA2AMessage } from "@/services/a2a-executor";
 import type { InternalMcpCatalog } from "@/types";
 import {
   AutonomyPolicyOperator,
@@ -112,6 +112,14 @@ export interface ArchestraContext {
   organizationId?: string;
   /** Token authentication result */
   tokenAuth?: TokenAuthResult;
+  /** Session ID for grouping related LLM requests in logs */
+  sessionId?: string;
+  /**
+   * Delegation chain of prompt IDs (colon-separated).
+   * Used to track the path of delegated agent calls.
+   * E.g., "promptA:promptB" means promptA delegated to promptB.
+   */
+  delegationChain?: string;
 }
 
 /**
@@ -194,6 +202,9 @@ export async function executeArchestraTool(
     }
 
     try {
+      // Use sessionId from context, or fall back to conversationId for chat context
+      const sessionId = context.sessionId || context.conversationId;
+
       logger.info(
         {
           promptId,
@@ -201,6 +212,7 @@ export async function executeArchestraTool(
           agentName: agent.name,
           organizationId,
           userId: userId || "system",
+          sessionId,
         },
         "Executing agent tool",
       );
@@ -210,6 +222,9 @@ export async function executeArchestraTool(
         message,
         organizationId,
         userId: userId || "system",
+        sessionId,
+        // Pass the current delegation chain so the child can extend it
+        parentDelegationChain: context.delegationChain || context.promptId,
       });
 
       return {
