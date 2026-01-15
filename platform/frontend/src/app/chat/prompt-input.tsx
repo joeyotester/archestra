@@ -23,10 +23,10 @@ import {
   PromptInputTools,
   usePromptInputController,
 } from "@/components/ai-elements/prompt-input";
+import { AgentToolsDisplay } from "@/components/chat/agent-tools-display";
 import { ChatApiKeySelector } from "@/components/chat/chat-api-key-selector";
 import { ChatToolsDisplay } from "@/components/chat/chat-tools-display";
 import { ModelSelector } from "@/components/chat/model-selector";
-import { ProfileSelector } from "@/components/chat/profile-selector";
 import type { SupportedChatProvider } from "@/lib/chat-settings.query";
 
 interface ArchestraPromptInputProps {
@@ -55,8 +55,6 @@ interface ArchestraPromptInputProps {
   onProviderChange?: (provider: SupportedChatProvider) => void;
   // Ref for autofocus
   textareaRef?: React.RefObject<HTMLTextAreaElement | null>;
-  /** Callback for profile change in initial chat mode (no conversation) */
-  onProfileChange?: (agentId: string) => void;
   /** Whether file uploads are allowed (controlled by organization setting) */
   allowFileUploads?: boolean;
 }
@@ -77,7 +75,6 @@ const PromptInputContent = ({
   onApiKeyChange,
   onProviderChange,
   textareaRef: externalTextareaRef,
-  onProfileChange,
   allowFileUploads = false,
 }: Omit<ArchestraPromptInputProps, "onSubmit"> & {
   onSubmit: ArchestraPromptInputProps["onSubmit"];
@@ -97,14 +94,17 @@ const PromptInputContent = ({
   return (
     <PromptInput globalDrop multiple onSubmit={onSubmit}>
       <PromptInputHeader className="pt-3">
-        {/* Only show ProfileSelector and ChatToolsDisplay when no agent is selected (no promptId) */}
-        {agentId && !promptId && (
+        {agentId && (
           <div className="flex flex-wrap items-center gap-2">
-            <ProfileSelector
-              currentAgentId={agentId}
-              conversationId={conversationId}
-              onProfileChange={onProfileChange}
-            />
+            {/* Show AgentToolsDisplay when agent IS selected (has promptId) */}
+            {promptId && (
+              <AgentToolsDisplay
+                agentId={agentId}
+                promptId={promptId}
+                conversationId={conversationId}
+              />
+            )}
+            {/* Show ChatToolsDisplay always */}
             <ChatToolsDisplay
               agentId={agentId}
               promptId={promptId}
@@ -185,7 +185,6 @@ const ArchestraPromptInput = ({
   onApiKeyChange,
   onProviderChange,
   textareaRef,
-  onProfileChange,
   allowFileUploads = false,
 }: ArchestraPromptInputProps) => {
   return (
@@ -206,7 +205,6 @@ const ArchestraPromptInput = ({
           onApiKeyChange={onApiKeyChange}
           onProviderChange={onProviderChange}
           textareaRef={textareaRef}
-          onProfileChange={onProfileChange}
           allowFileUploads={allowFileUploads}
         />
       </PromptInputProvider>

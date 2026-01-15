@@ -44,64 +44,69 @@ export function InitialAgentSelector({
   };
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <Button
-          variant="outline"
-          role="combobox"
-          aria-expanded={open}
-          className="h-8 justify-between"
-        >
-          <Bot className="h-3 w-3 shrink-0 opacity-70" />
-          <span className="text-xs font-medium">
-            {currentPrompt?.name || "No agent selected"}
-          </span>
-          {open ? (
-            <ChevronDown className="ml-1 h-3 w-3 shrink-0 opacity-50" />
-          ) : (
-            <ChevronRight className="ml-1 h-3 w-3 shrink-0 opacity-50" />
-          )}
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-[200px] p-0" align="start">
-        <Command>
-          <CommandInput placeholder="Search agent..." className="h-9" />
-          <CommandList>
-            <CommandEmpty>No agent found.</CommandEmpty>
-            <CommandGroup>
-              <CommandItem
-                value="no-agent-selected"
-                onSelect={() => handlePromptSelect(null, defaultAgentId)}
-              >
-                No agent selected
-                <Check
-                  className={cn(
-                    "ml-auto h-4 w-4",
-                    currentPromptId === null ? "opacity-100" : "opacity-0",
-                  )}
-                />
-              </CommandItem>
-              {prompts.map((prompt) => (
+    <div className="flex items-center gap-1.5">
+      <span className="text-xs text-muted-foreground">Agent:</span>
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <Button
+            variant="outline"
+            role="combobox"
+            aria-expanded={open}
+            className="h-8 justify-between"
+          >
+            <Bot className="h-3 w-3 shrink-0 opacity-70" />
+            <span className="text-xs font-medium">
+              {currentPrompt?.name || "No agent selected"}
+            </span>
+            {open ? (
+              <ChevronDown className="ml-1 h-3 w-3 shrink-0 opacity-50" />
+            ) : (
+              <ChevronRight className="ml-1 h-3 w-3 shrink-0 opacity-50" />
+            )}
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-[200px] p-0" align="start">
+          <Command>
+            <CommandInput placeholder="Search agent..." className="h-9" />
+            <CommandList>
+              <CommandEmpty>No agent found.</CommandEmpty>
+              <CommandGroup>
                 <CommandItem
-                  key={prompt.id}
-                  value={prompt.name}
-                  onSelect={() => handlePromptSelect(prompt.id, prompt.agentId)}
+                  value="no-agent-selected"
+                  onSelect={() => handlePromptSelect(null, defaultAgentId)}
                 >
-                  {prompt.name}
+                  No agent selected
                   <Check
                     className={cn(
                       "ml-auto h-4 w-4",
-                      currentPromptId === prompt.id
-                        ? "opacity-100"
-                        : "opacity-0",
+                      currentPromptId === null ? "opacity-100" : "opacity-0",
                     )}
                   />
                 </CommandItem>
-              ))}
-            </CommandGroup>
-          </CommandList>
-        </Command>
-      </PopoverContent>
-    </Popover>
+                {prompts.map((prompt) => (
+                  <CommandItem
+                    key={prompt.id}
+                    value={prompt.name}
+                    onSelect={() =>
+                      handlePromptSelect(prompt.id, prompt.agentId)
+                    }
+                  >
+                    {prompt.name}
+                    <Check
+                      className={cn(
+                        "ml-auto h-4 w-4",
+                        currentPromptId === prompt.id
+                          ? "opacity-100"
+                          : "opacity-0",
+                      )}
+                    />
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            </CommandList>
+          </Command>
+        </PopoverContent>
+      </Popover>
+    </div>
   );
 }

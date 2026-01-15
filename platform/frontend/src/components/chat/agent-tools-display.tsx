@@ -1,15 +1,15 @@
 "use client";
 
-import { Bot } from "lucide-react";
+import { Bot, Wrench } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+  HoverCard,
+  HoverCardContent,
+  HoverCardTrigger,
+} from "@/components/ui/hover-card";
 import {
+  useChatProfileMcpTools,
   useConversationEnabledTools,
   usePromptTools,
   useUpdateConversationEnabledTools,
@@ -22,6 +22,38 @@ import {
 } from "@/lib/pending-tool-state";
 import { usePrompts } from "@/lib/prompts.query";
 import { cn } from "@/lib/utils";
+
+// Component to display tools for a specific agent
+function AgentToolsList({ agentId }: { agentId: string }) {
+  const { data: tools = [], isLoading } = useChatProfileMcpTools(agentId);
+
+  if (isLoading) {
+    return <p className="text-xs text-muted-foreground">Loading tools...</p>;
+  }
+
+  if (tools.length === 0) {
+    return <p className="text-xs text-muted-foreground">No tools available</p>;
+  }
+
+  return (
+    <div className="space-y-1">
+      <p className="text-xs font-medium text-muted-foreground mb-2">
+        Available tools ({tools.length}):
+      </p>
+      <div className="flex flex-wrap gap-1 max-h-[200px] overflow-y-auto">
+        {tools.map((tool) => (
+          <span
+            key={tool.name}
+            className="inline-flex items-center gap-1 text-xs bg-muted px-2 py-0.5 rounded"
+          >
+            <Wrench className="h-3 w-3 opacity-70" />
+            {tool.name}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 interface AgentToolsDisplayProps {
   agentId: string;
@@ -72,7 +104,7 @@ export function AgentToolsDisplay({
   const enabledToolIds = enabledToolsData?.enabledToolIds ?? [];
   const hasCustomSelection = enabledToolsData?.hasCustomSelection ?? false;
 
-  // Map promptTools to their display names
+  // Map promptTools to their display names and matching agent IDs
   const agentToolsWithNames = useMemo(() => {
     return promptTools.map((tool) => {
       const promptName = tool.name.replace(/^agent__/, "");
@@ -82,6 +114,7 @@ export function AgentToolsDisplay({
       return {
         ...tool,
         displayName: matchingPrompt?.name ?? promptName.replace(/_/g, " "),
+        matchingAgentId: matchingPrompt?.agentId,
       };
     });
   }, [promptTools, allPrompts]);
@@ -155,44 +188,61 @@ export function AgentToolsDisplay({
   }
 
   return (
-    <TooltipProvider>
-      <div className="flex items-center gap-1">
-        {agentToolsWithNames.map((tool) => {
-          const isEnabled = isToolEnabled(tool.id);
+    <div className="flex items-center gap-1">
+      {agentToolsWithNames.map((tool) => {
+        const isEnabled = isToolEnabled(tool.id);
 
-          return (
-            <Tooltip key={tool.id}>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="sm"
+        return (
+          <HoverCard key={tool.id} openDelay={200} closeDelay={100}>
+            <HoverCardTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                className={cn(
+                  "h-7 px-2 gap-1.5 text-xs",
+                  !isEnabled && "opacity-60",
+                )}
+              >
+                <span
                   className={cn(
-                    "h-7 px-2 gap-1.5 text-xs",
-                    !isEnabled && "opacity-60",
+                    "h-2 w-2 rounded-full",
+                    isEnabled ? "bg-green-500" : "bg-red-500",
                   )}
-                  onClick={() => handleToggle(tool.id)}
-                >
+                />
+                <Bot className="h-3 w-3" />
+                <span>{tool.displayName}</span>
+              </Button>
+            </HoverCardTrigger>
+            <HoverCardContent
+              className="w-80 cursor-pointer"
+              align="start"
+              onClick={() => handleToggle(tool.id)}
+            >
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-sm font-semibold">{tool.displayName}</h4>
                   <span
                     className={cn(
-                      "h-2 w-2 rounded-full",
-                      isEnabled ? "bg-green-500" : "bg-red-500",
+                      "text-xs px-2 py-0.5 rounded",
+                      isEnabled
+                        ? "bg-green-100 text-green-700"
+                        : "bg-red-100 text-red-700",
                     )}
-                  />
-                  <Bot className="h-3 w-3" />
-                  <span>{tool.displayName}</span>
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>
-                  {isEnabled
-                    ? `Click to disable ${tool.displayName}`
-                    : `Click to enable ${tool.displayName}`}
+                  >
+                    {isEnabled ? "Enabled" : "Disabled"}
+                  </span>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Click to {isEnabled ? "disable" : "enable"} this agent
                 </p>
-              </TooltipContent>
-            </Tooltip>
-          );
-        })}
-      </div>
-    </TooltipProvider>
+                {tool.matchingAgentId && (
+                  <AgentToolsList agentId={tool.matchingAgentId} />
+                )}
+              </div>
+            </HoverCardContent>
+          </HoverCard>
+        );
+      })}
+    </div>
   );
 }

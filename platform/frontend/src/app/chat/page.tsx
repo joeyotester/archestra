@@ -1,7 +1,7 @@
 "use client";
 
 import type { UIMessage } from "@ai-sdk/react";
-import { Eye, EyeOff, FileText, Globe, Plus } from "lucide-react";
+import { Eye, EyeOff, FileText, Globe } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
@@ -18,12 +18,11 @@ import { CustomServerRequestDialog } from "@/app/mcp-catalog/_parts/custom-serve
 import { Message, MessageContent } from "@/components/ai-elements/message";
 import type { PromptInputProps } from "@/components/ai-elements/prompt-input";
 import { Response } from "@/components/ai-elements/response";
-import { AgentSelector } from "@/components/chat/agent-selector";
-import { AgentToolsDisplay } from "@/components/chat/agent-tools-display";
 import { BrowserPanel } from "@/components/chat/browser-panel";
 import { ChatMessages } from "@/components/chat/chat-messages";
+import { CombinedSelector } from "@/components/chat/combined-selector";
 import { ConversationArtifactPanel } from "@/components/chat/conversation-artifact";
-import { InitialAgentSelector } from "@/components/chat/initial-agent-selector";
+import { ProfileEditDialog } from "@/components/chat/profile-edit-dialog";
 import { PromptDialog } from "@/components/chat/prompt-dialog";
 import { PromptVersionHistoryDialog } from "@/components/chat/prompt-version-history-dialog";
 import { StreamTimeoutWarning } from "@/components/chat/stream-timeout-warning";
@@ -142,6 +141,10 @@ export default function ChatPage() {
     (typeof prompts)[number] | null
   >(null);
   const { data: editingPrompt } = usePrompt(editingPromptId || "");
+
+  // Profile edit dialog state
+  const [isProfileEditDialogOpen, setIsProfileEditDialogOpen] = useState(false);
+  const [editingProfileId, setEditingProfileId] = useState<string | null>(null);
 
   // Set initial agent from URL param or default when data loads
   useEffect(() => {
@@ -888,56 +891,37 @@ export default function ChatPage() {
 
           <div className="sticky top-0 z-10 bg-background border-b p-2 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              {/* Agent/Profile selector - always show */}
-              {conversationId ? (
-                <AgentSelector
-                  currentPromptId={conversation?.promptId ?? null}
-                  currentAgentId={conversation?.agentId ?? ""}
-                  currentModel={conversation?.selectedModel ?? ""}
-                />
-              ) : (
-                <InitialAgentSelector
-                  currentPromptId={initialPromptId}
-                  onPromptChange={handleInitialPromptChange}
-                  defaultAgentId={initialAgentId ?? allProfiles[0]?.id ?? ""}
-                />
-              )}
-
-              {/* Agent tools display - only show when agent is selected */}
-              {(conversationId ? conversation?.promptId : initialPromptId) && (
-                <>
-                  <AgentToolsDisplay
-                    agentId={
-                      conversationId
-                        ? (conversation?.agentId ?? "")
-                        : (initialAgentId ?? "")
-                    }
-                    promptId={
-                      conversationId
-                        ? (conversation?.promptId ?? null)
-                        : initialPromptId
-                    }
-                    conversationId={conversationId}
-                  />
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="h-7 px-2 gap-1.5 text-xs border-dashed"
-                    onClick={() => {
-                      const promptIdToEdit = conversationId
-                        ? conversation?.promptId
-                        : initialPromptId;
-                      if (promptIdToEdit) {
-                        setEditingPromptId(promptIdToEdit);
-                        setIsPromptDialogOpen(true);
-                      }
-                    }}
-                  >
-                    <Plus className="h-3 w-3" />
-                    Add agents
-                  </Button>
-                </>
-              )}
+              {/* Combined Agent/Profile selector */}
+              <CombinedSelector
+                currentPromptId={
+                  conversationId
+                    ? (conversation?.promptId ?? null)
+                    : initialPromptId
+                }
+                currentAgentId={
+                  conversationId
+                    ? (conversation?.agentId ?? "")
+                    : (initialAgentId ?? allProfiles[0]?.id ?? "")
+                }
+                currentModel={
+                  conversationId
+                    ? (conversation?.selectedModel ?? "")
+                    : initialModel
+                }
+                conversationId={conversationId}
+                onPromptChange={
+                  conversationId ? undefined : handleInitialPromptChange
+                }
+                onProfileChange={conversationId ? undefined : setInitialAgentId}
+                onEditAgent={(promptId) => {
+                  setEditingPromptId(promptId);
+                  setIsPromptDialogOpen(true);
+                }}
+                onEditProfile={(agentId) => {
+                  setEditingProfileId(agentId);
+                  setIsProfileEditDialogOpen(true);
+                }}
+              />
             </div>
             <div className="flex-1 flex justify-end gap-2 items-center">
               {hasPlaywrightMcp && isBrowserStreamingEnabled && (
@@ -1193,11 +1177,6 @@ export default function ChatPage() {
                       : handleInitialProviderChange
                   }
                   textareaRef={textareaRef}
-                  onProfileChange={
-                    conversationId && conversation?.agent.id
-                      ? undefined
-                      : setInitialAgentId
-                  }
                   initialApiKeyId={
                     conversationId && conversation?.agent.id
                       ? undefined
@@ -1269,6 +1248,17 @@ export default function ChatPage() {
           }
         }}
         prompt={versionHistoryPrompt}
+      />
+
+      <ProfileEditDialog
+        open={isProfileEditDialogOpen}
+        onOpenChange={(open) => {
+          setIsProfileEditDialogOpen(open);
+          if (!open) {
+            setEditingProfileId(null);
+          }
+        }}
+        profileId={editingProfileId}
       />
     </div>
   );
