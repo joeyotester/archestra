@@ -141,7 +141,7 @@ export function LogoUpload({ currentLogo, onLogoChange }: LogoUploadProps) {
         />
 
         <p className="text-sm text-muted-foreground">
-          Recommended size: 200x60px.
+          Recommended size is 200x60px.
         </p>
       </CardContent>
     </Card>
