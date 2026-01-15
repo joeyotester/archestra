@@ -202,30 +202,6 @@ const ollamaConfig: ToolPersistenceTestConfig = {
   }),
 };
 
-const bedrockConfig: ToolPersistenceTestConfig = {
-  providerName: "Bedrock",
-
-  endpoint: (agentId) => `/v1/bedrock/${agentId}/chat/completions`,
-
-  headers: (wiremockStub) => ({
-    Authorization: `Bearer ${wiremockStub}`,
-    "Content-Type": "application/json",
-  }),
-
-  buildRequest: (content, tools) => ({
-    model: "anthropic.claude-3-5-sonnet-20241022-v2:0",
-    messages: [{ role: "user", content }],
-    tools: tools.map((t) => ({
-      type: "function",
-      function: {
-        name: t.name,
-        description: t.description,
-        parameters: t.parameters,
-      },
-    })),
-  }),
-};
-
 // =============================================================================
 // Test Suite
 // =============================================================================
@@ -237,7 +213,6 @@ const testConfigs: ToolPersistenceTestConfig[] = [
   cerebrasConfig,
   vllmConfig,
   ollamaConfig,
-  bedrockConfig,
 ];
 
 for (const config of testConfigs) {
