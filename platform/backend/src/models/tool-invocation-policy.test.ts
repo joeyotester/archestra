@@ -14,8 +14,8 @@ describe("ToolInvocationPolicyModel", () => {
       makeAgentTool,
     }) => {
       const agent = await makeAgent();
-      const tool1 = await makeTool({ agentId: agent.id, name: "tool-1" });
-      const tool2 = await makeTool({ agentId: agent.id, name: "tool-2" });
+      const tool1 = await makeTool({ sourceAgentId: agent.id, name: "tool-1" });
+      const tool2 = await makeTool({ sourceAgentId: agent.id, name: "tool-2" });
       await makeAgentTool(agent.id, tool1.id);
       await makeAgentTool(agent.id, tool2.id);
 
@@ -42,8 +42,8 @@ describe("ToolInvocationPolicyModel", () => {
       makeToolPolicy,
     }) => {
       const agent = await makeAgent();
-      const tool1 = await makeTool({ agentId: agent.id, name: "tool-1" });
-      const tool2 = await makeTool({ agentId: agent.id, name: "tool-2" });
+      const tool1 = await makeTool({ sourceAgentId: agent.id, name: "tool-1" });
+      const tool2 = await makeTool({ sourceAgentId: agent.id, name: "tool-2" });
       await makeAgentTool(agent.id, tool1.id);
       await makeAgentTool(agent.id, tool2.id);
 
@@ -111,7 +111,7 @@ describe("ToolInvocationPolicyModel", () => {
       const agent = await makeAgent();
       await seedAndAssignArchestraTools(agent.id);
 
-      const tool = await makeTool({ agentId: agent.id, name: "regular-tool" });
+      const tool = await makeTool({ sourceAgentId: agent.id, name: "regular-tool" });
       await makeAgentTool(agent.id, tool.id);
 
       await makeToolPolicy(tool.id, {
@@ -162,7 +162,7 @@ describe("ToolInvocationPolicyModel", () => {
       const agent = await makeAgent();
 
       const tool = await makeTool({
-        agentId: agent.id,
+        sourceAgentId: agent.id,
         name: "permissive-tool",
       });
       await makeAgentTool(agent.id, tool.id);
@@ -194,7 +194,7 @@ describe("ToolInvocationPolicyModel", () => {
       makeAgentTool,
     }) => {
       const agent = await makeAgent();
-      const tool = await makeTool({ agentId: agent.id, name: "strict-tool" });
+      const tool = await makeTool({ sourceAgentId: agent.id, name: "strict-tool" });
       await makeAgentTool(agent.id, tool.id);
       // Delete auto-created default policies to test global policy fallback
       await ToolInvocationPolicyModel.deleteByToolId(tool.id);
@@ -219,7 +219,7 @@ describe("ToolInvocationPolicyModel", () => {
       makeAgentTool,
     }) => {
       const agent = await makeAgent();
-      const tool = await makeTool({ agentId: agent.id, name: "lenient-tool" });
+      const tool = await makeTool({ sourceAgentId: agent.id, name: "lenient-tool" });
       await makeAgentTool(agent.id, tool.id);
 
       const result = await ToolInvocationPolicyModel.evaluateBatch(
@@ -241,7 +241,7 @@ describe("ToolInvocationPolicyModel", () => {
       makeToolPolicy,
     }) => {
       const agent = await makeAgent();
-      const tool = await makeTool({ agentId: agent.id, name: "blocked-tool" });
+      const tool = await makeTool({ sourceAgentId: agent.id, name: "blocked-tool" });
       await makeAgentTool(agent.id, tool.id);
 
       // Create a block policy - should be ignored in YOLO mode
@@ -271,7 +271,7 @@ describe("ToolInvocationPolicyModel", () => {
       makeToolPolicy,
     }) => {
       const agent = await makeAgent();
-      const tool = await makeTool({ agentId: agent.id, name: "guarded-tool" });
+      const tool = await makeTool({ sourceAgentId: agent.id, name: "guarded-tool" });
       await makeAgentTool(agent.id, tool.id);
 
       // Specific policy that allows certain paths in untrusted context
@@ -305,7 +305,7 @@ describe("ToolInvocationPolicyModel", () => {
       makeToolPolicy,
     }) => {
       const agent = await makeAgent();
-      const tool = await makeTool({ agentId: agent.id, name: "email-tool" });
+      const tool = await makeTool({ sourceAgentId: agent.id, name: "email-tool" });
       await makeAgentTool(agent.id, tool.id);
 
       // Default allow policy
@@ -349,7 +349,7 @@ describe("ToolInvocationPolicyModel", () => {
       const agent = await makeAgent();
 
       // Tool 1: allowed with default policy
-      const tool1 = await makeTool({ agentId: agent.id, name: "allowed-tool" });
+      const tool1 = await makeTool({ sourceAgentId: agent.id, name: "allowed-tool" });
       await makeAgentTool(agent.id, tool1.id);
       await makeToolPolicy(tool1.id, {
         conditions: [],
@@ -358,7 +358,7 @@ describe("ToolInvocationPolicyModel", () => {
       });
 
       // Tool 2: will be blocked by specific policy
-      const tool2 = await makeTool({ agentId: agent.id, name: "blocked-tool" });
+      const tool2 = await makeTool({ sourceAgentId: agent.id, name: "blocked-tool" });
       await makeAgentTool(agent.id, tool2.id);
       await makeToolPolicy(tool2.id, {
         conditions: [],
@@ -373,7 +373,7 @@ describe("ToolInvocationPolicyModel", () => {
 
       // Tool 3: would also be blocked, but tool 2 should be returned first
       const tool3 = await makeTool({
-        agentId: agent.id,
+        sourceAgentId: agent.id,
         name: "another-blocked",
       });
       await makeAgentTool(agent.id, tool3.id);
@@ -408,7 +408,7 @@ describe("ToolInvocationPolicyModel", () => {
         makeToolPolicy,
       }) => {
         const agent = await makeAgent();
-        const tool = await makeTool({ agentId: agent.id, name: "test-tool" });
+        const tool = await makeTool({ sourceAgentId: agent.id, name: "test-tool" });
         await makeAgentTool(agent.id, tool.id);
 
         await makeToolPolicy(tool.id, {
@@ -443,7 +443,7 @@ describe("ToolInvocationPolicyModel", () => {
         makeToolPolicy,
       }) => {
         const agent = await makeAgent();
-        const tool = await makeTool({ agentId: agent.id, name: "test-tool" });
+        const tool = await makeTool({ sourceAgentId: agent.id, name: "test-tool" });
         await makeAgentTool(agent.id, tool.id);
 
         await makeToolPolicy(tool.id, {
@@ -480,7 +480,7 @@ describe("ToolInvocationPolicyModel", () => {
         makeToolPolicy,
       }) => {
         const agent = await makeAgent();
-        const tool = await makeTool({ agentId: agent.id, name: "test-tool" });
+        const tool = await makeTool({ sourceAgentId: agent.id, name: "test-tool" });
         await makeAgentTool(agent.id, tool.id);
 
         await makeToolPolicy(tool.id, {
@@ -527,7 +527,7 @@ describe("ToolInvocationPolicyModel", () => {
         makeToolPolicy,
       }) => {
         const agent = await makeAgent();
-        const tool = await makeTool({ agentId: agent.id, name: "test-tool" });
+        const tool = await makeTool({ sourceAgentId: agent.id, name: "test-tool" });
         await makeAgentTool(agent.id, tool.id);
 
         await makeToolPolicy(tool.id, {
@@ -574,7 +574,7 @@ describe("ToolInvocationPolicyModel", () => {
         makeToolPolicy,
       }) => {
         const agent = await makeAgent();
-        const tool = await makeTool({ agentId: agent.id, name: "test-tool" });
+        const tool = await makeTool({ sourceAgentId: agent.id, name: "test-tool" });
         await makeAgentTool(agent.id, tool.id);
 
         await makeToolPolicy(tool.id, {
@@ -614,7 +614,7 @@ describe("ToolInvocationPolicyModel", () => {
         makeToolPolicy,
       }) => {
         const agent = await makeAgent();
-        const tool = await makeTool({ agentId: agent.id, name: "test-tool" });
+        const tool = await makeTool({ sourceAgentId: agent.id, name: "test-tool" });
         await makeAgentTool(agent.id, tool.id);
 
         await makeToolPolicy(tool.id, {
@@ -649,7 +649,7 @@ describe("ToolInvocationPolicyModel", () => {
         makeToolPolicy,
       }) => {
         const agent = await makeAgent();
-        const tool = await makeTool({ agentId: agent.id, name: "test-tool" });
+        const tool = await makeTool({ sourceAgentId: agent.id, name: "test-tool" });
         await makeAgentTool(agent.id, tool.id);
 
         await makeToolPolicy(tool.id, {
@@ -702,7 +702,7 @@ describe("ToolInvocationPolicyModel", () => {
         makeToolPolicy,
       }) => {
         const agent = await makeAgent();
-        const tool = await makeTool({ agentId: agent.id, name: "test-tool" });
+        const tool = await makeTool({ sourceAgentId: agent.id, name: "test-tool" });
         await makeAgentTool(agent.id, tool.id);
 
         await makeToolPolicy(tool.id, {
@@ -753,7 +753,7 @@ describe("ToolInvocationPolicyModel", () => {
         makeToolPolicy,
       }) => {
         const agent = await makeAgent();
-        const tool = await makeTool({ agentId: agent.id, name: "test-tool" });
+        const tool = await makeTool({ sourceAgentId: agent.id, name: "test-tool" });
         await makeAgentTool(agent.id, tool.id);
         // Delete auto-created default policies to test global policy fallback
         await ToolInvocationPolicyModel.deleteByToolId(tool.id);
@@ -788,7 +788,7 @@ describe("ToolInvocationPolicyModel", () => {
         makeToolPolicy,
       }) => {
         const agent = await makeAgent();
-        const tool = await makeTool({ agentId: agent.id, name: "test-tool" });
+        const tool = await makeTool({ sourceAgentId: agent.id, name: "test-tool" });
         await makeAgentTool(agent.id, tool.id);
 
         await makeToolPolicy(tool.id, {
@@ -818,7 +818,7 @@ describe("ToolInvocationPolicyModel", () => {
         makeToolPolicy,
       }) => {
         const agent = await makeAgent();
-        const tool = await makeTool({ agentId: agent.id, name: "test-tool" });
+        const tool = await makeTool({ sourceAgentId: agent.id, name: "test-tool" });
         await makeAgentTool(agent.id, tool.id);
 
         // Default policy: block in untrusted context
@@ -861,7 +861,7 @@ describe("ToolInvocationPolicyModel", () => {
         makeToolPolicy,
       }) => {
         const agent = await makeAgent();
-        const tool = await makeTool({ agentId: agent.id, name: "test-tool" });
+        const tool = await makeTool({ sourceAgentId: agent.id, name: "test-tool" });
         await makeAgentTool(agent.id, tool.id);
         // Delete auto-created default policies to set up our own
         await ToolInvocationPolicyModel.deleteByToolId(tool.id);
@@ -908,7 +908,7 @@ describe("ToolInvocationPolicyModel", () => {
         makeToolPolicy,
       }) => {
         const agent = await makeAgent();
-        const tool = await makeTool({ agentId: agent.id, name: "test-tool" });
+        const tool = await makeTool({ sourceAgentId: agent.id, name: "test-tool" });
         await makeAgentTool(agent.id, tool.id);
 
         await makeToolPolicy(tool.id, {
@@ -944,7 +944,7 @@ describe("ToolInvocationPolicyModel", () => {
         makeToolPolicy,
       }) => {
         const agent = await makeAgent();
-        const tool = await makeTool({ agentId: agent.id, name: "test-tool" });
+        const tool = await makeTool({ sourceAgentId: agent.id, name: "test-tool" });
         await makeAgentTool(agent.id, tool.id);
 
         await makeToolPolicy(tool.id, {
@@ -979,7 +979,7 @@ describe("ToolInvocationPolicyModel", () => {
         makeToolPolicy,
       }) => {
         const agent = await makeAgent();
-        const tool = await makeTool({ agentId: agent.id, name: "mixed-tool" });
+        const tool = await makeTool({ sourceAgentId: agent.id, name: "mixed-tool" });
         await makeAgentTool(agent.id, tool.id);
 
         await makeToolPolicy(tool.id, {
@@ -1038,7 +1038,7 @@ describe("ToolInvocationPolicyModel", () => {
         makeToolPolicy,
       }) => {
         const agent = await makeAgent();
-        const tool = await makeTool({ agentId: agent.id, name: "test-tool" });
+        const tool = await makeTool({ sourceAgentId: agent.id, name: "test-tool" });
         await makeAgentTool(agent.id, tool.id);
 
         await makeToolPolicy(tool.id, {
@@ -1075,7 +1075,7 @@ describe("ToolInvocationPolicyModel", () => {
         makeToolPolicy,
       }) => {
         const agent = await makeAgent();
-        const tool = await makeTool({ agentId: agent.id, name: "test-tool" });
+        const tool = await makeTool({ sourceAgentId: agent.id, name: "test-tool" });
         await makeAgentTool(agent.id, tool.id);
 
         await makeToolPolicy(tool.id, {
@@ -1111,7 +1111,7 @@ describe("ToolInvocationPolicyModel", () => {
         makeToolPolicy,
       }) => {
         const agent = await makeAgent();
-        const tool = await makeTool({ agentId: agent.id, name: "test-tool" });
+        const tool = await makeTool({ sourceAgentId: agent.id, name: "test-tool" });
         await makeAgentTool(agent.id, tool.id);
 
         await makeToolPolicy(tool.id, {
@@ -1148,7 +1148,7 @@ describe("ToolInvocationPolicyModel", () => {
         makeToolPolicy,
       }) => {
         const agent = await makeAgent();
-        const tool = await makeTool({ agentId: agent.id, name: "test-tool" });
+        const tool = await makeTool({ sourceAgentId: agent.id, name: "test-tool" });
         await makeAgentTool(agent.id, tool.id);
 
         await makeToolPolicy(tool.id, {
@@ -1184,7 +1184,7 @@ describe("ToolInvocationPolicyModel", () => {
         makeToolPolicy,
       }) => {
         const agent = await makeAgent();
-        const tool = await makeTool({ agentId: agent.id, name: "test-tool" });
+        const tool = await makeTool({ sourceAgentId: agent.id, name: "test-tool" });
         await makeAgentTool(agent.id, tool.id);
 
         await makeToolPolicy(tool.id, {

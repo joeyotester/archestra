@@ -127,13 +127,13 @@ describe("ToolModel", () => {
       const agent2 = await makeAgent({ name: "Agent2" });
 
       await makeTool({
-        agentId: agent1.id,
+        sourceAgentId: agent1.id,
         name: "tool1",
         description: "Tool 1",
       });
 
       await makeTool({
-        agentId: agent2.id,
+        sourceAgentId: agent2.id,
         name: "tool2",
         description: "Tool 2",
         parameters: {},
@@ -169,14 +169,14 @@ describe("ToolModel", () => {
       const agent2 = await makeAgent({ name: "Agent2", teams: [team2.id] });
 
       const tool1 = await makeTool({
-        agentId: agent1.id,
+        sourceAgentId: agent1.id,
         name: "tool1",
         description: "Tool 1",
         parameters: {},
       });
 
       await makeTool({
-        agentId: agent2.id,
+        sourceAgentId: agent2.id,
         name: "tool2",
         description: "Tool 2",
         parameters: {},
@@ -196,7 +196,7 @@ describe("ToolModel", () => {
       const agent1 = await makeAgent({ name: "Agent1" });
 
       await makeTool({
-        agentId: agent1.id,
+        sourceAgentId: agent1.id,
         name: "tool1",
         description: "Tool 1",
       });
@@ -214,7 +214,7 @@ describe("ToolModel", () => {
       const agent = await makeAgent();
 
       const tool = await makeTool({
-        agentId: agent.id,
+        sourceAgentId: agent.id,
         name: "test-tool",
         description: "Test Tool",
         parameters: {},
@@ -244,7 +244,7 @@ describe("ToolModel", () => {
       const agent = await makeAgent({ teams: [team.id] });
 
       const tool = await makeTool({
-        agentId: agent.id,
+        sourceAgentId: agent.id,
         name: "test-tool",
         description: "Test Tool",
         parameters: {},
@@ -264,7 +264,7 @@ describe("ToolModel", () => {
       const agent = await makeAgent();
 
       const tool = await makeTool({
-        agentId: agent.id,
+        sourceAgentId: agent.id,
         name: "test-tool",
         description: "Test Tool",
         parameters: {},
@@ -283,7 +283,7 @@ describe("ToolModel", () => {
       const agent = await makeAgent();
 
       await makeTool({
-        agentId: agent.id,
+        sourceAgentId: agent.id,
         name: "unique-tool",
         description: "Unique Tool",
         parameters: {},
@@ -313,7 +313,7 @@ describe("ToolModel", () => {
       const agent = await makeAgent({ teams: [team.id] });
 
       await makeTool({
-        agentId: agent.id,
+        sourceAgentId: agent.id,
         name: "user-tool",
         description: "User Tool",
         parameters: {},
@@ -333,7 +333,7 @@ describe("ToolModel", () => {
       const agent = await makeAgent();
 
       await makeTool({
-        agentId: agent.id,
+        sourceAgentId: agent.id,
         name: "restricted-tool",
         description: "Restricted Tool",
         parameters: {},
@@ -368,9 +368,9 @@ describe("ToolModel", () => {
       const _user = await makeUser();
       const agent = await makeAgent();
 
-      // Create a proxy-sniffed tool (no mcpServerId)
+      // Create an autodiscovered tool (no mcpServerId)
       await makeTool({
-        agentId: agent.id,
+        sourceAgentId: agent.id,
         name: "proxy_tool",
         description: "Proxy Tool",
         parameters: {},
@@ -538,7 +538,7 @@ describe("ToolModel", () => {
       expect(result).toEqual([]);
     });
 
-    test("excludes proxy-sniffed tools (tools with agentId set)", async ({
+    test("excludes autodiscovered tools (tools with sourceAgentId set)", async ({
       makeUser,
       makeAgent,
       makeInternalMcpCatalog,
@@ -559,15 +559,15 @@ describe("ToolModel", () => {
         ownerId: user.id,
       });
 
-      // Create a proxy-sniffed tool (with agentId)
+      // Create an autodiscovered tool (with sourceAgentId)
       await makeTool({
-        agentId: agent.id,
+        sourceAgentId: agent.id,
         name: "proxy_tool",
         description: "Proxy Tool",
         parameters: {},
       });
 
-      // Create an MCP tool (no agentId, linked via mcpServerId)
+      // Create an MCP tool (no sourceAgentId, linked via mcpServerId)
       const mcpTool = await makeTool({
         name: "mcp_tool",
         description: "MCP Tool",
@@ -584,7 +584,7 @@ describe("ToolModel", () => {
         agent.id,
       );
 
-      // Should only return the MCP tool, not the proxy-sniffed tool
+      // Should only return the MCP tool, not the autodiscovered tool
       expect(result).toHaveLength(1);
       expect(result[0].toolName).toBe("mcp_tool");
     });
@@ -906,7 +906,7 @@ describe("ToolModel", () => {
       createdTools.forEach((tool) => {
         expect(tool.catalogId).toBe(catalog.id);
         expect(tool.mcpServerId).toBe(mcpServer.id);
-        expect(tool.agentId).toBeNull();
+        expect(tool.sourceAgentId).toBeNull();
       });
     });
 
@@ -1044,7 +1044,7 @@ describe("ToolModel", () => {
   });
 
   describe("bulkCreateProxyToolsIfNotExists", () => {
-    test("creates multiple proxy-sniffed tools for an agent in bulk", async ({
+    test("creates multiple autodiscovered tools for an agent in bulk", async ({
       makeAgent,
     }) => {
       const agent = await makeAgent({ name: "Test Agent" });
@@ -1077,9 +1077,9 @@ describe("ToolModel", () => {
       expect(createdTools.map((t) => t.name)).toContain("proxy-tool-2");
       expect(createdTools.map((t) => t.name)).toContain("proxy-tool-3");
 
-      // Verify all tools have correct agentId and null catalogId
+      // Verify all tools have correct sourceAgentId and null catalogId
       for (const tool of createdTools) {
-        expect(tool.agentId).toBe(agent.id);
+        expect(tool.sourceAgentId).toBe(agent.id);
         expect(tool.catalogId).toBeNull();
         expect(tool.mcpServerId).toBeNull();
       }
@@ -1094,7 +1094,7 @@ describe("ToolModel", () => {
       // Create one tool manually
       const existingTool = await makeTool({
         name: "proxy-tool-1",
-        agentId: agent.id,
+        sourceAgentId: agent.id,
         description: "Existing tool",
       });
 
@@ -1217,7 +1217,7 @@ describe("ToolModel", () => {
 
       // Should create a new tool for agent2 (not return agent1's tool)
       expect(result).toHaveLength(1);
-      expect(result[0].agentId).toBe(agent2.id);
+      expect(result[0].sourceAgentId).toBe(agent2.id);
       expect(result[0].name).toBe("shared-name-tool");
     });
 

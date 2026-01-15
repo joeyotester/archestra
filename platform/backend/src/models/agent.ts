@@ -532,7 +532,7 @@ class AgentModel {
     const tools = await db
       .select()
       .from(schema.toolsTable)
-      .where(eq(schema.toolsTable.agentId, updatedAgent.id));
+      .where(eq(schema.toolsTable.sourceAgentId, updatedAgent.id));
 
     // Fetch current teams and labels
     const currentTeams = await AgentTeamModel.getTeamDetailsForAgent(id);

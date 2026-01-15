@@ -20,17 +20,17 @@ export const SelectToolSchema = createSelectSchema(schema.toolsTable, {
 });
 
 export const ExtendedSelectToolSchema = SelectToolSchema.omit({
-  agentId: true,
+  sourceAgentId: true,
   mcpServerId: true,
 }).extend({
-  // Nullable for MCP tools
-  agent: z
+  // Nullable for MCP tools, set for autodiscovered tools
+  sourceAgent: z
     .object({
       id: z.string(),
       name: z.string(),
     })
     .nullable(),
-  // Nullable for tools "sniffed" from LLM proxy requests
+  // Nullable for autodiscovered tools
   mcpServer: z
     .object({
       id: z.string(),

@@ -96,7 +96,7 @@ async function seedMockData() {
   // Step 4: Create agent-tool relationships
   logger.info("\nCreating agent-tool relationships...");
   const agentToolData = toolData.map((tool) => ({
-    agentId: tool.agentId,
+    agentId: tool.sourceAgentId,
     toolId: tool.id,
     allowUsageWhenUntrustedDataIsPresent:
       tool.allowUsageWhenUntrustedDataIsPresent || false,
@@ -114,8 +114,8 @@ async function seedMockData() {
   // Group tools by agent for efficient lookup
   const toolsByAgent = new Map<string, typeof toolData>();
   for (const tool of toolData) {
-    const existing = toolsByAgent.get(tool.agentId) || [];
-    toolsByAgent.set(tool.agentId, [...existing, tool]);
+    const existing = toolsByAgent.get(tool.sourceAgentId) || [];
+    toolsByAgent.set(tool.sourceAgentId, [...existing, tool]);
   }
 
   const interactionData = generateMockInteractions(

@@ -195,7 +195,7 @@ async function makeTool(
       | "parameters"
       | "catalogId"
       | "mcpServerId"
-      | "agentId"
+      | "sourceAgentId"
     >
   > = {},
 ): Promise<Tool> {

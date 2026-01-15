@@ -14,7 +14,7 @@ describe("trusted-data evaluation (provider-agnostic)", () => {
 
     // Create test tool
     await ToolModel.createToolIfNotExists({
-      agentId,
+      sourceAgentId: agentId,
       name: "get_emails",
       parameters: {},
       description: "Get emails",
@@ -340,7 +340,7 @@ describe("trusted-data evaluation (provider-agnostic)", () => {
     test("marks context as trusted when tool has trusted default policy", async () => {
       // Create a tool with trusted default policy
       await ToolModel.createToolIfNotExists({
-        agentId,
+        sourceAgentId: agentId,
         name: "trusted_tool",
         parameters: {},
         description: "Tool that trusts data by default",
@@ -392,7 +392,7 @@ describe("trusted-data evaluation (provider-agnostic)", () => {
     test("block policies override trusted default policy", async () => {
       // Create a tool with trusted default policy
       await ToolModel.createToolIfNotExists({
-        agentId,
+        sourceAgentId: agentId,
         name: "default_trusted_tool",
         parameters: {},
         description: "Tool that trusts data by default",

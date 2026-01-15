@@ -116,7 +116,7 @@ export const TOOL_NAMES = [
 
 export interface MockTool {
   id: string;
-  agentId: string;
+  sourceAgentId: string;
   name: string;
   description: string;
   parameters: Record<string, unknown>;
@@ -135,12 +135,12 @@ export function generateMockTools(
 ): MockTool[] {
   return toolNames.map((name, index) => {
     // Distribute tools across agents
-    const agentId = agentIds[index % agentIds.length];
+    const sourceAgentId = agentIds[index % agentIds.length];
     const agentName = `Agent ${index % agentIds.length}`;
 
     return {
       id: randomUUID(),
-      agentId,
+      sourceAgentId,
       name,
       description: `${name.replace(/_/g, " ")} tool for ${agentName}`,
       parameters: generateRandomParameters(name),

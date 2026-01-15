@@ -91,7 +91,7 @@ const mockTool = {
   policiesAutoConfiguredReasoning: null,
   createdAt: new Date(),
   updatedAt: new Date(),
-  agent: null,
+  sourceAgent: null,
   mcpServer: { id: "server-1", name: "test-server" },
 };
 

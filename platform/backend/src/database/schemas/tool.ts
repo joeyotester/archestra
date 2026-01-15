@@ -16,22 +16,23 @@ const toolsTable = pgTable(
   "tools",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    // agentId is nullable - null for MCP tools, set for proxy-sniffed tools
-    agentId: uuid("agent_id").references(() => agentsTable.id, {
+    // sourceAgentId is nullable - null for MCP tools, set for autodiscovered tools
+    // Identifies which agent/profile discovered this tool (e.g., via Claude Code proxy)
+    sourceAgentId: uuid("source_agent_id").references(() => agentsTable.id, {
       onDelete: "cascade",
     }),
     // catalogId links MCP tools to their catalog item (shared across installations)
-    // null for proxy-sniffed tools
+    // null for autodiscovered tools
     catalogId: uuid("catalog_id").references(() => mcpCatalogTable.id, {
       onDelete: "cascade",
     }),
     // mcpServerId indicates which MCP server discovered this tool (metadata)
-    // null for proxy-sniffed tools or if the discovering server was deleted
+    // null for autodiscovered tools or if the discovering server was deleted
     mcpServerId: uuid("mcp_server_id").references(() => mcpServerTable.id, {
       onDelete: "set null",
     }),
     // promptAgentId links agent delegation tools to their prompt_agent relationship
-    // null for MCP tools, Archestra tools, and proxy-sniffed tools
+    // null for MCP tools, Archestra tools, and autodiscovered tools
     // When set, the tool is a prompt-specific agent delegation tool (NOT in agent_tools)
     promptAgentId: uuid("prompt_agent_id").references(
       () => promptAgentsTable.id,
@@ -64,12 +65,12 @@ const toolsTable = pgTable(
   (table) => [
     // Unique constraint ensures:
     // - For MCP tools: one tool per (catalogId, name) combination
-    // - For proxy-sniffed tools: one tool per (agentId, name) combination
+    // - For autodiscovered tools: one tool per (sourceAgentId, name) combination
     // - For agent delegation tools: one tool per promptAgentId
     unique().on(
       table.catalogId,
       table.name,
-      table.agentId,
+      table.sourceAgentId,
       table.promptAgentId,
     ),
   ],

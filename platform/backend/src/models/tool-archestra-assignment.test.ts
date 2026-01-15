@@ -117,9 +117,9 @@ describe("Archestra Tools Dynamic Assignment", () => {
     // Seed and assign Archestra tools first
     await seedAndAssignArchestraTools(agent.id);
 
-    // Create a proxy-discovered tool (agentId set, catalogId null)
+    // Create an autodiscovered tool (sourceAgentId set, catalogId null)
     await makeTool({
-      agentId: agent.id,
+      sourceAgentId: agent.id,
       name: "proxy_discovered_tool",
       description: "Proxy discovered tool",
       parameters: {},

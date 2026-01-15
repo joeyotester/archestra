@@ -96,15 +96,15 @@ class ToolModel {
   }
 
   static async createToolIfNotExists(tool: InsertTool): Promise<Tool> {
-    // For Archestra built-in tools (both agentId and catalogId are null), check if tool already exists
+    // For Archestra built-in tools (both sourceAgentId and catalogId are null), check if tool already exists
     // This prevents duplicate Archestra tools since NULL != NULL in unique constraints
-    if (!tool.agentId && !tool.catalogId) {
+    if (!tool.sourceAgentId && !tool.catalogId) {
       const [existingTool] = await db
         .select()
         .from(schema.toolsTable)
         .where(
           and(
-            isNull(schema.toolsTable.agentId),
+            isNull(schema.toolsTable.sourceAgentId),
             isNull(schema.toolsTable.catalogId),
             eq(schema.toolsTable.name, tool.name),
           ),
@@ -115,15 +115,15 @@ class ToolModel {
       }
     }
 
-    // For proxy-sniffed tools (agentId is set, catalogId is null), check if tool already exists
-    // This prevents duplicate proxy-sniffed tools for the same agent
-    if (tool.agentId && !tool.catalogId) {
+    // For autodiscovered tools (sourceAgentId is set, catalogId is null), check if tool already exists
+    // This prevents duplicate autodiscovered tools for the same agent
+    if (tool.sourceAgentId && !tool.catalogId) {
       const [existingTool] = await db
         .select()
         .from(schema.toolsTable)
         .where(
           and(
-            eq(schema.toolsTable.agentId, tool.agentId),
+            eq(schema.toolsTable.sourceAgentId, tool.sourceAgentId),
             eq(schema.toolsTable.name, tool.name),
             isNull(schema.toolsTable.catalogId),
           ),
@@ -134,15 +134,15 @@ class ToolModel {
       }
     }
 
-    // For MCP tools (agentId is null, catalogId is set), check if tool with same catalog and name already exists
+    // For MCP tools (sourceAgentId is null, catalogId is set), check if tool with same catalog and name already exists
     // This allows multiple installations of the same catalog to share tool definitions
-    if (!tool.agentId && tool.catalogId) {
+    if (!tool.sourceAgentId && tool.catalogId) {
       const [existingTool] = await db
         .select()
         .from(schema.toolsTable)
         .where(
           and(
-            isNull(schema.toolsTable.agentId),
+            isNull(schema.toolsTable.sourceAgentId),
             eq(schema.toolsTable.catalogId, tool.catalogId),
             eq(schema.toolsTable.name, tool.name),
           ),
@@ -165,19 +165,19 @@ class ToolModel {
         .select()
         .from(schema.toolsTable)
         .where(
-          tool.agentId
+          tool.sourceAgentId
             ? and(
-                eq(schema.toolsTable.agentId, tool.agentId),
+                eq(schema.toolsTable.sourceAgentId, tool.sourceAgentId),
                 eq(schema.toolsTable.name, tool.name),
               )
             : tool.catalogId
               ? and(
-                  isNull(schema.toolsTable.agentId),
+                  isNull(schema.toolsTable.sourceAgentId),
                   eq(schema.toolsTable.catalogId, tool.catalogId),
                   eq(schema.toolsTable.name, tool.name),
                 )
               : and(
-                  isNull(schema.toolsTable.agentId),
+                  isNull(schema.toolsTable.sourceAgentId),
                   isNull(schema.toolsTable.catalogId),
                   eq(schema.toolsTable.name, tool.name),
                 ),
@@ -229,10 +229,10 @@ class ToolModel {
     }
 
     // Check access control for non-agent admins
-    if (tool.agentId && userId && !isAgentAdmin) {
+    if (tool.sourceAgentId && userId && !isAgentAdmin) {
       const hasAccess = await AgentTeamModel.userHasAgentAccess(
         userId,
-        tool.agentId,
+        tool.sourceAgentId,
         false,
       );
       if (!hasAccess) {
@@ -263,7 +263,7 @@ class ToolModel {
           schema.toolsTable.policiesAutoConfiguringStartedAt,
         policiesAutoConfiguredReasoning:
           schema.toolsTable.policiesAutoConfiguredReasoning,
-        agent: {
+        sourceAgent: {
           id: schema.agentsTable.id,
           name: schema.agentsTable.name,
         },
@@ -275,7 +275,7 @@ class ToolModel {
       .from(schema.toolsTable)
       .leftJoin(
         schema.agentsTable,
-        eq(schema.toolsTable.agentId, schema.agentsTable.id),
+        eq(schema.toolsTable.sourceAgentId, schema.agentsTable.id),
       )
       .leftJoin(
         schema.mcpServersTable,
@@ -303,7 +303,7 @@ class ToolModel {
       } else {
         query = query.where(
           or(
-            inArray(schema.toolsTable.agentId, accessibleAgentIds),
+            inArray(schema.toolsTable.sourceAgentId, accessibleAgentIds),
             mcpServerSourceClause,
           ),
         );
@@ -328,10 +328,10 @@ class ToolModel {
     }
 
     // Check access control for non-admins
-    if (tool.agentId && userId && !isAgentAdmin) {
+    if (tool.sourceAgentId && userId && !isAgentAdmin) {
       const hasAccess = await AgentTeamModel.userHasAgentAccess(
         userId,
-        tool.agentId,
+        tool.sourceAgentId,
         false,
       );
       if (!hasAccess) {
@@ -343,8 +343,8 @@ class ToolModel {
   }
 
   /**
-   * Get all tools for an agent (both proxy-sniffed and MCP tools)
-   * Proxy-sniffed tools are those with agentId set directly
+   * Get all tools for an agent (both autodiscovered and MCP tools)
+   * Autodiscovered tools are those with sourceAgentId set directly
    * MCP tools are those assigned via the agent_tools junction table
    */
   static async getToolsByAgent(agentId: string): Promise<Tool[]> {
@@ -352,9 +352,9 @@ class ToolModel {
     const assignedToolIds = await AgentToolModel.findToolIdsByAgent(agentId);
 
     // Query for tools that are either:
-    // 1. Directly associated with the agent (proxy-sniffed, agentId set)
-    // 2. Assigned via junction table (MCP tools, agentId is null)
-    const conditions = [eq(schema.toolsTable.agentId, agentId)];
+    // 1. Directly associated with the agent (autodiscovered, sourceAgentId set)
+    // 2. Assigned via junction table (MCP tools, sourceAgentId is null)
+    const conditions = [eq(schema.toolsTable.sourceAgentId, agentId)];
 
     if (assignedToolIds.length > 0) {
       conditions.push(inArray(schema.toolsTable.id, assignedToolIds));
@@ -372,7 +372,7 @@ class ToolModel {
   /**
    * Get only MCP tools assigned to an agent (those from connected MCP servers)
    * Includes: MCP server tools (catalogId set, including Archestra builtin tools)
-   * Excludes: proxy-discovered tools (agentId set, catalogId null)
+   * Excludes: autodiscovered tools (sourceAgentId set, catalogId null)
    *
    * Note: Archestra tools are no longer automatically assigned - they must be
    * explicitly assigned like any other MCP server tools.
@@ -387,7 +387,7 @@ class ToolModel {
 
     // Return tools that are assigned via junction table AND have catalogId set
     // This includes both regular MCP server tools and Archestra builtin tools
-    // Excludes proxy-discovered tools which have agentId set and catalogId null
+    // Excludes autodiscovered tools which have sourceAgentId set and catalogId null
     const tools = await db
       .select()
       .from(schema.toolsTable)
@@ -430,7 +430,7 @@ class ToolModel {
       .from(schema.toolsTable)
       .where(
         and(
-          isNull(schema.toolsTable.agentId),
+          isNull(schema.toolsTable.sourceAgentId),
           eq(schema.toolsTable.catalogId, catalogId),
           inArray(schema.toolsTable.name, toolNames),
         ),
@@ -453,7 +453,7 @@ class ToolModel {
           parameters: tool.parameters,
           catalogId: tool.catalogId,
           mcpServerId: tool.mcpServerId,
-          agentId: null,
+          sourceAgentId: null,
         });
       }
     }
@@ -484,7 +484,7 @@ class ToolModel {
             .from(schema.toolsTable)
             .where(
               and(
-                isNull(schema.toolsTable.agentId),
+                isNull(schema.toolsTable.sourceAgentId),
                 eq(schema.toolsTable.catalogId, catalogId),
                 inArray(schema.toolsTable.name, missingNames),
               ),
@@ -540,7 +540,7 @@ class ToolModel {
       .where(
         and(
           isNull(schema.toolsTable.catalogId),
-          isNull(schema.toolsTable.agentId),
+          isNull(schema.toolsTable.sourceAgentId),
           inArray(schema.toolsTable.name, archestraToolNames),
         ),
       );
@@ -569,7 +569,7 @@ class ToolModel {
           description: archestraTool.description || null,
           parameters: archestraTool.inputSchema,
           catalogId,
-          agentId: null,
+          sourceAgentId: null,
         });
       }
     }
@@ -928,7 +928,7 @@ class ToolModel {
   }
 
   /**
-   * Bulk create proxy-sniffed tools for an agent (tools discovered via LLM proxy)
+   * Bulk create autodiscovered tools for an agent (tools discovered via LLM proxy)
    * Fetches existing tools in a single query, then bulk inserts only new tools
    * Returns all tools (existing + newly created) to avoid N+1 queries
    */
@@ -938,7 +938,7 @@ class ToolModel {
       description?: string | null;
       parameters?: Record<string, unknown>;
     }>,
-    agentId: string,
+    sourceAgentId: string,
   ): Promise<Tool[]> {
     if (tools.length === 0) {
       return [];
@@ -952,7 +952,7 @@ class ToolModel {
       .from(schema.toolsTable)
       .where(
         and(
-          eq(schema.toolsTable.agentId, agentId),
+          eq(schema.toolsTable.sourceAgentId, sourceAgentId),
           isNull(schema.toolsTable.catalogId),
           inArray(schema.toolsTable.name, toolNames),
         ),
@@ -975,7 +975,7 @@ class ToolModel {
           parameters: tool.parameters ?? {},
           catalogId: null,
           mcpServerId: null,
-          agentId,
+          sourceAgentId,
         });
       }
     }
@@ -1006,7 +1006,7 @@ class ToolModel {
             .from(schema.toolsTable)
             .where(
               and(
-                eq(schema.toolsTable.agentId, agentId),
+                eq(schema.toolsTable.sourceAgentId, sourceAgentId),
                 isNull(schema.toolsTable.catalogId),
                 inArray(schema.toolsTable.name, missingNames),
               ),
@@ -1058,7 +1058,7 @@ class ToolModel {
       .values({
         name: `${AGENT_TOOL_PREFIX}${slugify(agentName)}`,
         promptAgentId,
-        agentId: null,
+        sourceAgentId: null,
         catalogId: null,
         mcpServerId: null,
         parameters: {
@@ -1220,9 +1220,9 @@ class ToolModel {
     // Filter by origin (either "llm-proxy" or a catalogId)
     if (filters?.origin) {
       if (filters.origin === "llm-proxy") {
-        // LLM Proxy tools have null catalogId but agentId is set
+        // LLM Proxy tools have null catalogId but sourceAgentId is set
         toolWhereConditions.push(isNull(schema.toolsTable.catalogId));
-        toolWhereConditions.push(isNotNull(schema.toolsTable.agentId));
+        toolWhereConditions.push(isNotNull(schema.toolsTable.sourceAgentId));
       } else {
         // MCP tools have a catalogId
         toolWhereConditions.push(

@@ -98,6 +98,10 @@ export async function handleLLMProxy<
   const providerMessages = requestAdapter.getProviderMessages();
   const messagesCount = getProviderMessagesCount(providerMessages);
 
+  const userAgent = (headers as Record<string, unknown>)["user-agent"] as
+    | string
+    | undefined;
+
   logger.debug(
     {
       agentId,
@@ -105,6 +109,7 @@ export async function handleLLMProxy<
       stream: requestAdapter.isStreaming(),
       messagesCount,
       toolsCount: requestAdapter.getTools().length,
+      userAgent,
     },
     `[${providerName}Proxy] handleLLMProxy: request received`,
   );
@@ -129,12 +134,10 @@ export async function handleLLMProxy<
     resolvedAgent = agent;
   } else {
     logger.debug(
-      { userAgent: (headers as Record<string, unknown>)["user-agent"] },
+      { userAgent },
       `[${providerName}Proxy] Resolving default agent by user-agent`,
     );
-    resolvedAgent = await AgentModel.getAgentOrCreateDefault(
-      (headers as Record<string, unknown>)["user-agent"] as string | undefined,
-    );
+    resolvedAgent = await AgentModel.getAgentOrCreateDefault(userAgent);
   }
 
   const resolvedAgentId = resolvedAgent.id;
