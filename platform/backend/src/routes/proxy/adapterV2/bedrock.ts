@@ -516,6 +516,12 @@ class BedrockStreamAdapter
   readonly state: StreamAccumulatorState;
   private currentToolCallIndex = -1;
 
+  // Bedrock-specific extended state
+  private bedrockState: {
+    latencyMs: number | null;
+    trace: unknown | null;
+  };
+
   constructor() {
     this.state = {
       responseId: generateMessageId(),
@@ -529,6 +535,10 @@ class BedrockStreamAdapter
         startTime: Date.now(),
         firstChunkTime: null,
       },
+    };
+    this.bedrockState = {
+      latencyMs: null,
+      trace: null,
     };
   }
 
@@ -629,12 +639,30 @@ class BedrockStreamAdapter
       this.state.stopReason = chunk.messageStop.stopReason ?? "end_turn";
       isFinal = true;
     } else if ("metadata" in chunk && chunk.metadata) {
-      // Usage information
-      if (chunk.metadata.usage) {
-        this.state.usage = {
-          inputTokens: chunk.metadata.usage.inputTokens ?? 0,
-          outputTokens: chunk.metadata.usage.outputTokens ?? 0,
+      // Usage and metrics information
+      const metadata = chunk.metadata as {
+        usage?: {
+          inputTokens?: number;
+          outputTokens?: number;
         };
+        metrics?: {
+          latencyMs?: number;
+        };
+        trace?: unknown;
+      };
+      if (metadata.usage) {
+        this.state.usage = {
+          inputTokens: metadata.usage.inputTokens ?? 0,
+          outputTokens: metadata.usage.outputTokens ?? 0,
+        };
+      }
+      // Capture latency metrics
+      if (metadata.metrics?.latencyMs !== undefined) {
+        this.bedrockState.latencyMs = metadata.metrics.latencyMs;
+      }
+      // Capture trace info (guardrail, promptRouter)
+      if (metadata.trace) {
+        this.bedrockState.trace = metadata.trace;
       }
     } else if ("internalServerException" in chunk && chunk.internalServerException) {
       // Internal server error from Bedrock
@@ -849,6 +877,12 @@ class BedrockStreamAdapter
       });
     }
 
+    // Build metrics if latency is available
+    const metrics =
+      this.bedrockState.latencyMs !== null
+        ? { latencyMs: this.bedrockState.latencyMs }
+        : undefined;
+
     return {
       $metadata: {
         requestId: this.state.responseId,
@@ -865,6 +899,8 @@ class BedrockStreamAdapter
         inputTokens: this.state.usage?.inputTokens ?? 0,
         outputTokens: this.state.usage?.outputTokens ?? 0,
       },
+      metrics,
+      trace: this.bedrockState.trace ?? undefined,
     };
   }
 }

@@ -936,6 +936,33 @@ describe("BedrockStreamAdapter", () => {
       });
     });
 
+    test("processes metadata event with latency metrics", () => {
+      const adapter = bedrockAdapterFactory.createStreamAdapter();
+      adapter.processChunk({
+        metadata: {
+          usage: { inputTokens: 10, outputTokens: 5 },
+          metrics: { latencyMs: 1234 },
+        },
+      } as any);
+
+      const response = adapter.toProviderResponse();
+      expect(response.metrics).toEqual({ latencyMs: 1234 });
+    });
+
+    test("processes metadata event with trace info", () => {
+      const adapter = bedrockAdapterFactory.createStreamAdapter();
+      const traceData = { guardrail: { inputAssessment: { blocked: false } } };
+      adapter.processChunk({
+        metadata: {
+          usage: { inputTokens: 10, outputTokens: 5 },
+          trace: traceData,
+        },
+      } as any);
+
+      const response = adapter.toProviderResponse();
+      expect(response.trace).toEqual(traceData);
+    });
+
     test("tracks first chunk time", () => {
       const adapter = bedrockAdapterFactory.createStreamAdapter();
       expect(adapter.state.timing.firstChunkTime).toBeNull();
