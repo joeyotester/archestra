@@ -285,21 +285,16 @@ export function createLLMModel(params: {
     const sessionToken = parts[2] || undefined;
     const region = parts[3] || config.chat.bedrock.region || "us-east-1";
 
-    // Route through LLM Proxy for interaction logging and policy enforcement
-    // URL format: /v1/bedrock/:agentId/converse (SDK appends /converse)
+    // NOTE: Bedrock cannot be routed through the LLM Proxy for streaming because
+    // the AI SDK expects AWS binary eventstream format, not SSE.
+    // The LLM Proxy converts responses to SSE which is incompatible.
+    // For now, call Bedrock directly. This means no interaction logging for Bedrock chat.
     const client = createAmazonBedrock({
-      // Use baseURL to route through proxy
-      baseURL: `http://localhost:${config.api.port}/v1/bedrock/${agentId}`,
-      // Use apiKey to bypass SigV4 signing (proxy handles AWS auth)
-      apiKey: "proxy-mode",
-      // Pass AWS credentials as custom headers for the proxy
-      headers: {
-        ...headers,
-        "x-amz-access-key-id": accessKeyId ?? "",
-        "x-amz-secret-access-key": secretAccessKey ?? "",
-        ...(sessionToken && { "x-amz-session-token": sessionToken }),
-        "x-amz-region": region,
-      },
+      region,
+      accessKeyId,
+      secretAccessKey,
+      sessionToken: sessionToken || undefined,
+      headers,
     });
     return client(modelName);
   }
