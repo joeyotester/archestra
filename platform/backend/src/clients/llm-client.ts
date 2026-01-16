@@ -1,5 +1,6 @@
 import { createAnthropic } from "@ai-sdk/anthropic";
 import { createCerebras } from "@ai-sdk/cerebras";
+import { createCohere } from "@ai-sdk/cohere";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { createOpenAI } from "@ai-sdk/openai";
 import {
@@ -31,7 +32,7 @@ export type LLMModel = Parameters<typeof streamText>[0]["model"];
  * Since same models could be served by different providers.
  * Currently it exists for backward compatibility.
  *
- * Note: vLLM and Ollama can serve any model, so they cannot be auto-detected by model name.
+ * Note: vLLM and Ollama cannot serve any model, so they cannot be auto-detected by model name.
  * Users must explicitly select vLLM or Ollama as the provider.
  */
 export function detectProviderFromModel(model: string): SupportedChatProvider {
@@ -51,6 +52,14 @@ export function detectProviderFromModel(model: string): SupportedChatProvider {
     lowerModel.includes("o3")
   ) {
     return "openai";
+  }
+
+  if (lowerModel.includes("command") || lowerModel.includes("cohere")) {
+    return "cohere";
+  }
+
+  if (lowerModel.includes("cerebras")) {
+    return "cerebras";
   }
 
   if (lowerModel.includes("glm") || lowerModel.includes("chatglm")) {
@@ -90,17 +99,37 @@ export async function resolveProviderApiKey(params: {
   });
 
   if (resolvedApiKey?.secretId) {
-    const secret = await secretManager().getSecret(resolvedApiKey.secretId);
+    const secretId =
+      Array.isArray(resolvedApiKey.secretId) &&
+      resolvedApiKey.secretId.length > 0
+        ? resolvedApiKey.secretId[0]
+        : resolvedApiKey.secretId;
+    const secret = await secretManager().getSecret(String(secretId));
     // Support both old format (anthropicApiKey) and new format (apiKey)
+    // Normalize secret.secret to an object if it's an array (take first element)
+    const secretObj =
+      secret && Array.isArray(secret.secret) && secret.secret.length > 0
+        ? secret.secret[0]
+        : secret?.secret;
     const secretValue =
-      secret?.secret?.apiKey ??
-      secret?.secret?.anthropicApiKey ??
-      secret?.secret?.geminiApiKey ??
-      secret?.secret?.openaiApiKey ??
-      secret?.secret?.zhipuaiApiKey;
+      secretObj?.apiKey ??
+      secretObj?.anthropicApiKey ??
+      secretObj?.geminiApiKey ??
+      secretObj?.openaiApiKey ??
+      secretObj?.cohereApiKey ??
+      secretObj?.cerebrasApiKey ??
+      secretObj?.zhipuaiApiKey;
     if (secretValue) {
       providerApiKey = secretValue as string;
-      apiKeySource = resolvedApiKey.scope;
+      // Normalize scope to a string (supports string or array)
+      const scopeVal = Array.isArray(resolvedApiKey.scope)
+        ? resolvedApiKey.scope[0]
+        : resolvedApiKey.scope;
+      if (typeof scopeVal === "string" && scopeVal.length > 0) {
+        apiKeySource = scopeVal;
+      } else if (scopeVal != null) {
+        apiKeySource = String(scopeVal);
+      }
     }
   }
 
@@ -118,11 +147,15 @@ export async function resolveProviderApiKey(params: {
     } else if (provider === "gemini" && config.chat.gemini.apiKey) {
       providerApiKey = config.chat.gemini.apiKey;
       apiKeySource = "environment";
+    } else if (provider === "cohere" && config.chat.cohere.apiKey) {
+      providerApiKey = config.chat.cohere.apiKey;
+      apiKeySource = "environment";
     } else if (provider === "vllm" && config.chat.vllm.apiKey) {
       providerApiKey = config.chat.vllm.apiKey;
       apiKeySource = "environment";
     } else if (provider === "ollama" && config.chat.ollama.apiKey) {
       providerApiKey = config.chat.ollama.apiKey;
+      apiKeySource = "environment";
     } else if (provider === "zhipuai" && config.chat.zhipuai.apiKey) {
       providerApiKey = config.chat.zhipuai.apiKey;
       apiKeySource = "environment";
@@ -216,6 +249,17 @@ export function createLLMModel(params: {
     // Use .chat() to force Chat Completions API (not Responses API)
     // so our proxy's tool policy evaluation is applied
     return client.chat(modelName);
+  }
+
+  if (provider === "cohere") {
+    // URL format: /v1/cohere/:agentId (SDK appends /chat)
+    // We use the native Cohere provider which uses the V2 API
+    const client = createCohere({
+      apiKey,
+      baseURL: `http://localhost:${config.api.port}/v1/cohere/${agentId}`,
+      headers,
+    });
+    return client(modelName);
   }
 
   if (provider === "cerebras") {
