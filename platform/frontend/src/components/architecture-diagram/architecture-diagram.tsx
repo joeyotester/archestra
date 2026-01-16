@@ -41,12 +41,13 @@ const nodeTypes = {
 };
 
 // Define base positions (40px gap between groups)
-// Agents: 0-160, Archestra: 200-500, Kubernetes: 540-690, Remote/LLM: 730+
+// Agents: 0-160, Archestra: 200-620, Kubernetes: 660-810, Remote/LLM: 850+
 const AGENTS_GROUP_X = 0;
 const ARCHESTRA_GROUP_X = 200;
-const KUBERNETES_GROUP_X = 620;
-const REMOTE_GROUP_X = 660;
-const LLM_GROUP_X = 660;
+const AGENT_RUNTIME_GROUP_X = 360;
+const KUBERNETES_GROUP_X = 750;
+const REMOTE_GROUP_X = 750;
+const LLM_GROUP_X = 750;
 
 function ArchitectureDiagramInner({ activeTab }: ArchitectureDiagramProps) {
   const { resolvedTheme } = useTheme();
@@ -196,7 +197,7 @@ function ArchitectureDiagramInner({ activeTab }: ArchitectureDiagramProps) {
           position: { x: ARCHESTRA_GROUP_X, y: -230 },
           data: {
             label: "Archestra.AI",
-            width: 380,
+            width: 420,
             height: 450,
             logo: "/logo.png",
             highlighted: isProxy || isMcp || isA2a,
@@ -221,7 +222,7 @@ function ArchitectureDiagramInner({ activeTab }: ArchitectureDiagramProps) {
         {
           id: "mcp-orchestrator",
           type: "architecture",
-          position: { x: ARCHESTRA_GROUP_X + 145, y: 0 },
+          position: { x: ARCHESTRA_GROUP_X + 145, y: 20 },
           data: {
             label: "MCP Orchestrator",
             highlighted: isMcp,
@@ -271,12 +272,37 @@ function ArchitectureDiagramInner({ activeTab }: ArchitectureDiagramProps) {
         {
           id: "kubernetes-group",
           type: "architectureGroup",
-          position: { x: KUBERNETES_GROUP_X, y: -120 },
+          position: { x: KUBERNETES_GROUP_X, y: -200 },
           data: {
             label: "Kubernetes",
             width: 150,
-            height: 150,
+            height: 230,
             highlighted: isMcp,
+            highlightColor,
+          },
+          draggable: false,
+          selectable: false,
+        },
+        // Kubernetes nodes
+        {
+          id: "langchain-agent",
+          type: "architecture",
+          position: { x: KUBERNETES_GROUP_X + 15, y: -168 },
+          data: {
+            label: "LangChain Agent",
+            highlighted: isA2a,
+            highlightColor,
+          },
+          draggable: false,
+          selectable: false,
+        },
+        {
+          id: "mastra-agent",
+          type: "architecture",
+          position: { x: KUBERNETES_GROUP_X + 15, y: -130 },
+          data: {
+            label: "Mastra Agent",
+            highlighted: isA2a,
             highlightColor,
           },
           draggable: false,
@@ -476,11 +502,27 @@ function ArchitectureDiagramInner({ activeTab }: ArchitectureDiagramProps) {
           selectable: false,
         },
 
-        // Internal agents (inside Archestra, stacked with MCP Orchestrator)
+        // Agent Runtime group
+        {
+          id: "agent-runtime-group",
+          type: "architectureGroup",
+          position: { x: AGENT_RUNTIME_GROUP_X, y: -200 },
+          data: {
+            label: "Agent Runtime",
+            width: 240,
+            height: 170,
+            highlighted: isA2a,
+            highlightColor,
+            strongBorder: true,
+          },
+          draggable: false,
+          selectable: false,
+        },
+        // Internal agents (inside Agent Runtime group)
         {
           id: "chat-agent",
           type: "architecture",
-          position: { x: ARCHESTRA_GROUP_X + 145, y: -200 },
+          position: { x: AGENT_RUNTIME_GROUP_X + 15, y: -170 },
           data: {
             label: "Chat",
             highlighted: isA2a,
@@ -492,7 +534,7 @@ function ArchitectureDiagramInner({ activeTab }: ArchitectureDiagramProps) {
         {
           id: "ai-sre-agent",
           type: "architecture",
-          position: { x: ARCHESTRA_GROUP_X + 145, y: -155 },
+          position: { x: AGENT_RUNTIME_GROUP_X + 15, y: -125 },
           data: {
             label: "AI SRE",
             highlighted: isA2a,
@@ -504,7 +546,7 @@ function ArchitectureDiagramInner({ activeTab }: ArchitectureDiagramProps) {
         {
           id: "accountant-agent",
           type: "architecture",
-          position: { x: ARCHESTRA_GROUP_X + 145, y: -110 },
+          position: { x: AGENT_RUNTIME_GROUP_X + 15, y: -80 },
           data: {
             label: "AI Accountant",
             highlighted: isA2a,
@@ -516,7 +558,7 @@ function ArchitectureDiagramInner({ activeTab }: ArchitectureDiagramProps) {
         {
           id: "observability-agent",
           type: "architecture",
-          position: { x: 470, y: -185 },
+          position: { x: AGENT_RUNTIME_GROUP_X + 130, y: -155 },
           data: {
             label: "Observability",
             highlighted: isA2a,
@@ -528,7 +570,7 @@ function ArchitectureDiagramInner({ activeTab }: ArchitectureDiagramProps) {
         {
           id: "coding-agent",
           type: "architecture",
-          position: { x: 470, y: -140 },
+          position: { x: AGENT_RUNTIME_GROUP_X + 130, y: -110 },
           data: {
             label: "Coding",
             highlighted: isA2a,

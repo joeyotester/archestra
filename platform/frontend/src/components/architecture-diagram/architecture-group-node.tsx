@@ -12,6 +12,7 @@ export type ArchitectureGroupNodeData = {
   highlighted?: boolean;
   highlightColor?: HighlightColor;
   logo?: string;
+  strongBorder?: boolean;
 };
 
 export type ArchitectureGroupNodeType = Node<
@@ -21,13 +22,19 @@ export type ArchitectureGroupNodeType = Node<
 
 export const ArchitectureGroupNode = memo(
   ({ data }: NodeProps<ArchitectureGroupNodeType>) => {
-    const { label, width, height, highlighted, highlightColor, logo } = data;
+    const { label, width, height, highlighted, highlightColor, logo, strongBorder } = data;
 
     const highlightStyle =
       highlighted && highlightColor
         ? {
-            borderColor: `color-mix(in oklch, var(--${highlightColor}) 50%, transparent)`,
+            borderColor: strongBorder 
+              ? `color-mix(in oklch, var(--${highlightColor}) 70%, transparent)` 
+              : `color-mix(in oklch, var(--${highlightColor}) 50%, transparent)`,
             backgroundColor: `color-mix(in oklch, var(--${highlightColor}) 10%, transparent)`,
+          }
+        : strongBorder
+        ? {
+            borderColor: `hsl(var(--border))`,
           }
         : undefined;
 
@@ -35,7 +42,9 @@ export const ArchitectureGroupNode = memo(
       <div
         className={
           highlighted
-            ? "rounded-lg border bg-muted/30"
+            ? "rounded-lg border-2 bg-muted/30"
+            : strongBorder
+            ? "rounded-lg border-2 bg-muted/30 border-border"
             : "rounded-lg border bg-muted/30 border-border/50"
         }
         style={{ width, height, ...highlightStyle }}
