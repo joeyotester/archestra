@@ -1,5 +1,4 @@
 import { RouteId } from "@shared";
-import type { FastifyReply, FastifyRequest } from "fastify";
 import type { FastifyPluginAsyncZod } from "fastify-type-provider-zod";
 import { z } from "zod";
 import logger from "@/logging";
@@ -9,52 +8,15 @@ import { PROXY_API_PREFIX, PROXY_BODY_LIMIT } from "../common";
 import { handleLLMProxy } from "../llm-proxy-handler";
 import * as utils from "../utils";
 
-/**
- * Shared handler for all Bedrock routes.
- * Logs the request, extracts user context, and forwards to LLM proxy.
- */
-async function handleBedrockRequest(params: {
-  request: FastifyRequest;
-  reply: FastifyReply;
-  body: Bedrock.Types.ConverseRequest;
-  agentId?: string;
-  modelId: string;
-  streaming?: boolean;
-}) {
-  const { request, reply, body, agentId, modelId, streaming = false } = params;
-  const headers = request.headers as Bedrock.Types.ConverseHeaders;
-
-  logger.info(
-    {
-      url: request.url,
-      agentId,
-      modelId,
-      streaming,
-      headers: {
-        ...headers,
-        "x-amz-secret-access-key": headers["x-amz-secret-access-key"]
-          ? "***"
-          : undefined,
-        "x-amz-session-token": headers["x-amz-session-token"]
-          ? "***"
-          : undefined,
-      },
-      bodyKeys: Object.keys(body || {}),
-    },
-    "[UnifiedProxy] Handling Bedrock request",
-  );
-
-  const externalAgentId = utils.externalAgentId.getExternalAgentId(headers);
-  const userId = await utils.userId.getUserId(headers);
-
-  const finalBody = { ...body, modelId };
-
-  return handleLLMProxy(finalBody, headers, reply, bedrockAdapterFactory, {
-    organizationId: request.organizationId,
-    agentId,
-    externalAgentId,
-    userId,
-  });
+/** Mask sensitive AWS credentials in headers for logging */
+function maskSensitiveHeaders(headers: Bedrock.Types.ConverseHeaders) {
+  return {
+    ...headers,
+    "x-amz-secret-access-key": headers["x-amz-secret-access-key"]
+      ? "***"
+      : undefined,
+    "x-amz-session-token": headers["x-amz-session-token"] ? "***" : undefined,
+  };
 }
 
 /**
@@ -91,15 +53,38 @@ const bedrockProxyRoutesV2: FastifyPluginAsyncZod = async (fastify) => {
         response: constructResponseSchema(Bedrock.API.ConverseResponseSchema),
       },
     },
-    (request, reply) =>
-      handleBedrockRequest({
-        request,
-        reply,
-        body: request.body as Bedrock.Types.ConverseRequest,
-        agentId: request.params.agentId,
-        modelId: decodeURIComponent(request.params.modelId),
-        streaming: request.params.action === "converse-stream",
-      }),
+    async (request, reply) => {
+      const body = request.body as Bedrock.Types.ConverseRequest;
+      const agentId = request.params.agentId;
+      const modelId = decodeURIComponent(request.params.modelId);
+      const action = request.params.action;
+      const stream = action === "converse-stream";
+      const headers = request.headers as Bedrock.Types.ConverseHeaders;
+
+      logger.info(
+        {
+          url: request.url,
+          agentId,
+          modelId,
+          stream,
+          headers: maskSensitiveHeaders(headers),
+          bodyKeys: Object.keys(body || {}),
+        },
+        "[UnifiedProxy] Handling Bedrock request",
+      );
+
+      const externalAgentId = utils.externalAgentId.getExternalAgentId(headers);
+      const userId = await utils.userId.getUserId(headers);
+
+      const finalBody = { ...body, modelId, stream };
+
+      return handleLLMProxy(finalBody, headers, reply, bedrockAdapterFactory, {
+        organizationId: request.organizationId,
+        agentId,
+        externalAgentId,
+        userId,
+      });
+    },
   );
 
   /**
@@ -124,14 +109,35 @@ const bedrockProxyRoutesV2: FastifyPluginAsyncZod = async (fastify) => {
         response: constructResponseSchema(Bedrock.API.ConverseResponseSchema),
       },
     },
-    (request, reply) =>
-      handleBedrockRequest({
-        request,
-        reply,
-        body: request.body as Bedrock.Types.ConverseRequest,
-        modelId: decodeURIComponent(request.params.modelId),
-        streaming: request.params.action === "converse-stream",
-      }),
+    async (request, reply) => {
+      const body = request.body as Bedrock.Types.ConverseRequest;
+      const modelId = decodeURIComponent(request.params.modelId);
+      const action = request.params.action;
+      const stream = action === "converse-stream";
+      const headers = request.headers as Bedrock.Types.ConverseHeaders;
+
+      logger.info(
+        {
+          url: request.url,
+          modelId,
+          stream,
+          headers: maskSensitiveHeaders(headers),
+          bodyKeys: Object.keys(body || {}),
+        },
+        "[UnifiedProxy] Handling Bedrock request",
+      );
+
+      const externalAgentId = utils.externalAgentId.getExternalAgentId(headers);
+      const userId = await utils.userId.getUserId(headers);
+
+      const finalBody = { ...body, modelId, stream };
+
+      return handleLLMProxy(finalBody, headers, reply, bedrockAdapterFactory, {
+        organizationId: request.organizationId,
+        externalAgentId,
+        userId,
+      });
+    },
   );
 };
 
