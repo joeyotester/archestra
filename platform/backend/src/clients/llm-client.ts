@@ -285,12 +285,21 @@ export function createLLMModel(params: {
     const sessionToken = parts[2] || undefined;
     const region = parts[3] || config.chat.bedrock.region || "us-east-1";
 
+    // Route through LLM Proxy for interaction logging and policy enforcement
+    // URL format: /v1/bedrock/:agentId/converse (SDK appends /converse)
     const client = createAmazonBedrock({
-      region,
-      accessKeyId,
-      secretAccessKey,
-      sessionToken,
-      headers,
+      // Use baseURL to route through proxy
+      baseURL: `http://localhost:${config.api.port}/v1/bedrock/${agentId}`,
+      // Use apiKey to bypass SigV4 signing (proxy handles AWS auth)
+      apiKey: "proxy-mode",
+      // Pass AWS credentials as custom headers for the proxy
+      headers: {
+        ...headers,
+        "x-amz-access-key-id": accessKeyId ?? "",
+        "x-amz-secret-access-key": secretAccessKey ?? "",
+        ...(sessionToken && { "x-amz-session-token": sessionToken }),
+        "x-amz-region": region,
+      },
     });
     return client(modelName);
   }
