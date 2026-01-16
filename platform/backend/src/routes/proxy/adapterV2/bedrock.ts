@@ -1,11 +1,8 @@
 import {
   BedrockRuntimeClient,
-  type ContentBlock,
   ConverseCommand,
   ConverseStreamCommand,
   type ConverseStreamOutput,
-  type Message,
-  type ToolResultContentBlock,
 } from "@aws-sdk/client-bedrock-runtime";
 import { encode as toonEncode } from "@toon-format/toon";
 import config from "@/config";
@@ -47,28 +44,46 @@ type BedrockStreamEvent = ConverseStreamOutput;
 // =============================================================================
 
 /**
- * Check if a content block is a text block
+ * Check if a content block is a text block.
+ * Works with both AWS SDK ContentBlock and our internal Zod types.
  */
-function isTextBlock(block: ContentBlock): block is ContentBlock.TextMember {
-  return "text" in block && typeof block.text === "string";
+function isTextBlock(block: unknown): block is { text: string } {
+  return (
+    typeof block === "object" &&
+    block !== null &&
+    "text" in block &&
+    typeof (block as { text: unknown }).text === "string"
+  );
 }
 
 /**
- * Check if a content block is a tool use block
+ * Check if a content block is a tool use block.
+ * Works with both AWS SDK ContentBlock and our internal Zod types.
  */
-function isToolUseBlock(
-  block: ContentBlock,
-): block is ContentBlock.ToolUseMember {
-  return "toolUse" in block && block.toolUse !== undefined;
+function isToolUseBlock(block: unknown): block is {
+  toolUse: { toolUseId?: string; name?: string; input?: unknown };
+} {
+  return (
+    typeof block === "object" &&
+    block !== null &&
+    "toolUse" in block &&
+    (block as { toolUse: unknown }).toolUse !== undefined
+  );
 }
 
 /**
- * Check if a content block is a tool result block
+ * Check if a content block is a tool result block.
+ * Works with both AWS SDK ContentBlock and our internal Zod types.
  */
-function isToolResultBlock(
-  block: ContentBlock,
-): block is ContentBlock.ToolResultMember {
-  return "toolResult" in block && block.toolResult !== undefined;
+function isToolResultBlock(block: unknown): block is {
+  toolResult: { toolUseId?: string; content?: unknown[]; status?: string };
+} {
+  return (
+    typeof block === "object" &&
+    block !== null &&
+    "toolResult" in block &&
+    (block as { toolResult: unknown }).toolResult !== undefined
+  );
 }
 
 /**
@@ -116,7 +131,7 @@ class BedrockRequestAdapter
     for (const message of this.request.messages) {
       if (message.role === "user" && Array.isArray(message.content)) {
         for (const contentBlock of message.content) {
-          if ("toolResult" in contentBlock && contentBlock.toolResult) {
+          if (isToolResultBlock(contentBlock)) {
             const toolResult = contentBlock.toolResult;
             const toolUseId = toolResult.toolUseId ?? "";
             // Find tool name from previous assistant messages
@@ -243,8 +258,8 @@ class BedrockRequestAdapter
       if (message.role === "assistant" && Array.isArray(message.content)) {
         for (const content of message.content) {
           if (
-            "toolUse" in content &&
-            content.toolUse?.toolUseId === toolUseId
+            isToolUseBlock(content) &&
+            content.toolUse.toolUseId === toolUseId
           ) {
             return content.toolUse.name ?? null;
           }
@@ -274,7 +289,7 @@ class BedrockRequestAdapter
         const toolCalls: CommonToolResult[] = [];
 
         for (const contentBlock of message.content) {
-          if ("toolResult" in contentBlock && contentBlock.toolResult) {
+          if (isToolResultBlock(contentBlock)) {
             const toolResult = contentBlock.toolResult;
             const toolUseId = toolResult.toolUseId ?? "";
             const toolName = this.findToolNameInMessages(messages, toolUseId);
@@ -341,8 +356,8 @@ class BedrockRequestAdapter
       if (message.role === "assistant" && Array.isArray(message.content)) {
         for (const content of message.content) {
           if (
-            "toolUse" in content &&
-            content.toolUse?.toolUseId === toolUseId
+            isToolUseBlock(content) &&
+            content.toolUse.toolUseId === toolUseId
           ) {
             return content.toolUse.name ?? null;
           }
@@ -376,8 +391,7 @@ class BedrockRequestAdapter
       if (message.role === "user" && Array.isArray(message.content)) {
         const updatedContent = message.content.map((contentBlock) => {
           if (
-            "toolResult" in contentBlock &&
-            contentBlock.toolResult &&
+            isToolResultBlock(contentBlock) &&
             contentBlock.toolResult.toolUseId &&
             updates[contentBlock.toolResult.toolUseId]
           ) {
@@ -441,10 +455,7 @@ class BedrockResponseAdapter implements LLMResponseAdapter<BedrockResponse> {
     const outputMessage = this.response.output?.message;
     if (!outputMessage?.content) return "";
 
-    const textBlocks = outputMessage.content.filter(
-      (block): block is { text: string } =>
-        "text" in block && typeof block.text === "string",
-    );
+    const textBlocks = outputMessage.content.filter(isTextBlock);
     return textBlocks.map((block) => block.text).join("");
   }
 
@@ -454,16 +465,11 @@ class BedrockResponseAdapter implements LLMResponseAdapter<BedrockResponse> {
 
     const toolCalls: CommonToolCall[] = [];
     for (const block of outputMessage.content) {
-      if ("toolUse" in block && block.toolUse) {
-        const toolUse = block.toolUse as {
-          toolUseId?: string;
-          name?: string;
-          input?: Record<string, unknown>;
-        };
+      if (isToolUseBlock(block)) {
         toolCalls.push({
-          id: toolUse.toolUseId ?? "",
-          name: toolUse.name ?? "",
-          arguments: (toolUse.input ?? {}) as Record<string, unknown>,
+          id: block.toolUse.toolUseId ?? "",
+          name: block.toolUse.name ?? "",
+          arguments: (block.toolUse.input ?? {}) as Record<string, unknown>,
         });
       }
     }
@@ -474,7 +480,7 @@ class BedrockResponseAdapter implements LLMResponseAdapter<BedrockResponse> {
     const outputMessage = this.response.output?.message;
     if (!outputMessage?.content) return false;
 
-    return outputMessage.content.some((block) => "toolUse" in block);
+    return outputMessage.content.some(isToolUseBlock);
   }
 
   getUsage(): UsageView {
@@ -940,8 +946,7 @@ export async function convertToolResultsToToon(
     if (message.role === "user" && Array.isArray(message.content)) {
       const updatedContent = message.content.map((contentBlock) => {
         if (
-          "toolResult" in contentBlock &&
-          contentBlock.toolResult &&
+          isToolResultBlock(contentBlock) &&
           contentBlock.toolResult.status !== "error"
         ) {
           toolResultCount++;
@@ -1251,9 +1256,9 @@ export const bedrockAdapterFactory: LLMProvider<
     > = [];
     if (response.output?.message?.content) {
       for (const c of response.output.message.content) {
-        if ("text" in c && c.text) {
+        if (isTextBlock(c)) {
           outputContent.push({ text: c.text });
-        } else if ("toolUse" in c && c.toolUse) {
+        } else if (isToolUseBlock(c)) {
           outputContent.push({
             toolUse: {
               toolUseId: c.toolUse.toolUseId ?? "",
