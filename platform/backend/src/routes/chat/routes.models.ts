@@ -653,14 +653,13 @@ export async function fetchModelsForProvider({
   // vLLM and Ollama typically don't require API keys
   const isVllm = provider === "vllm";
   const isOllama = provider === "ollama";
-  // Bedrock uses AWS credentials which may come from default credential chain
+  // Bedrock can use: 1) explicit credentials from DB, 2) env vars, or 3) default AWS credential chain
   const isBedrock = provider === "bedrock";
-  const bedrockEnabled = isBedrock && config.llm.bedrock.enabled;
 
   // For Gemini with Vertex AI, we don't need an API key - authentication is via ADC
   // For vLLM and Ollama, API key is optional
-  // For Bedrock, we check if it's enabled (may use default AWS credential chain)
-  if (!apiKey && !vertexAiEnabled && !isVllm && !isOllama && !bedrockEnabled) {
+  // For Bedrock, credentials may come from default AWS credential chain
+  if (!apiKey && !vertexAiEnabled && !isVllm && !isOllama && !isBedrock) {
     logger.debug(
       { provider, organizationId },
       "No API key available for provider",
@@ -694,11 +693,9 @@ export async function fetchModelsForProvider({
       }
     } else if (provider === "bedrock") {
       // Bedrock uses AWS credentials, may use default credential chain if no explicit credentials
-      if (apiKey || bedrockEnabled) {
-        models = await modelFetchers[provider](
-          apiKey || ":::" + config.chat.bedrock.region,
-        );
-      }
+      models = await modelFetchers[provider](
+        apiKey || ":::" + config.chat.bedrock.region,
+      );
     }
     logger.info(
       { provider, modelCount: models.length },

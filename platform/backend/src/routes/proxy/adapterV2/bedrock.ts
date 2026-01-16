@@ -636,6 +636,66 @@ class BedrockStreamAdapter
           outputTokens: chunk.metadata.usage.outputTokens ?? 0,
         };
       }
+    } else if ("internalServerException" in chunk && chunk.internalServerException) {
+      // Internal server error from Bedrock
+      const error = chunk.internalServerException;
+      return {
+        sseData: null,
+        isToolCallChunk: false,
+        isFinal: true,
+        error: {
+          type: "internal_server_error",
+          message: error.message ?? "Internal server error",
+        },
+      };
+    } else if ("modelStreamErrorException" in chunk && chunk.modelStreamErrorException) {
+      // Model stream error
+      const error = chunk.modelStreamErrorException;
+      return {
+        sseData: null,
+        isToolCallChunk: false,
+        isFinal: true,
+        error: {
+          type: "model_stream_error",
+          message: error.message ?? "Model stream error",
+        },
+      };
+    } else if ("serviceUnavailableException" in chunk && chunk.serviceUnavailableException) {
+      // Service unavailable
+      const error = chunk.serviceUnavailableException;
+      return {
+        sseData: null,
+        isToolCallChunk: false,
+        isFinal: true,
+        error: {
+          type: "service_unavailable",
+          message: error.message ?? "Service unavailable",
+        },
+      };
+    } else if ("throttlingException" in chunk && chunk.throttlingException) {
+      // Rate limiting / throttling
+      const error = chunk.throttlingException;
+      return {
+        sseData: null,
+        isToolCallChunk: false,
+        isFinal: true,
+        error: {
+          type: "throttling",
+          message: error.message ?? "Request throttled",
+        },
+      };
+    } else if ("validationException" in chunk && chunk.validationException) {
+      // Validation error (bad request)
+      const error = chunk.validationException;
+      return {
+        sseData: null,
+        isToolCallChunk: false,
+        isFinal: true,
+        error: {
+          type: "validation_error",
+          message: error.message ?? "Validation error",
+        },
+      };
     }
 
     return { sseData, isToolCallChunk, isFinal };

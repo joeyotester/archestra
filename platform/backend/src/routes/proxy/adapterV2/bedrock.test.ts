@@ -944,6 +944,48 @@ describe("BedrockStreamAdapter", () => {
 
       expect(adapter.state.timing.firstChunkTime).not.toBeNull();
     });
+
+    test("handles internalServerException", () => {
+      const adapter = bedrockAdapterFactory.createStreamAdapter();
+      const result = adapter.processChunk({
+        internalServerException: { message: "Internal error occurred" },
+      } as any);
+
+      expect(result).toEqual(
+        expect.objectContaining({
+          isFinal: true,
+          error: { type: "internal_server_error", message: "Internal error occurred" },
+        }),
+      );
+    });
+
+    test("handles throttlingException", () => {
+      const adapter = bedrockAdapterFactory.createStreamAdapter();
+      const result = adapter.processChunk({
+        throttlingException: { message: "Rate limit exceeded" },
+      } as any);
+
+      expect(result).toEqual(
+        expect.objectContaining({
+          isFinal: true,
+          error: { type: "throttling", message: "Rate limit exceeded" },
+        }),
+      );
+    });
+
+    test("handles validationException", () => {
+      const adapter = bedrockAdapterFactory.createStreamAdapter();
+      const result = adapter.processChunk({
+        validationException: { message: "Invalid model ID" },
+      } as any);
+
+      expect(result).toEqual(
+        expect.objectContaining({
+          isFinal: true,
+          error: { type: "validation_error", message: "Invalid model ID" },
+        }),
+      );
+    });
   });
 
   describe("toProviderResponse", () => {

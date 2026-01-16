@@ -237,6 +237,11 @@ export interface ChunkProcessingResult {
   isToolCallChunk: boolean;
   /** Whether this is the final chunk */
   isFinal: boolean;
+  /** Error information if this chunk represents an error event */
+  error?: {
+    type: string;
+    message: string;
+  };
 }
 
 /**

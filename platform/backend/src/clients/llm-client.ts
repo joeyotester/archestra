@@ -127,7 +127,7 @@ export async function resolveProviderApiKey(params: {
     } else if (provider === "zhipuai" && config.chat.zhipuai.apiKey) {
       providerApiKey = config.chat.zhipuai.apiKey;
       apiKeySource = "environment";
-    } else if (provider === "bedrock") {
+    } else if (provider === "bedrock" && config.chat.bedrock.accessKeyId) {
       // Bedrock uses AWS credentials format: accessKeyId:secretAccessKey:sessionToken:region
       const accessKeyId = config.chat.bedrock.accessKeyId;
       const secretAccessKey = config.chat.bedrock.secretAccessKey;
@@ -155,8 +155,8 @@ export function isApiKeyRequired(
   // vLLM and Ollama typically don't require API keys (use "EMPTY" or dummy values)
   const isVllm = provider === "vllm";
   const isOllama = provider === "ollama";
-  // Bedrock may use default AWS credential chain if no explicit credentials
-  const isBedrock = provider === "bedrock" && config.llm.bedrock.enabled;
+  // Bedrock can use: 1) explicit credentials from DB, 2) env vars, or 3) default AWS credential chain
+  const isBedrock = provider === "bedrock";
   return !apiKey && !isGeminiWithVertexAi && !isVllm && !isOllama && !isBedrock;
 }
 
@@ -340,8 +340,8 @@ export async function createLLMModelForAgent(params: {
   // vLLM and Ollama typically don't require API keys
   const isVllm = provider === "vllm";
   const isOllama = provider === "ollama";
-  // Bedrock may use default AWS credential chain if no explicit credentials
-  const isBedrock = provider === "bedrock" && config.llm.bedrock.enabled;
+  // Bedrock can use: 1) explicit credentials from DB, 2) env vars, or 3) default AWS credential chain
+  const isBedrock = provider === "bedrock";
 
   logger.info(
     {
