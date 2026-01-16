@@ -558,17 +558,9 @@ class BedrockStreamAdapter
     let isToolCallChunk = false;
     let isFinal = false;
 
-    // Process different event types from Bedrock stream
+    // Pass through chunks as NDJSON - exactly what AWS SDK returns, just serialized
     if ("messageStart" in chunk && chunk.messageStart) {
-      // Message started
-      sseData = `event: message_start\ndata: ${JSON.stringify({
-        type: "message_start",
-        message: {
-          id: this.state.responseId,
-          role: "assistant",
-          model: this.state.model,
-        },
-      })}\n\n`;
+      sseData = `${JSON.stringify(chunk)}\n`;
     } else if ("contentBlockStart" in chunk && chunk.contentBlockStart) {
       const blockStart = chunk.contentBlockStart;
       if (
@@ -576,7 +568,7 @@ class BedrockStreamAdapter
         "toolUse" in blockStart.start &&
         blockStart.start.toolUse
       ) {
-        // Tool use block started
+        // Tool use block - buffer for policy evaluation
         const toolUse = blockStart.start.toolUse;
         this.currentToolCallIndex = this.state.toolCalls.length;
         this.state.toolCalls.push({
@@ -587,12 +579,7 @@ class BedrockStreamAdapter
         this.state.rawToolCallEvents.push(chunk);
         isToolCallChunk = true;
       } else {
-        // Text block started
-        sseData = `event: content_block_start\ndata: ${JSON.stringify({
-          type: "content_block_start",
-          index: blockStart.contentBlockIndex ?? 0,
-          content_block: { type: "text", text: "" },
-        })}\n\n`;
+        sseData = `${JSON.stringify(chunk)}\n`;
       }
     } else if ("contentBlockDelta" in chunk && chunk.contentBlockDelta) {
       const blockDelta = chunk.contentBlockDelta;
@@ -601,22 +588,14 @@ class BedrockStreamAdapter
         "text" in blockDelta.delta &&
         blockDelta.delta.text
       ) {
-        // Text delta
         this.state.text += blockDelta.delta.text;
-        sseData = `event: content_block_delta\ndata: ${JSON.stringify({
-          type: "content_block_delta",
-          index: blockDelta.contentBlockIndex ?? 0,
-          delta: {
-            type: "text_delta",
-            text: blockDelta.delta.text,
-          },
-        })}\n\n`;
+        sseData = `${JSON.stringify(chunk)}\n`;
       } else if (
         blockDelta.delta &&
         "toolUse" in blockDelta.delta &&
         blockDelta.delta.toolUse
       ) {
-        // Tool use delta (input JSON)
+        // Tool use delta - buffer for policy evaluation
         const toolUseDelta = blockDelta.delta.toolUse;
         if (this.currentToolCallIndex >= 0 && toolUseDelta.input) {
           this.state.toolCalls[this.currentToolCallIndex].arguments +=
@@ -626,7 +605,6 @@ class BedrockStreamAdapter
         isToolCallChunk = true;
       }
     } else if ("contentBlockStop" in chunk && chunk.contentBlockStop) {
-      // Content block ended
       const isToolBlock =
         this.state.toolCalls.length > 0 &&
         this.currentToolCallIndex === this.state.toolCalls.length - 1;
@@ -635,25 +613,16 @@ class BedrockStreamAdapter
         this.state.rawToolCallEvents.push(chunk);
         isToolCallChunk = true;
       } else {
-        sseData = `event: content_block_stop\ndata: ${JSON.stringify({
-          type: "content_block_stop",
-          index: chunk.contentBlockStop.contentBlockIndex ?? 0,
-        })}\n\n`;
+        sseData = `${JSON.stringify(chunk)}\n`;
       }
     } else if ("messageStop" in chunk && chunk.messageStop) {
-      // Message ended
       this.state.stopReason = chunk.messageStop.stopReason ?? "end_turn";
-      isFinal = true;
+      sseData = `${JSON.stringify(chunk)}\n`;
+      // Don't set isFinal here - metadata chunk comes after messageStop
     } else if ("metadata" in chunk && chunk.metadata) {
-      // Usage and metrics information
       const metadata = chunk.metadata as {
-        usage?: {
-          inputTokens?: number;
-          outputTokens?: number;
-        };
-        metrics?: {
-          latencyMs?: number;
-        };
+        usage?: { inputTokens?: number; outputTokens?: number };
+        metrics?: { latencyMs?: number };
         trace?: unknown;
       };
       if (metadata.usage) {
@@ -662,81 +631,75 @@ class BedrockStreamAdapter
           outputTokens: metadata.usage.outputTokens ?? 0,
         };
       }
-      // Capture latency metrics
       if (metadata.metrics?.latencyMs !== undefined) {
         this.bedrockState.latencyMs = metadata.metrics.latencyMs;
       }
-      // Capture trace info (guardrail, promptRouter)
       if (metadata.trace) {
         this.bedrockState.trace = metadata.trace;
       }
+      // Pass through metadata chunk as-is - this is the final event
+      sseData = `${JSON.stringify(chunk)}\n`;
+      isFinal = true;
     } else if (
       "internalServerException" in chunk &&
       chunk.internalServerException
     ) {
-      // Internal server error from Bedrock
-      const error = chunk.internalServerException;
       return {
         sseData: null,
         isToolCallChunk: false,
         isFinal: true,
         error: {
           type: "internal_server_error",
-          message: error.message ?? "Internal server error",
+          message:
+            chunk.internalServerException.message ?? "Internal server error",
         },
       };
     } else if (
       "modelStreamErrorException" in chunk &&
       chunk.modelStreamErrorException
     ) {
-      // Model stream error
-      const error = chunk.modelStreamErrorException;
       return {
         sseData: null,
         isToolCallChunk: false,
         isFinal: true,
         error: {
           type: "model_stream_error",
-          message: error.message ?? "Model stream error",
+          message:
+            chunk.modelStreamErrorException.message ?? "Model stream error",
         },
       };
     } else if (
       "serviceUnavailableException" in chunk &&
       chunk.serviceUnavailableException
     ) {
-      // Service unavailable
-      const error = chunk.serviceUnavailableException;
       return {
         sseData: null,
         isToolCallChunk: false,
         isFinal: true,
         error: {
           type: "service_unavailable",
-          message: error.message ?? "Service unavailable",
+          message:
+            chunk.serviceUnavailableException.message ?? "Service unavailable",
         },
       };
     } else if ("throttlingException" in chunk && chunk.throttlingException) {
-      // Rate limiting / throttling
-      const error = chunk.throttlingException;
       return {
         sseData: null,
         isToolCallChunk: false,
         isFinal: true,
         error: {
           type: "throttling",
-          message: error.message ?? "Request throttled",
+          message: chunk.throttlingException.message ?? "Request throttled",
         },
       };
     } else if ("validationException" in chunk && chunk.validationException) {
-      // Validation error (bad request)
-      const error = chunk.validationException;
       return {
         sseData: null,
         isToolCallChunk: false,
         isFinal: true,
         error: {
           type: "validation_error",
-          message: error.message ?? "Validation error",
+          message: chunk.validationException.message ?? "Validation error",
         },
       };
     }
@@ -746,7 +709,7 @@ class BedrockStreamAdapter
 
   getSSEHeaders(): Record<string, string> {
     return {
-      "Content-Type": "text/event-stream",
+      "Content-Type": "application/x-ndjson",
       "Cache-Control": "no-cache",
       Connection: "keep-alive",
       "request-id": `req-proxy-${Date.now()}`,
@@ -754,107 +717,35 @@ class BedrockStreamAdapter
   }
 
   formatTextDeltaSSE(text: string): string {
-    const event = {
-      type: "content_block_delta",
-      index: 0,
-      delta: {
-        type: "text_delta",
-        text,
+    // NDJSON format - matches AWS SDK output
+    return `${JSON.stringify({
+      contentBlockDelta: {
+        contentBlockIndex: 0,
+        delta: { text },
       },
-    };
-    return `event: content_block_delta\ndata: ${JSON.stringify(event)}\n\n`;
+    })}\n`;
   }
 
   getRawToolCallEvents(): string[] {
-    return this.state.rawToolCallEvents.map((event) => {
-      const typedEvent = event as BedrockStreamEvent;
-      // Convert Bedrock events to Anthropic-like SSE format
-      if (
-        "contentBlockStart" in typedEvent &&
-        typedEvent.contentBlockStart?.start &&
-        "toolUse" in typedEvent.contentBlockStart.start
-      ) {
-        const toolUse = typedEvent.contentBlockStart.start.toolUse;
-        return `event: content_block_start\ndata: ${JSON.stringify({
-          type: "content_block_start",
-          index: typedEvent.contentBlockStart.contentBlockIndex ?? 0,
-          content_block: {
-            type: "tool_use",
-            id: toolUse?.toolUseId,
-            name: toolUse?.name,
-            input: {},
-          },
-        })}\n\n`;
-      }
-      if (
-        "contentBlockDelta" in typedEvent &&
-        typedEvent.contentBlockDelta?.delta &&
-        "toolUse" in typedEvent.contentBlockDelta.delta
-      ) {
-        return `event: content_block_delta\ndata: ${JSON.stringify({
-          type: "content_block_delta",
-          index: typedEvent.contentBlockDelta.contentBlockIndex ?? 0,
-          delta: {
-            type: "input_json_delta",
-            partial_json:
-              typedEvent.contentBlockDelta.delta.toolUse?.input ?? "",
-          },
-        })}\n\n`;
-      }
-      if ("contentBlockStop" in typedEvent && typedEvent.contentBlockStop) {
-        return `event: content_block_stop\ndata: ${JSON.stringify({
-          type: "content_block_stop",
-          index: typedEvent.contentBlockStop.contentBlockIndex ?? 0,
-        })}\n\n`;
-      }
-      return "";
-    });
+    // NDJSON format - pass through raw chunks
+    return this.state.rawToolCallEvents.map(
+      (event) => `${JSON.stringify(event)}\n`,
+    );
   }
 
   formatCompleteTextSSE(text: string): string[] {
+    // NDJSON format - matches AWS SDK output
     return [
-      `event: content_block_start\ndata: ${JSON.stringify({
-        type: "content_block_start",
-        index: 0,
-        content_block: { type: "text", text: "" },
-      })}\n\n`,
-      `event: content_block_delta\ndata: ${JSON.stringify({
-        type: "content_block_delta",
-        index: 0,
-        delta: { type: "text_delta", text },
-      })}\n\n`,
-      `event: content_block_stop\ndata: ${JSON.stringify({
-        type: "content_block_stop",
-        index: 0,
-      })}\n\n`,
+      `${JSON.stringify({ contentBlockStart: { contentBlockIndex: 0, start: { text: "" } } })}\n`,
+      `${JSON.stringify({ contentBlockDelta: { contentBlockIndex: 0, delta: { text } } })}\n`,
+      `${JSON.stringify({ contentBlockStop: { contentBlockIndex: 0 } })}\n`,
     ];
   }
 
   formatEndSSE(): string {
-    const events: string[] = [];
-
-    // message_delta with stop_reason
-    events.push(
-      `event: message_delta\ndata: ${JSON.stringify({
-        type: "message_delta",
-        delta: {
-          stop_reason: this.state.stopReason ?? "end_turn",
-          stop_sequence: null,
-        },
-        usage: {
-          output_tokens: this.state.usage?.outputTokens ?? 0,
-        },
-      })}\n\n`,
-    );
-
-    // message_stop
-    events.push(
-      `event: message_stop\ndata: ${JSON.stringify({
-        type: "message_stop",
-      })}\n\n`,
-    );
-
-    return events.join("");
+    // All events (messageStop, metadata) are passed through in processChunk
+    // Nothing additional needed here
+    return "";
   }
 
   toProviderResponse(): BedrockResponse {

@@ -786,22 +786,24 @@ describe("BedrockStreamAdapter", () => {
         messageStart: { role: "assistant" },
       });
 
-      expect(result.sseData).toContain("message_start");
+      // NDJSON format - exact SDK output
+      expect(result.sseData).toBe('{"messageStart":{"role":"assistant"}}\n');
       expect(result.isToolCallChunk).toBe(false);
       expect(result.isFinal).toBe(false);
     });
 
     test("processes text contentBlockStart event", () => {
       const adapter = bedrockAdapterFactory.createStreamAdapter();
-      const result = adapter.processChunk({
+      const chunk = {
         contentBlockStart: {
           contentBlockIndex: 0,
           start: { text: "" },
         },
-      } as any);
+      };
+      const result = adapter.processChunk(chunk as any);
 
-      expect(result.sseData).toContain("content_block_start");
-      expect(result.sseData).toContain('"type":"text"');
+      // NDJSON format - exact SDK output
+      expect(result.sseData).toBe(`${JSON.stringify(chunk)}\n`);
     });
 
     test("processes toolUse contentBlockStart event", () => {
@@ -831,15 +833,16 @@ describe("BedrockStreamAdapter", () => {
 
     test("processes text contentBlockDelta event", () => {
       const adapter = bedrockAdapterFactory.createStreamAdapter();
-      const result = adapter.processChunk({
+      const chunk = {
         contentBlockDelta: {
           contentBlockIndex: 0,
           delta: { text: "Hello " },
         },
-      });
+      };
+      const result = adapter.processChunk(chunk);
 
-      expect(result.sseData).toContain("content_block_delta");
-      expect(result.sseData).toContain("Hello ");
+      // NDJSON format - exact SDK output
+      expect(result.sseData).toBe(`${JSON.stringify(chunk)}\n`);
       expect(adapter.state.text).toBe("Hello ");
     });
 
@@ -914,53 +917,62 @@ describe("BedrockStreamAdapter", () => {
 
     test("processes messageStop event", () => {
       const adapter = bedrockAdapterFactory.createStreamAdapter();
-      const result = adapter.processChunk({
-        messageStop: { stopReason: "end_turn" },
-      });
+      const chunk = { messageStop: { stopReason: "end_turn" } };
+      const result = adapter.processChunk(chunk as any);
 
-      expect(result.isFinal).toBe(true);
+      // messageStop is NOT final - metadata comes after
+      expect(result.isFinal).toBe(false);
+      expect(result.sseData).toBe(`${JSON.stringify(chunk)}\n`);
       expect(adapter.state.stopReason).toBe("end_turn");
     });
 
     test("processes metadata event with usage", () => {
       const adapter = bedrockAdapterFactory.createStreamAdapter();
-      adapter.processChunk({
+      const chunk = {
         metadata: {
           usage: { inputTokens: 100, outputTokens: 50, totalTokens: 150 },
         },
-      } as any);
+      };
+      const result = adapter.processChunk(chunk as any);
 
       expect(adapter.state.usage).toEqual({
         inputTokens: 100,
         outputTokens: 50,
       });
+      // metadata is the final event and outputs NDJSON
+      expect(result.isFinal).toBe(true);
+      expect(result.sseData).toBe(`${JSON.stringify(chunk)}\n`);
     });
 
     test("processes metadata event with latency metrics", () => {
       const adapter = bedrockAdapterFactory.createStreamAdapter();
-      adapter.processChunk({
+      const chunk = {
         metadata: {
           usage: { inputTokens: 10, outputTokens: 5 },
           metrics: { latencyMs: 1234 },
         },
-      } as any);
+      };
+      const result = adapter.processChunk(chunk as any);
 
       const response = adapter.toProviderResponse();
       expect(response.metrics).toEqual({ latencyMs: 1234 });
+      expect(result.sseData).toBe(`${JSON.stringify(chunk)}\n`);
     });
 
     test("processes metadata event with trace info", () => {
       const adapter = bedrockAdapterFactory.createStreamAdapter();
       const traceData = { guardrail: { inputAssessment: { blocked: false } } };
-      adapter.processChunk({
+      const chunk = {
         metadata: {
           usage: { inputTokens: 10, outputTokens: 5 },
           trace: traceData,
         },
-      } as any);
+      };
+      const result = adapter.processChunk(chunk as any);
 
       const response = adapter.toProviderResponse();
       expect(response.trace).toEqual(traceData);
+      expect(result.sseData).toBe(`${JSON.stringify(chunk)}\n`);
     });
 
     test("tracks first chunk time", () => {
@@ -1102,49 +1114,63 @@ describe("BedrockStreamAdapter", () => {
   });
 
   describe("getRawToolCallEvents", () => {
-    test("returns tool call events in Anthropic-like SSE format", () => {
+    test("returns tool call events as NDJSON", () => {
       const adapter = bedrockAdapterFactory.createStreamAdapter();
 
-      adapter.processChunk({
+      const chunk1 = {
         contentBlockStart: {
           contentBlockIndex: 0,
           start: {
             toolUse: { toolUseId: "call_123", name: "get_weather" },
           },
         },
-      } as any);
-      adapter.processChunk({
+      };
+      const chunk2 = {
         contentBlockDelta: {
           contentBlockIndex: 0,
           delta: { toolUse: { input: '{"loc":"NYC"}' } },
         },
-      } as any);
+      };
+
+      adapter.processChunk(chunk1 as any);
+      adapter.processChunk(chunk2 as any);
 
       const events = adapter.getRawToolCallEvents();
 
+      // NDJSON format - exact SDK output
       expect(events).toEqual([
-        expect.stringContaining("content_block_start"),
-        expect.stringContaining("input_json_delta"),
+        `${JSON.stringify(chunk1)}\n`,
+        `${JSON.stringify(chunk2)}\n`,
       ]);
     });
   });
 
   describe("formatEndSSE", () => {
-    test("formats end events with stop reason and usage", () => {
+    test("returns empty string since events pass through processChunk", () => {
+      const adapter = bedrockAdapterFactory.createStreamAdapter();
+      expect(adapter.formatEndSSE()).toBe("");
+    });
+  });
+
+  describe("processChunk streams messageStop and metadata", () => {
+    test("outputs messageStop and metadata as NDJSON", () => {
       const adapter = bedrockAdapterFactory.createStreamAdapter();
 
-      adapter.processChunk({
+      const messageStopChunk = { messageStop: { stopReason: "end_turn" } };
+      const metadataChunk = {
         metadata: {
-          usage: { inputTokens: 100, outputTokens: 50, totalTokens: 150 },
+          usage: { inputTokens: 100, outputTokens: 50 },
+          metrics: { latencyMs: 590 },
         },
-      } as any);
-      adapter.processChunk({ messageStop: { stopReason: "end_turn" } } as any);
+      };
 
-      const endSSE = adapter.formatEndSSE();
+      const stopResult = adapter.processChunk(messageStopChunk as any);
+      expect(stopResult.sseData).toBe(`${JSON.stringify(messageStopChunk)}\n`);
+      expect(stopResult.isFinal).toBe(false); // metadata comes after
 
-      expect(endSSE).toContain("message_delta");
-      expect(endSSE).toContain("end_turn");
-      expect(endSSE).toContain("message_stop");
+      const metadataResult = adapter.processChunk(metadataChunk as any);
+      expect(metadataResult.sseData).toBe(`${JSON.stringify(metadataChunk)}\n`);
+      expect(metadataResult.isFinal).toBe(true); // metadata is final
     });
   });
 });
