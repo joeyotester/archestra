@@ -81,7 +81,7 @@ export class Authnz {
       );
       return true;
     }
-    // Check if URL matches any LLM proxy route (e.g., /v1/openai, /v1/anthropic, /v1/vllm)
+    // Check if URL matches any LLM proxy route (e.g., /v1/openai, /v1/anthropic, /v1/cohere, /v1/vllm)
     const isLlmProxyRoute = SupportedProviders.some((provider) =>
       url.startsWith(`/v1/${provider}`),
     );
@@ -89,10 +89,6 @@ export class Authnz {
     if (
       url.startsWith("/api/auth") ||
       url.startsWith("/api/invitation/") || // Allow invitation check without auth
-      url.startsWith("/v1/openai") ||
-      url.startsWith("/v1/anthropic") ||
-      url.startsWith("/v1/gemini") ||
-      url.startsWith("/v1/cohere") ||
       isLlmProxyRoute ||
       url === "/openapi.json" ||
       url === "/health" ||

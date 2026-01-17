@@ -132,12 +132,10 @@ For non-GKE environments or when Workload Identity isn't available, set `ARCHEST
 ### Supported Cohere APIs
 
 - **Chat API v2** (`/v2/chat`) - ✅ Fully supported
-- **OpenAI Compatibility API** (`/compatibility/v1/chat/completions`) - ✅ Fully supported
 
 ### Cohere Connection Details
 
 - **Base URL (Native API)**: `http://localhost:9000/v1/cohere/{agent-id}`
-- **Base URL (OpenAI Compatibility)**: `http://localhost:9000/v1/cohere/{agent-id}/compatibility/v1`
 - **Authentication**: Pass your Cohere API key in the `Authorization` header as `Bearer <your-api-key>`
 
 ### Cohere Configuration
@@ -146,12 +144,6 @@ For non-GKE environments or when Workload Identity isn't available, set `ARCHEST
 | ------------------------------- | -------- | ------------------------------------------------------ |
 | `ARCHESTRA_COHERE_BASE_URL`     | No       | Cohere API base URL (default: `https://api.cohere.ai`) |
 | `ARCHESTRA_CHAT_COHERE_API_KEY` | No       | Default Cohere API key for Chat UI                     |
-
-### Important Notes
-
-- **Model Selection**: Cohere's Command series models are supported (e.g., `command-r-plus-08-2024`, `command-a-03-2025`). Vision models are excluded from the Chat UI as they don't support tool use.
-- **OpenAI Compatibility**: You can use the OpenAI SDK with Cohere by pointing to the compatibility endpoint. This is useful for frameworks that natively support OpenAI.
-- **Tool Support**: Function calling (tool use) is fully supported with Cohere's Command models, including tool invocation policies and trusted data policies.
 ---
 title: Supported LLM Providers
 category: Archestra Platform

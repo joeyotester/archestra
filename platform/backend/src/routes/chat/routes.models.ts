@@ -726,17 +726,9 @@ const chatModelsRoutes: FastifyPluginAsyncZod = async (fastify) => {
         "Returning chat models",
       );
 
-      const sanitizedModels = uniqBy(
-        models,
-        (model) => `${model.provider}:${model.id}`,
-      ).map((model) => ({
-        id: String(model.id),
-        displayName: model.displayName || String(model.id),
-        provider: model.provider,
-        createdAt: model.createdAt ?? undefined,
-      }));
-
-      return reply.send(sanitizedModels);
+      return reply.send(
+        uniqBy(models, (model) => `${model.provider}:${model.id}`),
+      );
     },
   );
 };

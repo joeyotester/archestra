@@ -32,7 +32,7 @@ export type LLMModel = Parameters<typeof streamText>[0]["model"];
  * Since same models could be served by different providers.
  * Currently it exists for backward compatibility.
  *
- * Note: vLLM and Ollama cannot serve any model, so they cannot be auto-detected by model name.
+ * Note: vLLM and Ollama can serve any model, so they cannot be auto-detected by model name.
  * Users must explicitly select vLLM or Ollama as the provider.
  */
 export function detectProviderFromModel(model: string): SupportedChatProvider {
@@ -54,7 +54,7 @@ export function detectProviderFromModel(model: string): SupportedChatProvider {
     return "openai";
   }
 
-  if (lowerModel.includes("command") || lowerModel.includes("cohere")) {
+  if (lowerModel.includes("command")) {
     return "cohere";
   }
 
@@ -67,7 +67,7 @@ export function detectProviderFromModel(model: string): SupportedChatProvider {
   }
 
   // Default to anthropic for backwards compatibility
-  // Note: vLLM and Ollama cannot be auto-detected as they can serve any model
+  // Note: vLLM and Ollama can serve any model, so they cannot be auto-detected
   return "anthropic";
 }
 
@@ -99,7 +99,7 @@ export async function resolveProviderApiKey(params: {
   });
 
   if (resolvedApiKey?.secretId) {
-    const secretId =
+    const secretId = await secretManager().getSecret(resolvedApiKey.secretId);
       Array.isArray(resolvedApiKey.secretId) &&
       resolvedApiKey.secretId.length > 0
         ? resolvedApiKey.secretId[0]
