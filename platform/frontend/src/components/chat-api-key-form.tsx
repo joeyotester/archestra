@@ -115,13 +115,10 @@ const PROVIDER_CONFIG: Record<
     consoleUrl: "https://z.ai/model-api",
     consoleName: "Zhipu AI Platform",
   },
-  // TODO: Bedrock uses AWS credentials (access key, secret, optional session token, region)
-  // instead of a single API key. Consider adding separate form fields for each credential
-  // component instead of the colon-separated format in a single input.
   bedrock: {
     name: "Amazon Bedrock",
     icon: "/icons/bedrock.png",
-    placeholder: "ACCESS_KEY:SECRET_KEY:SESSION_TOKEN:REGION",
+    placeholder: "your-bedrock-access-token",
     enabled: true,
     consoleUrl: "https://console.aws.amazon.com/bedrock/",
     consoleName: "AWS Bedrock Console",

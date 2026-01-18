@@ -98,12 +98,8 @@ export const ConverseResponseSchema = z.object({
 // Headers schema for the proxy
 export const ConverseHeadersSchema = z.object({
   "user-agent": z.string().optional().describe("The user agent of the client"),
-  "x-amz-access-key-id": z.string().optional().describe("AWS Access Key ID"),
-  "x-amz-secret-access-key": z
+  authorization: z
     .string()
     .optional()
-    .describe("AWS Secret Access Key"),
-  "x-amz-session-token": z.string().optional().describe("AWS Session Token"),
-  "x-amz-region": z.string().optional().describe("AWS Region"),
-  authorization: z.string().optional().describe("Authorization header"),
+    .describe("Authorization header with Bearer token"),
 });

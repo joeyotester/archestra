@@ -1,12 +1,5 @@
-import {
-  BedrockRuntimeClient,
-  ConverseCommand,
-  ConverseStreamCommand,
-  type ConverseStreamOutput,
-} from "@aws-sdk/client-bedrock-runtime";
-import { Sha256 } from "@aws-crypto/sha256-js";
+import type { ConverseStreamOutput } from "@aws-sdk/client-bedrock-runtime";
 import { EventStreamCodec } from "@smithy/eventstream-codec";
-import { SignatureV4 } from "@smithy/signature-v4";
 import { fromUtf8, toUtf8 } from "@smithy/util-utf8";
 import { encode as toonEncode } from "@toon-format/toon";
 import config from "@/config";
@@ -87,9 +80,7 @@ function encodeToolName(name: string): string {
 /**
  * Build a mapping from encoded tool names back to original names.
  */
-function buildToolNameMapping(
-  request: BedrockRequest,
-): Map<string, string> {
+function buildToolNameMapping(request: BedrockRequest): Map<string, string> {
   const mapping = new Map<string, string>();
   const tools = request.toolConfig?.tools ?? [];
   for (const tool of tools) {
@@ -649,7 +640,9 @@ class BedrockStreamAdapter
 
     // Process based on event type
     if ("messageStart" in chunk && chunk.messageStart) {
-      sseData = rawBytes ?? encodeEventStreamMessage("messageStart", chunk.messageStart);
+      sseData =
+        rawBytes ??
+        encodeEventStreamMessage("messageStart", chunk.messageStart);
     } else if ("contentBlockStart" in chunk && chunk.contentBlockStart) {
       const blockStart = chunk.contentBlockStart;
       if (
@@ -670,7 +663,10 @@ class BedrockStreamAdapter
       } else {
         sseData =
           rawBytes ??
-          encodeEventStreamMessage("contentBlockStart", chunk.contentBlockStart);
+          encodeEventStreamMessage(
+            "contentBlockStart",
+            chunk.contentBlockStart,
+          );
       }
     } else if ("contentBlockDelta" in chunk && chunk.contentBlockDelta) {
       const blockDelta = chunk.contentBlockDelta;
@@ -682,7 +678,10 @@ class BedrockStreamAdapter
         this.state.text += blockDelta.delta.text;
         sseData =
           rawBytes ??
-          encodeEventStreamMessage("contentBlockDelta", chunk.contentBlockDelta);
+          encodeEventStreamMessage(
+            "contentBlockDelta",
+            chunk.contentBlockDelta,
+          );
       } else if (
         blockDelta.delta &&
         "toolUse" in blockDelta.delta &&
@@ -719,7 +718,8 @@ class BedrockStreamAdapter
         isToolCallChunk = true; // Mark as tool-related so it's not streamed yet
       } else {
         sseData =
-          rawBytes ?? encodeEventStreamMessage("messageStop", chunk.messageStop);
+          rawBytes ??
+          encodeEventStreamMessage("messageStop", chunk.messageStop);
       }
       // Don't set isFinal here - metadata chunk comes after messageStop
     } else if ("metadata" in chunk && chunk.metadata) {
@@ -746,7 +746,8 @@ class BedrockStreamAdapter
         isToolCallChunk = true; // Mark as tool-related so it's not streamed yet
       } else {
         // Pass through metadata chunk as-is - this is the final event
-        sseData = rawBytes ?? encodeEventStreamMessage("metadata", chunk.metadata);
+        sseData =
+          rawBytes ?? encodeEventStreamMessage("metadata", chunk.metadata);
       }
       isFinal = true;
     } else if (
@@ -861,15 +862,23 @@ class BedrockStreamAdapter
               },
             },
           };
-          result.push(encodeEventStreamMessage("contentBlockStart", decodedEvent));
+          result.push(
+            encodeEventStreamMessage("contentBlockStart", decodedEvent),
+          );
         } else {
           result.push(
-            encodeEventStreamMessage("contentBlockStart", event.contentBlockStart),
+            encodeEventStreamMessage(
+              "contentBlockStart",
+              event.contentBlockStart,
+            ),
           );
         }
       } else if ("contentBlockDelta" in event && event.contentBlockDelta) {
         result.push(
-          encodeEventStreamMessage("contentBlockDelta", event.contentBlockDelta),
+          encodeEventStreamMessage(
+            "contentBlockDelta",
+            event.contentBlockDelta,
+          ),
         );
       } else if ("contentBlockStop" in event && event.contentBlockStop) {
         result.push(
@@ -1213,33 +1222,20 @@ export const bedrockAdapterFactory: LLMProvider<
   },
 
   extractApiKey(headers: BedrockHeaders): string | undefined {
-    // Bedrock uses AWS credentials, not a simple API key
-    // Return a composite string that includes access key, secret, and optionally session token
-    const accessKeyId = headers["x-amz-access-key-id"];
-    const secretAccessKey = headers["x-amz-secret-access-key"];
-    const sessionToken = headers["x-amz-session-token"];
-    const region = headers["x-amz-region"];
-
-    if (accessKeyId && secretAccessKey) {
-      // Format: accessKeyId:secretAccessKey:sessionToken:region
-      const parts = [accessKeyId, secretAccessKey];
-      if (sessionToken) parts.push(sessionToken);
-      else parts.push("");
-      if (region) parts.push(region);
-      return parts.join(":");
+    // Extract Bearer token from Authorization header
+    const authHeader = headers.authorization;
+    if (authHeader?.startsWith("Bearer ")) {
+      return authHeader.slice(7);
     }
-
-    // Fall back to Authorization header if present
-    if (headers.authorization?.startsWith("AWS4-HMAC-SHA256")) {
-      return headers.authorization;
+    // Also accept raw token in authorization header
+    if (authHeader && !authHeader.includes(" ")) {
+      return authHeader;
     }
-
     return undefined;
   },
 
   getBaseUrl(): string | undefined {
-    // Bedrock uses regional endpoints, not a single base URL
-    return undefined;
+    return config.llm.bedrock.baseUrl || undefined;
   },
 
   getSpanName(streaming: boolean): string {
@@ -1249,75 +1245,51 @@ export const bedrockAdapterFactory: LLMProvider<
   createClient(
     apiKey: string | undefined,
     _options?: CreateClientOptions,
-  ): BedrockRuntimeClient {
-    // Parse credentials from the composite API key string
-    let accessKeyId: string | undefined;
-    let secretAccessKey: string | undefined;
-    let sessionToken: string | undefined;
-    let region = config.llm.bedrock.region;
+  ): { apiKey: string; baseUrl: string } {
+    // Use provided API key or fall back to config
+    const finalApiKey = apiKey || config.chat.bedrock.apiKey;
+    const baseUrl = config.llm.bedrock.baseUrl;
 
-    if (apiKey) {
-      const parts = apiKey.split(":");
-      if (parts.length >= 2) {
-        accessKeyId = parts[0];
-        secretAccessKey = parts[1];
-        if (parts.length >= 3 && parts[2]) {
-          sessionToken = parts[2];
-        }
-        if (parts.length >= 4 && parts[3]) {
-          region = parts[3];
-        }
-      }
-    }
-
-    // Fall back to config if no credentials provided
-    if (!accessKeyId) {
-      accessKeyId = config.chat.bedrock.accessKeyId;
-    }
-    if (!secretAccessKey) {
-      secretAccessKey = config.chat.bedrock.secretAccessKey;
-    }
-    if (!sessionToken && config.chat.bedrock.sessionToken) {
-      sessionToken = config.chat.bedrock.sessionToken;
-    }
-
-    const clientConfig: {
-      region: string;
-      credentials?: {
-        accessKeyId: string;
-        secretAccessKey: string;
-        sessionToken?: string;
-      };
-    } = {
-      region,
-    };
-
-    // Only set credentials if we have them, otherwise use default credential chain
-    if (accessKeyId && secretAccessKey) {
-      clientConfig.credentials = {
-        accessKeyId,
-        secretAccessKey,
-      };
-      if (sessionToken) {
-        clientConfig.credentials.sessionToken = sessionToken;
-      }
-    }
-
-    return new BedrockRuntimeClient(clientConfig);
+    return { apiKey: finalApiKey, baseUrl };
   },
 
   async execute(
     client: unknown,
     request: BedrockRequest,
   ): Promise<BedrockResponse> {
-    const bedrockClient = client as BedrockRuntimeClient;
+    const { apiKey, baseUrl } = client as { apiKey: string; baseUrl: string };
     const commandInput = getCommandInput(request);
     const toolNameMapping = buildToolNameMapping(request);
 
-    // biome-ignore lint/suspicious/noExplicitAny: AWS SDK types are complex, casting to any for flexibility
-    const command = new ConverseCommand(commandInput as any);
+    const modelId = commandInput.modelId;
+    const path = `/model/${encodeURIComponent(modelId!)}/converse`;
+    const url = `${baseUrl}${path}`;
 
-    const response = await bedrockClient.send(command);
+    const bodyJson = JSON.stringify({
+      modelId: commandInput.modelId,
+      messages: commandInput.messages,
+      system: commandInput.system,
+      inferenceConfig: commandInput.inferenceConfig,
+      toolConfig: commandInput.toolConfig,
+    });
+
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: bodyJson,
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(
+        `Bedrock request failed: ${response.status} ${errorText}`,
+      );
+    }
+
+    const responseData = await response.json();
 
     // Convert response to our internal format
     const outputContent: Array<
@@ -1330,8 +1302,8 @@ export const bedrockAdapterFactory: LLMProvider<
           };
         }
     > = [];
-    if (response.output?.message?.content) {
-      for (const c of response.output.message.content) {
+    if (responseData.output?.message?.content) {
+      for (const c of responseData.output.message.content) {
         if (isTextBlock(c)) {
           outputContent.push({ text: c.text });
         } else if (isToolUseBlock(c)) {
@@ -1347,25 +1319,28 @@ export const bedrockAdapterFactory: LLMProvider<
     }
 
     return {
-      $metadata: response.$metadata,
+      $metadata: {
+        requestId: response.headers.get("x-amzn-requestid") ?? undefined,
+      },
       output: {
-        message: response.output?.message
+        message: responseData.output?.message
           ? {
               role: "assistant",
               content: outputContent,
             }
           : undefined,
       },
-      stopReason: response.stopReason as BedrockResponse["stopReason"],
+      stopReason: responseData.stopReason as BedrockResponse["stopReason"],
       usage: {
-        inputTokens: response.usage?.inputTokens ?? 0,
-        outputTokens: response.usage?.outputTokens ?? 0,
+        inputTokens: responseData.usage?.inputTokens ?? 0,
+        outputTokens: responseData.usage?.outputTokens ?? 0,
       },
-      metrics: response.metrics,
-      additionalModelResponseFields: response.additionalModelResponseFields as
-        | Record<string, unknown>
-        | undefined,
-      trace: response.trace,
+      metrics: responseData.metrics,
+      additionalModelResponseFields:
+        responseData.additionalModelResponseFields as
+          | Record<string, unknown>
+          | undefined,
+      trace: responseData.trace,
     };
   },
 
@@ -1373,12 +1348,8 @@ export const bedrockAdapterFactory: LLMProvider<
     client: unknown,
     request: BedrockRequest,
   ): Promise<AsyncIterable<BedrockStreamEventWithRaw>> {
-    const bedrockClient = client as BedrockRuntimeClient;
+    const { apiKey, baseUrl } = client as { apiKey: string; baseUrl: string };
     const commandInput = getCommandInput(request);
-
-    // Get credentials and region from client config
-    const clientConfig = await bedrockClient.config.credentials();
-    const region = await bedrockClient.config.region();
 
     // Build request body matching SDK format - cast to any to access optional fields
     const inputAny = commandInput as Record<string, unknown>;
@@ -1390,43 +1361,28 @@ export const bedrockAdapterFactory: LLMProvider<
       toolConfig: commandInput.toolConfig,
       guardrailConfig: inputAny.guardrailConfig,
       additionalModelRequestFields: inputAny.additionalModelRequestFields,
-      additionalModelResponseFieldPaths: inputAny.additionalModelResponseFieldPaths,
+      additionalModelResponseFieldPaths:
+        inputAny.additionalModelResponseFieldPaths,
     });
 
     const modelId = commandInput.modelId;
     const path = `/model/${encodeURIComponent(modelId!)}/converse-stream`;
-    const hostname = `bedrock-runtime.${region}.amazonaws.com`;
+    const url = `${baseUrl}${path}`;
 
-    // Sign request with SigV4
-    const signer = new SignatureV4({
-      service: "bedrock",
-      region,
-      credentials: clientConfig,
-      sha256: Sha256,
-    });
-
-    const signed = await signer.sign({
-      method: "POST",
-      protocol: "https:",
-      hostname,
-      path,
-      headers: {
-        host: hostname,
-        "content-type": "application/json",
-      },
-      body: bodyJson,
-    });
-
-    const url = `https://${hostname}${path}`;
     const response = await fetch(url, {
       method: "POST",
-      headers: signed.headers as Record<string, string>,
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+      },
       body: bodyJson,
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      throw new Error(`Bedrock request failed: ${response.status} ${errorText}`);
+      throw new Error(
+        `Bedrock request failed: ${response.status} ${errorText}`,
+      );
     }
 
     // Return async iterable that yields stream events with raw bytes
@@ -1527,7 +1483,11 @@ export const bedrockAdapterFactory: LLMProvider<
               } else {
                 // Log unrecognized event types for debugging
                 logger.warn(
-                  { eventType, messageType, bodyDataKeys: Object.keys(bodyData) },
+                  {
+                    eventType,
+                    messageType,
+                    bodyDataKeys: Object.keys(bodyData),
+                  },
                   "[BedrockStream] Unrecognized event type",
                 );
               }

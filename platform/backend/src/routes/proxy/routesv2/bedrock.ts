@@ -8,14 +8,11 @@ import { PROXY_API_PREFIX, PROXY_BODY_LIMIT } from "../common";
 import { handleLLMProxy } from "../llm-proxy-handler";
 import * as utils from "../utils";
 
-/** Mask sensitive AWS credentials in headers for logging */
+/** Mask sensitive credentials in headers for logging */
 function maskSensitiveHeaders(headers: Bedrock.Types.ConverseHeaders) {
   return {
     ...headers,
-    "x-amz-secret-access-key": headers["x-amz-secret-access-key"]
-      ? "***"
-      : undefined,
-    "x-amz-session-token": headers["x-amz-session-token"] ? "***" : undefined,
+    authorization: headers.authorization ? "***" : undefined,
   };
 }
 

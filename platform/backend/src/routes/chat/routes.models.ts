@@ -1,7 +1,3 @@
-import {
-  BedrockClient,
-  ListFoundationModelsCommand,
-} from "@aws-sdk/client-bedrock";
 import { RouteId, type SupportedProvider, SupportedProviders } from "@shared";
 import type { FastifyPluginAsyncZod } from "fastify-type-provider-zod";
 import { uniqBy } from "lodash-es";
@@ -410,45 +406,42 @@ async function fetchZhipuaiModels(apiKey: string): Promise<ModelInfo[]> {
 
 /**
  * Fetch models from Amazon Bedrock
- * Uses AWS credentials for authentication
- * https://docs.aws.amazon.com/bedrock/latest/APIReference/API_ListFoundationModels.html
+ * Uses Bearer token auth to call the foundation-models endpoint via the Bedrock gateway.
  */
-async function fetchBedrockModels(credentials: string): Promise<ModelInfo[]> {
-  // Parse credentials: accessKeyId:secretAccessKey:sessionToken:region
-  const parts = credentials.split(":");
-  const accessKeyId = parts[0];
-  const secretAccessKey = parts[1];
-  const sessionToken = parts[2] || undefined;
-  const region = parts[3] || config.chat.bedrock.region;
-
-  const clientConfig: {
-    region: string;
-    credentials?: {
-      accessKeyId: string;
-      secretAccessKey: string;
-      sessionToken?: string;
-    };
-  } = { region };
-
-  if (accessKeyId && secretAccessKey) {
-    clientConfig.credentials = {
-      accessKeyId,
-      secretAccessKey,
-    };
-    if (sessionToken) {
-      clientConfig.credentials.sessionToken = sessionToken;
-    }
+async function fetchBedrockModels(apiKey: string): Promise<ModelInfo[]> {
+  const baseUrl = config.llm.bedrock.baseUrl;
+  if (!baseUrl) {
+    logger.warn("Bedrock base URL not configured");
+    return [];
   }
 
-  const client = new BedrockClient(clientConfig);
-  const command = new ListFoundationModelsCommand({
-    // Filter for models with text output modality (chat-capable)
-    byOutputModality: "TEXT",
+  const url = `${baseUrl.replace('-runtime', '')}/foundation-models?byOutputModality=TEXT`;
+
+  const response = await fetch(url, {
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+    },
   });
 
-  const response = await client.send(command);
+  if (!response.ok) {
+    const errorText = await response.text();
+    logger.error(
+      { status: response.status, error: errorText },
+      "Failed to fetch Bedrock models",
+    );
+    throw new Error(`Failed to fetch Bedrock models: ${response.status}`);
+  }
 
-  if (!response.modelSummaries) {
+  const data = (await response.json()) as {
+    modelSummaries?: Array<{
+      modelId?: string;
+      modelName?: string;
+      inferenceTypesSupported?: string[];
+      inputModalities?: string[];
+    }>;
+  };
+
+  if (!data.modelSummaries) {
     logger.warn("No models returned from Bedrock ListFoundationModels");
     return [];
   }
@@ -456,16 +449,14 @@ async function fetchBedrockModels(credentials: string): Promise<ModelInfo[]> {
   // Filter to only include models that:
   // 1. Support on-demand inference
   // 2. Support TEXT input modality (excludes speech-only models like Nova Sonic)
-  const models = response.modelSummaries
+  const models = data.modelSummaries
     .filter(
       (model) =>
         (model.inferenceTypesSupported?.includes("ON_DEMAND") ?? false) &&
         (model.inputModalities?.includes("TEXT") ?? false),
     )
     .map((model) => {
-      // Generate a readable display name
       const displayName = model.modelName ?? model.modelId ?? "Unknown";
-
       return {
         id: model.modelId ?? "",
         displayName,
@@ -606,17 +597,8 @@ async function getProviderApiKey({
       return config.chat.ollama.apiKey || "";
     case "zhipuai":
       return config.chat.zhipuai?.apiKey || null;
-    case "bedrock": {
-      // Bedrock uses AWS credentials format: accessKeyId:secretAccessKey:sessionToken:region
-      const accessKeyId = config.chat.bedrock.accessKeyId;
-      const secretAccessKey = config.chat.bedrock.secretAccessKey;
-      const sessionToken = config.chat.bedrock.sessionToken;
-      const region = config.chat.bedrock.region;
-      if (accessKeyId && secretAccessKey) {
-        return `${accessKeyId}:${secretAccessKey}:${sessionToken}:${region}`;
-      }
-      return null;
-    }
+    case "bedrock":
+      return config.chat.bedrock.apiKey || null;
     default:
       return null;
   }
@@ -709,11 +691,9 @@ export async function fetchModelsForProvider({
         models = await modelFetchers[provider](apiKey);
       }
     } else if (provider === "bedrock") {
-      // Bedrock uses AWS credentials, only fetch if configured
+      // Bedrock returns static model list
       if (config.llm.bedrock.enabled) {
-        models = await modelFetchers[provider](
-          apiKey || ":::" + config.chat.bedrock.region,
-        );
+        models = await modelFetchers[provider](apiKey || "");
       }
     }
     logger.info(

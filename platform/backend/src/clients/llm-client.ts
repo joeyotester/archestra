@@ -127,16 +127,9 @@ export async function resolveProviderApiKey(params: {
     } else if (provider === "zhipuai" && config.chat.zhipuai.apiKey) {
       providerApiKey = config.chat.zhipuai.apiKey;
       apiKeySource = "environment";
-    } else if (provider === "bedrock" && config.chat.bedrock.accessKeyId) {
-      // Bedrock uses AWS credentials format: accessKeyId:secretAccessKey:sessionToken:region
-      const accessKeyId = config.chat.bedrock.accessKeyId;
-      const secretAccessKey = config.chat.bedrock.secretAccessKey;
-      const sessionToken = config.chat.bedrock.sessionToken;
-      const region = config.chat.bedrock.region;
-      if (accessKeyId && secretAccessKey) {
-        providerApiKey = `${accessKeyId}:${secretAccessKey}:${sessionToken || ""}:${region || ""}`;
-        apiKeySource = "environment";
-      }
+    } else if (provider === "bedrock" && config.chat.bedrock.apiKey) {
+      providerApiKey = config.chat.bedrock.apiKey;
+      apiKeySource = "environment";
     }
   }
 
@@ -277,29 +270,14 @@ export function createLLMModel(params: {
   }
 
   if (provider === "bedrock") {
-    // Bedrock uses AWS credentials format: accessKeyId:secretAccessKey:sessionToken:region
-    // Parse credentials from the apiKey string
-    const parts = apiKey?.split(":") ?? [];
-    const accessKeyId = parts[0] || undefined;
-    const secretAccessKey = parts[1] || undefined;
-    const sessionToken = parts[2] || undefined;
-    const region = parts[3] || config.chat.bedrock.region || "us-east-1";
-
     // Route through LLM Proxy for interaction logging and policy enforcement
     // URL format: /v1/bedrock/:agentId/converse (SDK appends /converse)
     const client = createAmazonBedrock({
       // Use baseURL to route through proxy
       baseURL: `http://localhost:${config.api.port}/v1/bedrock/${agentId}`,
-      // Use apiKey to bypass SigV4 signing (proxy handles AWS auth)
-      apiKey: "proxy-mode",
-      // Pass AWS credentials as custom headers for the proxy
-      headers: {
-        ...headers,
-        "x-amz-access-key-id": accessKeyId ?? "",
-        "x-amz-secret-access-key": secretAccessKey ?? "",
-        ...(sessionToken && { "x-amz-session-token": sessionToken }),
-        "x-amz-region": region,
-      },
+      // Use apiKey for Bearer token authentication (SDK handles Authorization header)
+      apiKey,
+      headers,
     });
     return client(modelName);
   }

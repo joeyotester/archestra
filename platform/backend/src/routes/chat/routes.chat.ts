@@ -109,9 +109,9 @@ async function getSmartDefaultModel(
   if (config.chat.gemini.apiKey) {
     return { model: "gemini-2.5-pro", provider: "gemini" };
   }
-  if (config.chat.bedrock.accessKeyId && config.chat.bedrock.secretAccessKey) {
+  if (config.chat.bedrock.apiKey) {
     return {
-      model: "anthropic.claude-3-5-sonnet",
+      model: "amazon.nova-lite-v1:0",
       provider: "bedrock",
     };
   }

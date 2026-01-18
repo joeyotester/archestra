@@ -568,8 +568,7 @@ async function handleStreaming<
       const refusalEvents = streamAdapter.formatCompleteTextSSE(contentMessage);
       for (const event of refusalEvents) {
         // Convert Uint8Array to Buffer for Node.js compatibility
-        const data =
-          event instanceof Uint8Array ? Buffer.from(event) : event;
+        const data = event instanceof Uint8Array ? Buffer.from(event) : event;
         reply.raw.write(data);
       }
 
@@ -594,8 +593,7 @@ async function handleStreaming<
 
       for (const event of rawEvents) {
         // Convert Uint8Array to Buffer for Node.js compatibility
-        const data =
-          event instanceof Uint8Array ? Buffer.from(event) : event;
+        const data = event instanceof Uint8Array ? Buffer.from(event) : event;
         reply.raw.write(data);
       }
     }

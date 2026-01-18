@@ -1183,11 +1183,11 @@ describe("BedrockStreamAdapter", () => {
       expect(events[1]).toBeInstanceOf(Uint8Array);
 
       // Decode and verify content
-      const decoded1 = decodeEventStreamMessage(events[0]);
+      const decoded1 = decodeEventStreamMessage(events[0] as Uint8Array);
       expect(decoded1.eventType).toBe("contentBlockStart");
       expect(decoded1.body).toEqual(chunk1.contentBlockStart);
 
-      const decoded2 = decodeEventStreamMessage(events[1]);
+      const decoded2 = decodeEventStreamMessage(events[1] as Uint8Array);
       expect(decoded2.eventType).toBe("contentBlockDelta");
       expect(decoded2.body).toEqual(chunk2.contentBlockDelta);
     });
@@ -1201,9 +1201,14 @@ describe("BedrockStreamAdapter", () => {
         contentBlockStart: { contentBlockIndex: 0, start: { text: "" } },
       } as any);
       adapter.processChunk({
-        contentBlockDelta: { contentBlockIndex: 0, delta: { text: "Let me help." } },
+        contentBlockDelta: {
+          contentBlockIndex: 0,
+          delta: { text: "Let me help." },
+        },
       } as any);
-      adapter.processChunk({ contentBlockStop: { contentBlockIndex: 0 } } as any);
+      adapter.processChunk({
+        contentBlockStop: { contentBlockIndex: 0 },
+      } as any);
 
       // Tool use block (buffered for policy evaluation)
       adapter.processChunk({
@@ -1218,7 +1223,9 @@ describe("BedrockStreamAdapter", () => {
           delta: { toolUse: { input: '{"location":"NYC"}' } },
         },
       } as any);
-      adapter.processChunk({ contentBlockStop: { contentBlockIndex: 1 } } as any);
+      adapter.processChunk({
+        contentBlockStop: { contentBlockIndex: 1 },
+      } as any);
 
       // messageStop and metadata (buffered when tool calls present)
       const stopResult = adapter.processChunk({
@@ -1240,22 +1247,22 @@ describe("BedrockStreamAdapter", () => {
       expect(events).toHaveLength(5); // 3 tool events + messageStop + metadata
 
       // Verify order: tool blocks first
-      const decoded0 = decodeEventStreamMessage(events[0]);
+      const decoded0 = decodeEventStreamMessage(events[0] as Uint8Array);
       expect(decoded0.eventType).toBe("contentBlockStart");
 
-      const decoded1 = decodeEventStreamMessage(events[1]);
+      const decoded1 = decodeEventStreamMessage(events[1] as Uint8Array);
       expect(decoded1.eventType).toBe("contentBlockDelta");
 
-      const decoded2 = decodeEventStreamMessage(events[2]);
+      const decoded2 = decodeEventStreamMessage(events[2] as Uint8Array);
       expect(decoded2.eventType).toBe("contentBlockStop");
 
       // Then messageStop
-      const decoded3 = decodeEventStreamMessage(events[3]);
+      const decoded3 = decodeEventStreamMessage(events[3] as Uint8Array);
       expect(decoded3.eventType).toBe("messageStop");
       expect(decoded3.body).toEqual({ stopReason: "tool_use" });
 
       // Finally metadata
-      const decoded4 = decodeEventStreamMessage(events[4]);
+      const decoded4 = decodeEventStreamMessage(events[4] as Uint8Array);
       expect(decoded4.eventType).toBe("metadata");
     });
   });
@@ -1292,75 +1299,82 @@ describe("BedrockStreamAdapter", () => {
 
 describe("bedrockAdapterFactory", () => {
   describe("extractApiKey", () => {
-    test("extracts credentials from custom headers", () => {
+    test("extracts API key from Bearer authorization header", () => {
       const headers = {
-        "x-amz-access-key-id": "AKIAIOSFODNN7EXAMPLE",
-        "x-amz-secret-access-key": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
-        "x-amz-region": "us-west-2",
+        authorization: "Bearer my-api-key-123",
       };
 
       const apiKey = bedrockAdapterFactory.extractApiKey(headers);
 
-      expect(apiKey).toBe(
-        "AKIAIOSFODNN7EXAMPLE:wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY::us-west-2",
-      );
+      expect(apiKey).toBe("my-api-key-123");
     });
 
-    test("includes session token when provided", () => {
+    test("extracts raw token without Bearer prefix", () => {
       const headers = {
-        "x-amz-access-key-id": "AKID",
-        "x-amz-secret-access-key": "SECRET",
-        "x-amz-session-token": "SESSION_TOKEN",
-        "x-amz-region": "eu-west-1",
+        authorization: "raw-api-key-456",
       };
 
       const apiKey = bedrockAdapterFactory.extractApiKey(headers);
 
-      expect(apiKey).toBe("AKID:SECRET:SESSION_TOKEN:eu-west-1");
+      expect(apiKey).toBe("raw-api-key-456");
     });
 
-    test("returns undefined when credentials missing", () => {
+    test("returns undefined when authorization missing", () => {
       const headers = {};
       const apiKey = bedrockAdapterFactory.extractApiKey(headers);
 
       expect(apiKey).toBeUndefined();
     });
 
-    test("falls back to AWS4 authorization header", () => {
+    test("ignores non-bearer authorization with spaces", () => {
       const headers = {
-        authorization: "AWS4-HMAC-SHA256 Credential=...",
+        authorization: "Basic dXNlcjpwYXNz",
       };
 
       const apiKey = bedrockAdapterFactory.extractApiKey(headers);
 
-      expect(apiKey).toBe("AWS4-HMAC-SHA256 Credential=...");
+      expect(apiKey).toBeUndefined();
     });
   });
 });
 
 describe("bedrockAdapterFactory.execute", () => {
   test("sends request and returns formatted response", async () => {
-    const client = createMockBedrockClient({
-      converseResponse: {
-        $metadata: { requestId: "req-123" },
-        output: {
-          message: {
-            role: "assistant",
-            content: [{ text: "Hello from Bedrock!" }],
-          },
+    const mockResponse = {
+      output: {
+        message: {
+          role: "assistant",
+          content: [{ text: "Hello from Bedrock!" }],
         },
-        stopReason: "end_turn",
-        usage: { inputTokens: 50, outputTokens: 25 },
       },
-    });
+      stopReason: "end_turn",
+      usage: { inputTokens: 50, outputTokens: 25 },
+    };
 
+    const mockFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      headers: new Headers({ "x-amzn-requestid": "req-123" }),
+      json: () => Promise.resolve(mockResponse),
+    });
+    vi.stubGlobal("fetch", mockFetch);
+
+    const client = { apiKey: "test-api-key", baseUrl: "https://bedrock.example.com" };
     const request = createMockRequest([
       { role: "user", content: [{ text: "Hi" }] },
     ]);
 
     const response = await bedrockAdapterFactory.execute(client, request);
 
-    expect(client.send).toHaveBeenCalledTimes(1);
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+    expect(mockFetch).toHaveBeenCalledWith(
+      "https://bedrock.example.com/model/anthropic.claude-3-sonnet-20240229-v1%3A0/converse",
+      expect.objectContaining({
+        method: "POST",
+        headers: expect.objectContaining({
+          Authorization: "Bearer test-api-key",
+        }),
+      }),
+    );
     expect(response).toEqual(
       expect.objectContaining({
         $metadata: { requestId: "req-123" },
@@ -1374,6 +1388,8 @@ describe("bedrockAdapterFactory.execute", () => {
         usage: { inputTokens: 50, outputTokens: 25 },
       }),
     );
+
+    vi.unstubAllGlobals();
   });
 });
 
