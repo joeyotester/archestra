@@ -4,6 +4,10 @@ import {
   ConverseStreamCommand,
   type ConverseStreamOutput,
 } from "@aws-sdk/client-bedrock-runtime";
+import { Sha256 } from "@aws-crypto/sha256-js";
+import { EventStreamCodec } from "@smithy/eventstream-codec";
+import { SignatureV4 } from "@smithy/signature-v4";
+import { fromUtf8, toUtf8 } from "@smithy/util-utf8";
 import { encode as toonEncode } from "@toon-format/toon";
 import config from "@/config";
 import logger from "@/logging";
@@ -38,6 +42,34 @@ type BedrockHeaders = Bedrock.Types.ConverseHeaders;
 
 // Stream event types from the SDK
 type BedrockStreamEvent = ConverseStreamOutput;
+
+// Extended event type that includes raw bytes for passthrough
+type BedrockStreamEventWithRaw = BedrockStreamEvent & {
+  __rawBytes?: Uint8Array;
+};
+
+// Event stream codec for binary encoding/decoding
+const eventStreamCodec = new EventStreamCodec(toUtf8, fromUtf8);
+
+/**
+ * Encode an event to AWS Event Stream binary format.
+ */
+function encodeEventStreamMessage(
+  eventType: string,
+  body: unknown,
+): Uint8Array {
+  const bodyJson = JSON.stringify(body);
+  const bodyBytes = fromUtf8(bodyJson);
+
+  return eventStreamCodec.encode({
+    headers: {
+      ":event-type": { type: "string", value: eventType },
+      ":content-type": { type: "string", value: "application/json" },
+      ":message-type": { type: "string", value: "event" },
+    },
+    body: bodyBytes,
+  });
+}
 
 // =============================================================================
 // HELPER FUNCTIONS
@@ -548,19 +580,22 @@ class BedrockStreamAdapter
     };
   }
 
-  processChunk(chunk: BedrockStreamEvent): ChunkProcessingResult {
+  processChunk(chunk: BedrockStreamEventWithRaw): ChunkProcessingResult {
     // Track first chunk time
     if (this.state.timing.firstChunkTime === null) {
       this.state.timing.firstChunkTime = Date.now();
     }
 
-    let sseData: string | null = null;
+    let sseData: Uint8Array | null = null;
     let isToolCallChunk = false;
     let isFinal = false;
 
-    // Pass through chunks as NDJSON - exactly what AWS SDK returns, just serialized
+    // Use raw bytes if available (passthrough from Bedrock), otherwise re-encode
+    const rawBytes = chunk.__rawBytes;
+
+    // Process based on event type
     if ("messageStart" in chunk && chunk.messageStart) {
-      sseData = `${JSON.stringify(chunk)}\n`;
+      sseData = rawBytes ?? encodeEventStreamMessage("messageStart", chunk.messageStart);
     } else if ("contentBlockStart" in chunk && chunk.contentBlockStart) {
       const blockStart = chunk.contentBlockStart;
       if (
@@ -579,7 +614,9 @@ class BedrockStreamAdapter
         this.state.rawToolCallEvents.push(chunk);
         isToolCallChunk = true;
       } else {
-        sseData = `${JSON.stringify(chunk)}\n`;
+        sseData =
+          rawBytes ??
+          encodeEventStreamMessage("contentBlockStart", chunk.contentBlockStart);
       }
     } else if ("contentBlockDelta" in chunk && chunk.contentBlockDelta) {
       const blockDelta = chunk.contentBlockDelta;
@@ -589,7 +626,9 @@ class BedrockStreamAdapter
         blockDelta.delta.text
       ) {
         this.state.text += blockDelta.delta.text;
-        sseData = `${JSON.stringify(chunk)}\n`;
+        sseData =
+          rawBytes ??
+          encodeEventStreamMessage("contentBlockDelta", chunk.contentBlockDelta);
       } else if (
         blockDelta.delta &&
         "toolUse" in blockDelta.delta &&
@@ -613,11 +652,14 @@ class BedrockStreamAdapter
         this.state.rawToolCallEvents.push(chunk);
         isToolCallChunk = true;
       } else {
-        sseData = `${JSON.stringify(chunk)}\n`;
+        sseData =
+          rawBytes ??
+          encodeEventStreamMessage("contentBlockStop", chunk.contentBlockStop);
       }
     } else if ("messageStop" in chunk && chunk.messageStop) {
       this.state.stopReason = chunk.messageStop.stopReason ?? "end_turn";
-      sseData = `${JSON.stringify(chunk)}\n`;
+      sseData =
+        rawBytes ?? encodeEventStreamMessage("messageStop", chunk.messageStop);
       // Don't set isFinal here - metadata chunk comes after messageStop
     } else if ("metadata" in chunk && chunk.metadata) {
       const metadata = chunk.metadata as {
@@ -638,7 +680,7 @@ class BedrockStreamAdapter
         this.bedrockState.trace = metadata.trace;
       }
       // Pass through metadata chunk as-is - this is the final event
-      sseData = `${JSON.stringify(chunk)}\n`;
+      sseData = rawBytes ?? encodeEventStreamMessage("metadata", chunk.metadata);
       isFinal = true;
     } else if (
       "internalServerException" in chunk &&
@@ -709,36 +751,67 @@ class BedrockStreamAdapter
 
   getSSEHeaders(): Record<string, string> {
     return {
-      "Content-Type": "application/json",
+      "Content-Type": "application/vnd.amazon.eventstream",
       "Cache-Control": "no-cache",
       Connection: "keep-alive",
       "request-id": `req-proxy-${Date.now()}`,
     };
   }
 
-  formatTextDeltaSSE(text: string): string {
-    // NDJSON format - matches AWS SDK output
-    return `${JSON.stringify({
-      contentBlockDelta: {
+  formatTextDeltaSSE(text: string): Uint8Array {
+    // AWS Event Stream binary format
+    return encodeEventStreamMessage("contentBlockDelta", {
+      contentBlockIndex: 0,
+      delta: { text },
+    });
+  }
+
+  getRawToolCallEvents(): Uint8Array[] {
+    // Use raw bytes if available (passthrough), otherwise re-encode
+    return this.state.rawToolCallEvents.map((rawEvent) => {
+      const event = rawEvent as BedrockStreamEventWithRaw;
+
+      // Use original raw bytes if available
+      if (event.__rawBytes) {
+        return event.__rawBytes;
+      }
+
+      // Fallback to re-encoding
+      if ("contentBlockStart" in event && event.contentBlockStart) {
+        return encodeEventStreamMessage(
+          "contentBlockStart",
+          event.contentBlockStart,
+        );
+      } else if ("contentBlockDelta" in event && event.contentBlockDelta) {
+        return encodeEventStreamMessage(
+          "contentBlockDelta",
+          event.contentBlockDelta,
+        );
+      } else if ("contentBlockStop" in event && event.contentBlockStop) {
+        return encodeEventStreamMessage(
+          "contentBlockStop",
+          event.contentBlockStop,
+        );
+      }
+      // Fallback - shouldn't happen
+      return new Uint8Array(0);
+    });
+  }
+
+  formatCompleteTextSSE(text: string): Uint8Array[] {
+    // AWS Event Stream binary format
+    return [
+      encodeEventStreamMessage("contentBlockStart", {
+        contentBlockIndex: 0,
+        start: { text: "" },
+      }),
+      encodeEventStreamMessage("contentBlockDelta", {
         contentBlockIndex: 0,
         delta: { text },
-      },
-    })}\n`;
-  }
-
-  getRawToolCallEvents(): string[] {
-    // NDJSON format - pass through raw chunks
-    return this.state.rawToolCallEvents.map(
-      (event) => `${JSON.stringify(event)}\n`,
-    );
-  }
-
-  formatCompleteTextSSE(text: string): string[] {
-    // NDJSON format - matches AWS SDK output
-    return [
-      `${JSON.stringify({ contentBlockStart: { contentBlockIndex: 0, start: { text: "" } } })}\n`,
-      `${JSON.stringify({ contentBlockDelta: { contentBlockIndex: 0, delta: { text } } })}\n`,
-      `${JSON.stringify({ contentBlockStop: { contentBlockIndex: 0 } })}\n`,
+      }),
+      encodeEventStreamMessage("contentBlockStop", {
+        contentBlockIndex: 0,
+      }),
     ];
   }
 
@@ -1187,21 +1260,138 @@ export const bedrockAdapterFactory: LLMProvider<
   async executeStream(
     client: unknown,
     request: BedrockRequest,
-  ): Promise<AsyncIterable<BedrockStreamEvent>> {
+  ): Promise<AsyncIterable<BedrockStreamEventWithRaw>> {
     const bedrockClient = client as BedrockRuntimeClient;
     const commandInput = getCommandInput(request);
 
-    // biome-ignore lint/suspicious/noExplicitAny: AWS SDK types are complex, casting to any for flexibility
-    const command = new ConverseStreamCommand(commandInput as any);
+    // Get credentials and region from client config
+    const clientConfig = await bedrockClient.config.credentials();
+    const region = await bedrockClient.config.region();
 
-    const response = await bedrockClient.send(command);
+    // Build request body matching SDK format - cast to any to access optional fields
+    const inputAny = commandInput as Record<string, unknown>;
+    const bodyJson = JSON.stringify({
+      modelId: commandInput.modelId,
+      messages: commandInput.messages,
+      system: commandInput.system,
+      inferenceConfig: commandInput.inferenceConfig,
+      toolConfig: commandInput.toolConfig,
+      guardrailConfig: inputAny.guardrailConfig,
+      additionalModelRequestFields: inputAny.additionalModelRequestFields,
+      additionalModelResponseFieldPaths: inputAny.additionalModelResponseFieldPaths,
+    });
 
-    // Return async iterable that yields stream events
+    const modelId = commandInput.modelId;
+    const path = `/model/${encodeURIComponent(modelId!)}/converse-stream`;
+    const hostname = `bedrock-runtime.${region}.amazonaws.com`;
+
+    // Sign request with SigV4
+    const signer = new SignatureV4({
+      service: "bedrock",
+      region,
+      credentials: clientConfig,
+      sha256: Sha256,
+    });
+
+    const signed = await signer.sign({
+      method: "POST",
+      protocol: "https:",
+      hostname,
+      path,
+      headers: {
+        host: hostname,
+        "content-type": "application/json",
+      },
+      body: bodyJson,
+    });
+
+    const url = `https://${hostname}${path}`;
+    const response = await fetch(url, {
+      method: "POST",
+      headers: signed.headers as Record<string, string>,
+      body: bodyJson,
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Bedrock request failed: ${response.status} ${errorText}`);
+    }
+
+    // Return async iterable that yields stream events with raw bytes
     return {
       [Symbol.asyncIterator]: async function* () {
-        if (response.stream) {
-          for await (const event of response.stream) {
-            yield event;
+        const reader = response.body?.getReader();
+        if (!reader) return;
+
+        let buffer = new Uint8Array(0);
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          // Accumulate buffer
+          const newBuffer = new Uint8Array(buffer.length + value.length);
+          newBuffer.set(buffer);
+          newBuffer.set(value, buffer.length);
+          buffer = newBuffer;
+
+          // Extract complete messages
+          while (buffer.length >= 4) {
+            const totalLen =
+              (buffer[0] << 24) |
+              (buffer[1] << 16) |
+              (buffer[2] << 8) |
+              buffer[3];
+            if (totalLen < 16 || buffer.length < totalLen) break;
+
+            const msgBytes = buffer.slice(0, totalLen);
+            buffer = buffer.slice(totalLen);
+
+            try {
+              // Decode to get headers and body
+              const message = eventStreamCodec.decode(msgBytes);
+
+              // Extract event type from headers
+              const eventType = String(
+                message.headers[":event-type"]?.value ?? "",
+              );
+
+              // Parse body JSON to get event data
+              let bodyData: Record<string, unknown> = {};
+              if (message.body?.length > 0) {
+                const bodyText = toUtf8(message.body);
+                try {
+                  bodyData = JSON.parse(bodyText);
+                } catch {
+                  // Keep empty object if parse fails
+                }
+              }
+
+              // Build event object matching SDK format, with raw bytes attached
+              // biome-ignore lint/suspicious/noExplicitAny: Building event dynamically from parsed data
+              const event: any = {
+                __rawBytes: msgBytes,
+              };
+
+              // Map event type to SDK event structure
+              if (eventType === "messageStart") {
+                event.messageStart = bodyData;
+              } else if (eventType === "contentBlockStart") {
+                event.contentBlockStart = bodyData;
+              } else if (eventType === "contentBlockDelta") {
+                event.contentBlockDelta = bodyData;
+              } else if (eventType === "contentBlockStop") {
+                event.contentBlockStop = bodyData;
+              } else if (eventType === "messageStop") {
+                event.messageStop = bodyData;
+              } else if (eventType === "metadata") {
+                event.metadata = bodyData;
+              }
+
+              yield event as BedrockStreamEventWithRaw;
+            } catch (err) {
+              logger.error({ err }, "Failed to decode event stream message");
+            }
           }
         }
       },

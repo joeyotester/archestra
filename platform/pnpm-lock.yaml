@@ -147,9 +147,15 @@ importers:
       '@shared':
         specifier: workspace:*
         version: link:../shared
+      '@smithy/eventstream-codec':
+        specifier: ^4.2.8
+        version: 4.2.8
       '@smithy/signature-v4':
         specifier: ^5.3.7
         version: 5.3.7
+      '@smithy/util-utf8':
+        specifier: ^4.2.0
+        version: 4.2.0
       '@toon-format/toon':
         specifier: ^2.1.0
         version: 2.1.0
@@ -9044,7 +9050,7 @@ snapshots:
   '@aws-crypto/crc32@5.2.0':
     dependencies:
       '@aws-crypto/util': 5.2.0
-      '@aws-sdk/types': 3.965.0
+      '@aws-sdk/types': 3.969.0
       tslib: 2.8.1
 
   '@aws-crypto/sha256-browser@5.2.0':
