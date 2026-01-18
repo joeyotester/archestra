@@ -69,6 +69,13 @@ function encodeEventStreamMessage(
 // =============================================================================
 
 /**
+ * Check if the model is a Nova model (requires tool name encoding).
+ */
+function isNovaModel(modelId: string): boolean {
+  return modelId.toLowerCase().includes("nova");
+}
+
+/**
  * Nova models fail with "Model produced invalid sequence as part of ToolUse" when
  * tool names contain hyphens. We replace hyphens with underscores before sending
  * to Bedrock and use a name mapping to restore original names in responses.
@@ -168,7 +175,10 @@ class BedrockRequestAdapter
 
   constructor(request: BedrockRequest) {
     this.request = request;
-    this.toolNameMapping = buildToolNameMapping(request);
+    // Only build mapping for Nova models (which require tool name encoding)
+    this.toolNameMapping = isNovaModel(request.modelId)
+      ? buildToolNameMapping(request)
+      : new Map();
   }
 
   // ---------------------------------------------------------------------------
@@ -620,9 +630,12 @@ class BedrockStreamAdapter
 
   /**
    * Set the tool name mapping from the request for decoding tool names in responses.
+   * Only builds mapping for Nova models (which require tool name encoding).
    */
   setToolNameMapping(request: BedrockRequest): void {
-    this.toolNameMapping = buildToolNameMapping(request);
+    if (isNovaModel(request.modelId)) {
+      this.toolNameMapping = buildToolNameMapping(request);
+    }
   }
 
   processChunk(chunk: BedrockStreamEventWithRaw): ChunkProcessingResult {
@@ -1153,8 +1166,11 @@ export async function convertToolResultsToToon(
 /**
  * Convert BedrockRequest to AWS SDK command input format.
  * Used by both ConverseCommand and ConverseStreamCommand.
+ * Only maps tool names for Nova models (which don't support hyphens).
  */
 export function getCommandInput(request: BedrockRequest) {
+  const shouldEncode = isNovaModel(request.modelId);
+
   return {
     modelId: request.modelId,
     messages: request.messages,
@@ -1168,10 +1184,11 @@ export function getCommandInput(request: BedrockRequest) {
           tools: request.toolConfig.tools?.map((t) => ({
             toolSpec: t.toolSpec
               ? {
-                  // Encode hyphens in tool names for Nova compatibility
-                  name: t.toolSpec.name
-                    ? encodeToolName(t.toolSpec.name)
-                    : undefined,
+                  // Only encode hyphens for Nova models
+                  name:
+                    t.toolSpec.name && shouldEncode
+                      ? encodeToolName(t.toolSpec.name)
+                      : t.toolSpec.name,
                   description: t.toolSpec.description,
                   inputSchema: t.toolSpec.inputSchema
                     ? {
@@ -1261,7 +1278,10 @@ export const bedrockAdapterFactory: LLMProvider<
   ): Promise<BedrockResponse> {
     const { apiKey, baseUrl } = client as { apiKey: string; baseUrl: string };
     const commandInput = getCommandInput(request);
-    const toolNameMapping = buildToolNameMapping(request);
+    // Only build mapping for Nova models (which require tool name encoding)
+    const toolNameMapping = isNovaModel(request.modelId)
+      ? buildToolNameMapping(request)
+      : new Map<string, string>();
 
     const modelId = commandInput.modelId;
     const path = `/model/${encodeURIComponent(modelId!)}/converse`;

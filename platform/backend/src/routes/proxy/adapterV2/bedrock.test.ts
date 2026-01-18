@@ -1452,7 +1452,7 @@ describe("bedrockAdapterFactory.executeStream", () => {
 // =============================================================================
 
 describe("getCommandInput", () => {
-  test("replaces hyphens with underscores in tool names for Nova compatibility", () => {
+  test("replaces hyphens with underscores in tool names for Nova models", () => {
     const request: Bedrock.Types.ConverseRequest = {
       modelId: "us.amazon.nova-pro-v1:0",
       messages: [{ role: "user", content: [{ text: "Hi" }] }],
@@ -1476,7 +1476,7 @@ describe("getCommandInput", () => {
     );
   });
 
-  test("preserves tool names without hyphens", () => {
+  test("preserves tool names without hyphens for Nova models", () => {
     const request: Bedrock.Types.ConverseRequest = {
       modelId: "amazon.nova-lite-v1:0",
       messages: [{ role: "user", content: [{ text: "Hi" }] }],
@@ -1498,7 +1498,7 @@ describe("getCommandInput", () => {
     expect(result.toolConfig?.tools?.[0]?.toolSpec?.name).toBe("get_weather");
   });
 
-  test("handles multiple tools with hyphens", () => {
+  test("handles multiple tools with hyphens for Nova models", () => {
     const request: Bedrock.Types.ConverseRequest = {
       modelId: "us.amazon.nova-pro-v1:0",
       messages: [{ role: "user", content: [{ text: "Hi" }] }],
@@ -1527,10 +1527,35 @@ describe("getCommandInput", () => {
     expect(result.toolConfig?.tools?.[0]?.toolSpec?.name).toBe("tool_one");
     expect(result.toolConfig?.tools?.[1]?.toolSpec?.name).toBe("tool_two");
   });
+
+  test("does NOT map tool names for non-Nova models (Claude)", () => {
+    const request: Bedrock.Types.ConverseRequest = {
+      modelId: "anthropic.claude-3-sonnet-20240229-v1:0",
+      messages: [{ role: "user", content: [{ text: "Hi" }] }],
+      toolConfig: {
+        tools: [
+          {
+            toolSpec: {
+              name: "github-copilot__remote-mcp__issue-read",
+              description: "Read GitHub issues",
+              inputSchema: { json: { type: "object" } },
+            },
+          },
+        ],
+      },
+    };
+
+    const result = getCommandInput(request);
+
+    // Tool name should remain unchanged for non-Nova models
+    expect(result.toolConfig?.tools?.[0]?.toolSpec?.name).toBe(
+      "github-copilot__remote-mcp__issue-read",
+    );
+  });
 });
 
 describe("BedrockStreamAdapter tool name mapping", () => {
-  test("decodes tool names in streaming responses using name mapping", () => {
+  test("decodes tool names in streaming responses for Nova models", () => {
     const request: Bedrock.Types.ConverseRequest = {
       modelId: "us.amazon.nova-pro-v1:0",
       messages: [{ role: "user", content: [{ text: "Hi" }] }],
@@ -1565,6 +1590,46 @@ describe("BedrockStreamAdapter tool name mapping", () => {
     streamAdapter.processChunk(chunk);
 
     // The tool call should have the original name with hyphens
+    expect(streamAdapter.state.toolCalls[0].name).toBe(
+      "github-copilot__issue-read",
+    );
+  });
+
+  test("does NOT map tool names for non-Nova models (passes through unchanged)", () => {
+    const request: Bedrock.Types.ConverseRequest = {
+      modelId: "anthropic.claude-3-sonnet-20240229-v1:0",
+      messages: [{ role: "user", content: [{ text: "Hi" }] }],
+      toolConfig: {
+        tools: [
+          {
+            toolSpec: {
+              name: "github-copilot__issue-read",
+              description: "Read issues",
+              inputSchema: { json: {} },
+            },
+          },
+        ],
+      },
+    };
+
+    const streamAdapter = bedrockAdapterFactory.createStreamAdapter(request);
+
+    // Simulate a tool use chunk - for non-Nova, tool name comes through as-is
+    const chunk = {
+      contentBlockStart: {
+        contentBlockIndex: 0,
+        start: {
+          toolUse: {
+            toolUseId: "tool-123",
+            name: "github-copilot__issue-read", // Original name (no encoding happened)
+          },
+        },
+      },
+    };
+
+    streamAdapter.processChunk(chunk);
+
+    // Tool name should remain unchanged (no decoding for non-Nova)
     expect(streamAdapter.state.toolCalls[0].name).toBe(
       "github-copilot__issue-read",
     );
