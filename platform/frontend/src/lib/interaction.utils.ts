@@ -137,7 +137,7 @@ export class DynamicInteraction implements InteractionUtils {
     if (type === "ollama:chatCompletions") {
       return new OllamaChatCompletionInteraction(interaction);
     }
-      if (this.provider === "cohere" && this.endpoint === "chat") {
+    if (type === "cohere:chat") {
       return createCohereInteraction(interaction);
     }
     if (this.provider === "gemini" && this.endpoint === "generateContent") {
