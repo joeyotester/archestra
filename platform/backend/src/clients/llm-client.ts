@@ -95,7 +95,7 @@ export async function resolveProviderApiKey(params: {
     conversationId: conversationId ?? null,
   });
 
-    if (resolvedApiKey?.secretId) {
+  if (resolvedApiKey?.secretId) {
     const secret = await secretManager().getSecret(resolvedApiKey.secretId);
     // Support both old format (anthropicApiKey) and new format (apiKey)
     const secretValue =
@@ -133,7 +133,6 @@ export async function resolveProviderApiKey(params: {
       apiKeySource = "environment";
     } else if (provider === "ollama" && config.chat.ollama.apiKey) {
       providerApiKey = config.chat.ollama.apiKey;
-      apiKeySource = "environment";
     } else if (provider === "zhipuai" && config.chat.zhipuai.apiKey) {
       providerApiKey = config.chat.zhipuai.apiKey;
       apiKeySource = "environment";
