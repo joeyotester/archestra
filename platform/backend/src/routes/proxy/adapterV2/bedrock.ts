@@ -1,4 +1,11 @@
-import type { ConverseStreamOutput } from "@aws-sdk/client-bedrock-runtime";
+import {
+  BedrockRuntimeClient,
+  ConverseCommand,
+  type ConverseCommandInput,
+  ConverseStreamCommand,
+  type ConverseStreamCommandInput,
+  type ConverseStreamOutput,
+} from "@aws-sdk/client-bedrock-runtime";
 import { EventStreamCodec } from "@smithy/eventstream-codec";
 import { fromUtf8, toUtf8 } from "@smithy/util-utf8";
 import { encode as toonEncode } from "@toon-format/toon";
@@ -1264,56 +1271,55 @@ export const bedrockAdapterFactory: LLMProvider<
   createClient(
     apiKey: string | undefined,
     _options?: CreateClientOptions,
-  ): { apiKey: string | undefined; baseUrl: string } {
+  ): BedrockRuntimeClient {
     const baseUrl = config.llm.bedrock.baseUrl;
-    return { apiKey, baseUrl };
+
+    // Extract region from baseUrl (e.g., https://bedrock-runtime.us-east-1.amazonaws.com)
+    // or use a default region
+    const regionMatch = baseUrl.match(/bedrock-runtime\.([a-z0-9-]+)\./);
+    const region = regionMatch?.[1] || "us-east-1";
+
+    const client = new BedrockRuntimeClient({
+      region,
+      endpoint: baseUrl || undefined,
+    });
+
+    // Add bearer token auth middleware
+    if (apiKey) {
+      client.middlewareStack.add(
+        (next) => async (args) => {
+          const request = args.request as { headers: Record<string, string> };
+          request.headers.Authorization = `Bearer ${apiKey}`;
+          return next(args);
+        },
+        {
+          step: "build",
+          name: "addBearerToken",
+          priority: "high",
+        },
+      );
+    }
+
+    return client;
   },
 
   async execute(
     client: unknown,
     request: BedrockRequest,
   ): Promise<BedrockResponse> {
-    const { apiKey, baseUrl } = client as {
-      apiKey: string | undefined;
-      baseUrl: string;
-    };
+    const bedrockClient = client as BedrockRuntimeClient;
     const commandInput = getCommandInput(request);
     // Only build mapping for Nova models (which require tool name encoding)
     const toolNameMapping = isNovaModel(request.modelId)
       ? buildToolNameMapping(request)
       : new Map<string, string>();
 
-    const modelId = commandInput.modelId;
-    const path = `/model/${encodeURIComponent(modelId!)}/converse`;
-    const url = `${baseUrl}${path}`;
+    const command = new ConverseCommand(
+      commandInput as unknown as ConverseCommandInput,
+    );
+    const response = await bedrockClient.send(command);
 
-    const bodyJson = JSON.stringify({
-      modelId: commandInput.modelId,
-      messages: commandInput.messages,
-      system: commandInput.system,
-      inferenceConfig: commandInput.inferenceConfig,
-      toolConfig: commandInput.toolConfig,
-    });
-
-    const response = await fetch(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        ...(apiKey && { Authorization: `Bearer ${apiKey}` }),
-      },
-      body: bodyJson,
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(
-        `Bedrock request failed: ${response.status} ${errorText}`,
-      );
-    }
-
-    const responseData = await response.json();
-
-    // Convert response to our internal format
+    // Convert response to our internal format with decoded tool names
     const outputContent: Array<
       | { text: string }
       | {
@@ -1324,8 +1330,8 @@ export const bedrockAdapterFactory: LLMProvider<
           };
         }
     > = [];
-    if (responseData.output?.message?.content) {
-      for (const c of responseData.output.message.content) {
+    if (response.output?.message?.content) {
+      for (const c of response.output.message.content) {
         if (isTextBlock(c)) {
           outputContent.push({ text: c.text });
         } else if (isToolUseBlock(c)) {
@@ -1342,27 +1348,26 @@ export const bedrockAdapterFactory: LLMProvider<
 
     return {
       $metadata: {
-        requestId: response.headers.get("x-amzn-requestid") ?? undefined,
+        requestId: response.$metadata?.requestId,
       },
       output: {
-        message: responseData.output?.message
+        message: response.output?.message
           ? {
               role: "assistant",
               content: outputContent,
             }
           : undefined,
       },
-      stopReason: responseData.stopReason as BedrockResponse["stopReason"],
+      stopReason: response.stopReason as BedrockResponse["stopReason"],
       usage: {
-        inputTokens: responseData.usage?.inputTokens ?? 0,
-        outputTokens: responseData.usage?.outputTokens ?? 0,
+        inputTokens: response.usage?.inputTokens ?? 0,
+        outputTokens: response.usage?.outputTokens ?? 0,
       },
-      metrics: responseData.metrics,
-      additionalModelResponseFields:
-        responseData.additionalModelResponseFields as
-          | Record<string, unknown>
-          | undefined,
-      trace: responseData.trace,
+      metrics: response.metrics,
+      additionalModelResponseFields: response.additionalModelResponseFields as
+        | Record<string, unknown>
+        | undefined,
+      trace: response.trace,
     };
   },
 
@@ -1370,158 +1375,102 @@ export const bedrockAdapterFactory: LLMProvider<
     client: unknown,
     request: BedrockRequest,
   ): Promise<AsyncIterable<BedrockStreamEventWithRaw>> {
-    const { apiKey, baseUrl } = client as {
-      apiKey: string | undefined;
-      baseUrl: string;
-    };
+    const bedrockClient = client as BedrockRuntimeClient;
     const commandInput = getCommandInput(request);
 
-    // Build request body matching SDK format - cast to any to access optional fields
-    const inputAny = commandInput as Record<string, unknown>;
-    const bodyJson = JSON.stringify({
-      modelId: commandInput.modelId,
-      messages: commandInput.messages,
-      system: commandInput.system,
-      inferenceConfig: commandInput.inferenceConfig,
-      toolConfig: commandInput.toolConfig,
-      guardrailConfig: inputAny.guardrailConfig,
-      additionalModelRequestFields: inputAny.additionalModelRequestFields,
-      additionalModelResponseFieldPaths:
-        inputAny.additionalModelResponseFieldPaths,
-    });
+    const command = new ConverseStreamCommand(
+      commandInput as unknown as ConverseStreamCommandInput,
+    );
+    const response = await bedrockClient.send(command);
 
-    const modelId = commandInput.modelId;
-    const path = `/model/${encodeURIComponent(modelId!)}/converse-stream`;
-    const url = `${baseUrl}${path}`;
-
-    const response = await fetch(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        ...(apiKey && { Authorization: `Bearer ${apiKey}` }),
-      },
-      body: bodyJson,
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(
-        `Bedrock request failed: ${response.status} ${errorText}`,
-      );
-    }
-
-    // Return async iterable that yields stream events with raw bytes
+    // Return async iterable that yields stream events with re-encoded raw bytes
     return {
       [Symbol.asyncIterator]: async function* () {
-        const reader = response.body?.getReader();
-        if (!reader) return;
+        if (!response.stream) return;
 
-        let buffer = new Uint8Array(0);
+        for await (const event of response.stream) {
+          // Re-encode the event to binary format for passthrough
+          // biome-ignore lint/suspicious/noExplicitAny: Building event dynamically from SDK response
+          const eventWithRaw: any = { ...event };
 
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) {
-            if (buffer.length > 0) {
-              logger.warn(
-                { remainingBytes: buffer.length },
-                "[BedrockStream] Stream ended with remaining buffer data",
-              );
-            }
-            break;
+          // Determine event type and encode to binary
+          if ("messageStart" in event && event.messageStart) {
+            eventWithRaw.__rawBytes = encodeEventStreamMessage(
+              "messageStart",
+              event.messageStart,
+            );
+          } else if ("contentBlockStart" in event && event.contentBlockStart) {
+            eventWithRaw.__rawBytes = encodeEventStreamMessage(
+              "contentBlockStart",
+              event.contentBlockStart,
+            );
+          } else if ("contentBlockDelta" in event && event.contentBlockDelta) {
+            eventWithRaw.__rawBytes = encodeEventStreamMessage(
+              "contentBlockDelta",
+              event.contentBlockDelta,
+            );
+          } else if ("contentBlockStop" in event && event.contentBlockStop) {
+            eventWithRaw.__rawBytes = encodeEventStreamMessage(
+              "contentBlockStop",
+              event.contentBlockStop,
+            );
+          } else if ("messageStop" in event && event.messageStop) {
+            eventWithRaw.__rawBytes = encodeEventStreamMessage(
+              "messageStop",
+              event.messageStop,
+            );
+          } else if ("metadata" in event && event.metadata) {
+            eventWithRaw.__rawBytes = encodeEventStreamMessage(
+              "metadata",
+              event.metadata,
+            );
+          } else if (
+            "internalServerException" in event &&
+            event.internalServerException
+          ) {
+            logger.error(
+              { event },
+              "[BedrockStream] Internal server exception",
+            );
+            throw new Error(
+              event.internalServerException.message ?? "Internal server error",
+            );
+          } else if (
+            "modelStreamErrorException" in event &&
+            event.modelStreamErrorException
+          ) {
+            logger.error({ event }, "[BedrockStream] Model stream error");
+            throw new Error(
+              event.modelStreamErrorException.message ?? "Model stream error",
+            );
+          } else if (
+            "serviceUnavailableException" in event &&
+            event.serviceUnavailableException
+          ) {
+            logger.error({ event }, "[BedrockStream] Service unavailable");
+            throw new Error(
+              event.serviceUnavailableException.message ??
+                "Service unavailable",
+            );
+          } else if (
+            "throttlingException" in event &&
+            event.throttlingException
+          ) {
+            logger.error({ event }, "[BedrockStream] Throttling exception");
+            throw new Error(
+              event.throttlingException.message ?? "Request throttled",
+            );
+          } else if (
+            "validationException" in event &&
+            event.validationException
+          ) {
+            logger.error({ event }, "[BedrockStream] Validation exception");
+            throw new Error(
+              event.validationException.message ?? "Validation error",
+            );
           }
 
-          // Accumulate buffer
-          const newBuffer = new Uint8Array(buffer.length + value.length);
-          newBuffer.set(buffer);
-          newBuffer.set(value, buffer.length);
-          buffer = newBuffer;
-
-          // Extract complete messages
-          while (buffer.length >= 4) {
-            const totalLen =
-              (buffer[0] << 24) |
-              (buffer[1] << 16) |
-              (buffer[2] << 8) |
-              buffer[3];
-            if (totalLen < 16 || buffer.length < totalLen) break;
-
-            const msgBytes = buffer.slice(0, totalLen);
-            buffer = buffer.slice(totalLen);
-
-            try {
-              // Decode to get headers and body
-              const message = eventStreamCodec.decode(msgBytes);
-
-              // Check message type - could be "event" or "exception"
-              const messageType = String(
-                message.headers[":message-type"]?.value ?? "event",
-              );
-
-              // Extract event type from headers
-              const eventType = String(
-                message.headers[":event-type"]?.value ?? "",
-              );
-
-              // Parse body JSON to get event data
-              let bodyData: Record<string, unknown> = {};
-              if (message.body?.length > 0) {
-                const bodyText = toUtf8(message.body);
-                try {
-                  bodyData = JSON.parse(bodyText);
-                } catch {
-                  // Keep empty object if parse fails
-                }
-              }
-
-              // Handle exception messages from Bedrock
-              if (messageType === "exception") {
-                const errorMessage =
-                  typeof bodyData.message === "string"
-                    ? bodyData.message
-                    : "Unknown Bedrock error";
-                logger.error(
-                  { eventType, bodyData },
-                  `[BedrockStream] Exception received: ${errorMessage}`,
-                );
-                throw new Error(`Bedrock error: ${errorMessage}`);
-              }
-
-              // Build event object matching SDK format, with raw bytes attached
-              // biome-ignore lint/suspicious/noExplicitAny: Building event dynamically from parsed data
-              const event: any = {
-                __rawBytes: msgBytes,
-              };
-
-              // Map event type to SDK event structure
-              if (eventType === "messageStart") {
-                event.messageStart = bodyData;
-              } else if (eventType === "contentBlockStart") {
-                event.contentBlockStart = bodyData;
-              } else if (eventType === "contentBlockDelta") {
-                event.contentBlockDelta = bodyData;
-              } else if (eventType === "contentBlockStop") {
-                event.contentBlockStop = bodyData;
-              } else if (eventType === "messageStop") {
-                event.messageStop = bodyData;
-              } else if (eventType === "metadata") {
-                event.metadata = bodyData;
-              } else {
-                // Log unrecognized event types for debugging
-                logger.warn(
-                  {
-                    eventType,
-                    messageType,
-                    bodyDataKeys: Object.keys(bodyData),
-                  },
-                  "[BedrockStream] Unrecognized event type",
-                );
-              }
-
-              yield event as BedrockStreamEventWithRaw;
-            } catch (err) {
-              logger.error({ err }, "Failed to decode event stream message");
-            }
-          }
+          yield eventWithRaw as BedrockStreamEventWithRaw;
         }
       },
     };

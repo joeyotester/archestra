@@ -1340,7 +1340,8 @@ describe("bedrockAdapterFactory", () => {
 
 describe("bedrockAdapterFactory.execute", () => {
   test("sends request and returns formatted response", async () => {
-    const mockResponse = {
+    const mockResponse: Bedrock.Types.ConverseResponse = {
+      $metadata: { requestId: "req-123" },
       output: {
         message: {
           role: "assistant",
@@ -1351,33 +1352,14 @@ describe("bedrockAdapterFactory.execute", () => {
       usage: { inputTokens: 50, outputTokens: 25 },
     };
 
-    const mockFetch = vi.fn().mockResolvedValue({
-      ok: true,
-      headers: new Headers({ "x-amzn-requestid": "req-123" }),
-      json: () => Promise.resolve(mockResponse),
-    });
-    vi.stubGlobal("fetch", mockFetch);
-
-    const client = {
-      apiKey: "test-api-key",
-      baseUrl: "https://bedrock.example.com",
-    };
+    const client = createMockBedrockClient({ converseResponse: mockResponse });
     const request = createMockRequest([
       { role: "user", content: [{ text: "Hi" }] },
     ]);
 
     const response = await bedrockAdapterFactory.execute(client, request);
 
-    expect(mockFetch).toHaveBeenCalledTimes(1);
-    expect(mockFetch).toHaveBeenCalledWith(
-      "https://bedrock.example.com/model/anthropic.claude-3-sonnet-20240229-v1%3A0/converse",
-      expect.objectContaining({
-        method: "POST",
-        headers: expect.objectContaining({
-          Authorization: "Bearer test-api-key",
-        }),
-      }),
-    );
+    expect(client.send).toHaveBeenCalledTimes(1);
     expect(response).toEqual(
       expect.objectContaining({
         $metadata: { requestId: "req-123" },
@@ -1391,8 +1373,6 @@ describe("bedrockAdapterFactory.execute", () => {
         usage: { inputTokens: 50, outputTokens: 25 },
       }),
     );
-
-    vi.unstubAllGlobals();
   });
 });
 
