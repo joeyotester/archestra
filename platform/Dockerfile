@@ -5,6 +5,18 @@ ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
 RUN corepack enable
 
+# Patch CVE-2026-23745: tar <=7.5.2 has path traversal vulnerability
+# tar is bundled in pnpm's corepack distribution and needs to be patched
+# Patch ALL pnpm versions in corepack cache to ensure comprehensive fix
+RUN corepack prepare pnpm@10.27.0 --activate && \
+    for PNPM_TAR_PATH in $(find /root/.cache/node/corepack -path "*/pnpm/*/dist/node_modules/tar" -type d 2>/dev/null); do \
+        echo "Patching tar in $PNPM_TAR_PATH" && \
+        cd "$PNPM_TAR_PATH" && \
+        rm -rf ./* && \
+        wget -qO- https://registry.npmjs.org/tar/-/tar-7.5.3.tgz | tar -xz --strip-components=1; \
+    done && \
+    echo "Patched tar to 7.5.3 in all pnpm corepack caches"
+
 # Dependencies stage
 FROM base AS deps
 WORKDIR /app
