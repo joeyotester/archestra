@@ -246,7 +246,27 @@ class McpClient {
           if (recoveryResult) {
             return recoveryResult;
           }
-          // If recovery returned null, fall through to create error result
+          // If recovery returned null, the error was already recorded in attemptTokenRefreshAndRetry
+        } else if (isAuthError && isOAuthServer && targetLocalMcpServerId) {
+          // Track OAuth error when we can't attempt recovery
+          // Error codes: 1=no_refresh_token, 2=retry_failed, 3=auth_failed
+          const errorCode = !hasRefreshToken ? "1" : isRetry ? "2" : "3";
+
+          await McpServerModel.update(targetLocalMcpServerId, {
+            oauthRefreshError: errorCode,
+            oauthRefreshFailedAt: new Date(),
+          });
+
+          logger.warn(
+            {
+              toolName: toolCall.name,
+              targetLocalMcpServerId,
+              errorCode,
+              isRetry,
+              hasRefreshToken,
+            },
+            "OAuth authentication error recorded",
+          );
         }
 
         return await this.createErrorResult(
@@ -896,6 +916,14 @@ class McpClient {
         { toolName: toolCall.name, secretId },
         "attemptTokenRefreshAndRetry: token refresh failed",
       );
+
+      // Track the refresh failure in the MCP server record
+      // Error code: 0=refresh_failed
+      await McpServerModel.update(targetLocalMcpServerId, {
+        oauthRefreshError: "0",
+        oauthRefreshFailedAt: new Date(),
+      });
+
       return null;
     }
 
@@ -903,6 +931,12 @@ class McpClient {
       { toolName: toolCall.name, secretId },
       "attemptTokenRefreshAndRetry: token refreshed, retrying tool call",
     );
+
+    // Clear any previous refresh error since refresh succeeded
+    await McpServerModel.update(targetLocalMcpServerId, {
+      oauthRefreshError: null,
+      oauthRefreshFailedAt: null,
+    });
 
     try {
       // Re-fetch updated secrets and retry once

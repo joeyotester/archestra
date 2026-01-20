@@ -341,7 +341,8 @@ export async function refreshOAuthToken(
     // Use client credentials from OAuth config first (source of truth),
     // fall back to stored values (for dynamic client registration cases)
     const clientId = oauthConfig.client_id || currentTokens.client_id;
-    const clientSecret = oauthConfig.client_secret || currentTokens.client_secret;
+    const clientSecret =
+      oauthConfig.client_secret || currentTokens.client_secret;
 
     if (!clientId) {
       logger.warn(
@@ -617,19 +618,18 @@ const oauthRoutes: FastifyPluginAsyncZod = async (fastify) => {
             { registrationEndpoint },
             "Attempting dynamic client registration",
           );
-          registrationResult = await registerOAuthClient(
-            registrationEndpoint,
-            {
-              client_name: `Archestra Platform - ${catalogItem.name}`,
-              redirect_uris: [redirectUri],
-              grant_types: ["authorization_code", "refresh_token"],
-              response_types: ["code"],
-              scope: scopesToUse.join(" "),
-            },
-          );
+          registrationResult = await registerOAuthClient(registrationEndpoint, {
+            client_name: `Archestra Platform - ${catalogItem.name}`,
+            redirect_uris: [redirectUri],
+            grant_types: ["authorization_code", "refresh_token"],
+            response_types: ["code"],
+            scope: scopesToUse.join(" "),
+          });
 
           clientId = registrationResult?.client_id as string;
-          clientSecret = registrationResult?.client_secret as string | undefined;
+          clientSecret = registrationResult?.client_secret as
+            | string
+            | undefined;
 
           fastify.log.info(
             { client_id: clientId },
