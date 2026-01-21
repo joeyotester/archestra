@@ -165,18 +165,8 @@ See the [Vertex AI authentication guide](https://cloud.google.com/vertex-ai/docs
 | `ARCHESTRA_COHERE_BASE_URL`     | No       | Cohere API base URL (default: `https://api.cohere.ai`)                         |
 | `ARCHESTRA_CHAT_COHERE_API_KEY` | No       | Default API key for Cohere (can be overridden per conversation/team/org)       |
 
-### Popular Models
-
-- **Command R 7B** - Lightweight model optimized for speed
-- **Command R** - Balanced model with strong performance
-- **Command R+** - Advanced model with enhanced capabilities
-- **Command Nightly** - Latest development model with newest features
-
 ### Important Notes
 
-- **Function Calling**: Cohere supports function calling (tools) for complex workflows and API integrations
-- **Safety Features**: Built-in safety modes (`CONTEXTUAL`, `STRICT`, `OFF`) help manage response safety and content filtering
-- **Response Format**: Supports both text and JSON response formats for structured outputs
 - **API Key format**: Obtain your API key from the [Cohere Dashboard](https://dashboard.cohere.ai/)
 
 ## vLLM
