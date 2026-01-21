@@ -20,12 +20,11 @@ import type { PromptInputProps } from "@/components/ai-elements/prompt-input";
 import { Response } from "@/components/ai-elements/response";
 import { AgentSelector } from "@/components/chat/agent-selector";
 import { AgentToolsDisplay } from "@/components/chat/agent-tools-display";
-import { BrowserPanel } from "@/components/chat/browser-panel";
 import { ChatMessages } from "@/components/chat/chat-messages";
-import { ConversationArtifactPanel } from "@/components/chat/conversation-artifact";
 import { InitialAgentSelector } from "@/components/chat/initial-agent-selector";
 import { PromptDialog } from "@/components/chat/prompt-dialog";
 import { PromptVersionHistoryDialog } from "@/components/chat/prompt-version-history-dialog";
+import { RightSidePanel } from "@/components/chat/right-side-panel";
 import { StreamTimeoutWarning } from "@/components/chat/stream-timeout-warning";
 import { PermissivePolicyBar } from "@/components/permissive-policy-bar";
 import { Button } from "@/components/ui/button";
@@ -119,6 +118,7 @@ export default function ChatPage() {
 
   // State for browser panel
   const [isBrowserPanelOpen, setIsBrowserPanelOpen] = useState(false);
+  const [isBrowserMinimized, setIsBrowserMinimized] = useState(true);
 
   // Fetch prompts for conversation prompt name lookup
   const { data: prompts = [] } = usePromptsQuery();
@@ -1244,19 +1244,18 @@ export default function ChatPage() {
         onSuccess={() => router.push("/mcp-catalog/registry")}
       />
 
-      {isBrowserPanelOpen && isBrowserStreamingEnabled && hasPlaywrightMcp && (
-        <BrowserPanel
-          isOpen={isBrowserPanelOpen}
-          onClose={() => setIsBrowserPanelOpen(false)}
-          conversationId={conversationId}
-        />
-      )}
-
-      {/* Right-side artifact panel */}
-      <ConversationArtifactPanel
+      {/* Right-side panel with artifact and browser preview */}
+      <RightSidePanel
         artifact={conversation?.artifact}
-        isOpen={isArtifactOpen}
-        onToggle={toggleArtifactPanel}
+        isArtifactOpen={isArtifactOpen}
+        onArtifactToggle={toggleArtifactPanel}
+        isBrowserOpen={
+          isBrowserPanelOpen && isBrowserStreamingEnabled && hasPlaywrightMcp
+        }
+        isBrowserMinimized={isBrowserMinimized}
+        onBrowserMinimizeToggle={() => setIsBrowserMinimized((prev) => !prev)}
+        onBrowserClose={() => setIsBrowserPanelOpen(false)}
+        conversationId={conversationId}
       />
 
       <PromptDialog
