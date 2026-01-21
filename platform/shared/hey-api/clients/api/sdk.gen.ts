@@ -922,6 +922,18 @@ export const deleteMcpServer = <ThrowOnError extends boolean = false>(options: O
 export const getMcpServer = <ThrowOnError extends boolean = false>(options: Options<GetMcpServerData, ThrowOnError>) => (options.client ?? client).get<GetMcpServerResponses, GetMcpServerErrors, ThrowOnError>({ url: '/api/mcp_server/{id}', ...options });
 
 /**
+ * Update MCP server secret after re-authentication (clears OAuth refresh errors)
+ */
+export const reauthenticateMcpServer = <ThrowOnError extends boolean = false>(options: Options<ReauthenticateMcpServerData, ThrowOnError>) => (options.client ?? client).patch<ReauthenticateMcpServerResponses, ReauthenticateMcpServerErrors, ThrowOnError>({
+    url: '/api/mcp_server/{id}/reauthenticate',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
  * Get the installation status of an MCP server (for polling during local server installation)
  */
 export const getMcpServerInstallationStatus = <ThrowOnError extends boolean = false>(options: Options<GetMcpServerInstallationStatusData, ThrowOnError>) => (options.client ?? client).get<GetMcpServerInstallationStatusResponses, GetMcpServerInstallationStatusErrors, ThrowOnError>({ url: '/api/mcp_server/{id}/installation-status', ...options });
