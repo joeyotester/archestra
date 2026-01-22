@@ -32,6 +32,12 @@ test(
       if (createAttempts > 1) {
         await page.reload();
         await page.waitForLoadState("networkidle");
+        // Wait for Suspense loading spinner to disappear (indicates React has finished loading)
+        // This helps WebKit/Firefox which may need more time for React hydration
+        const loadingSpinner = page.locator(".animate-spin").first();
+        if (await loadingSpinner.isVisible({ timeout: 1000 }).catch(() => false)) {
+          await expect(loadingSpinner).not.toBeVisible({ timeout: 15_000 });
+        }
       }
       await expect(createButton).toBeVisible({ timeout: 5000 });
       await expect(createButton).toBeEnabled({ timeout: 5000 });
