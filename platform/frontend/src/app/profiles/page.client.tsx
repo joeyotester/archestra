@@ -499,6 +499,10 @@ function Profiles({ initialData }: { initialData?: ProfilesInitialData }) {
             open={isCreateDialogOpen}
             onOpenChange={setIsCreateDialogOpen}
             agentType="mcp_gateway"
+            onCreated={(profile) => {
+              setIsCreateDialogOpen(false);
+              setConnectingProfile(profile);
+            }}
           />
 
           {connectingProfile && (

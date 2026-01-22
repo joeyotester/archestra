@@ -101,6 +101,8 @@ interface AgentDialogProps {
   agentType?: "mcp_gateway" | "agent";
   /** Callback when viewing version history (internal agents only) */
   onViewVersionHistory?: (agent: Agent) => void;
+  /** Callback when a new agent/profile is created (not called for updates) */
+  onCreated?: (created: { id: string; name: string }) => void;
 }
 
 export function AgentDialog({
@@ -109,6 +111,7 @@ export function AgentDialog({
   agent,
   agentType = "mcp_gateway",
   onViewVersionHistory,
+  onCreated,
 }: AgentDialogProps) {
   const { data: allInternalAgents = [] } = useInternalAgents();
   const createAgent = useCreateProfile();
@@ -277,6 +280,10 @@ export function AgentDialog({
             ? "Agent created successfully"
             : "Profile created successfully",
         );
+        // Notify parent about creation (for opening connection dialog, etc.)
+        if (onCreated && created) {
+          onCreated({ id: created.id, name: created.name });
+        }
       }
 
       // Sync delegations
@@ -314,6 +321,7 @@ export function AgentDialog({
     updateAgent,
     createAgent,
     syncDelegations,
+    onCreated,
   ]);
 
   const handleClose = useCallback(() => {
