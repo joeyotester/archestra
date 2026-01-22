@@ -18,7 +18,7 @@ test(
     await goToPage(page, "/profiles");
     await page.getByTestId(E2eTestId.CreateAgentButton).click();
     await page.getByRole("textbox", { name: "Name" }).fill(AGENT_NAME);
-    await page.locator("[type=submit]").click();
+    await page.getByRole("button", { name: "Create" }).click();
 
     // After profile creation, wait for the success toast to appear
     await expect(page.getByText("Profile created successfully")).toBeVisible({
