@@ -2560,7 +2560,7 @@ export async function getAgentTools(context: {
   /** Skip user access check (for A2A/ChatOps flows where caller has elevated permissions) */
   skipAccessCheck?: boolean;
 }): Promise<Tool[]> {
-  const { agentId, organizationId, userId } = context;
+  const { agentId, organizationId, userId, skipAccessCheck } = context;
 
   // Get all delegation tools assigned to this agent
   const allToolsWithDetails =
