@@ -1,3 +1,4 @@
+import type { IncomingEmailSecurityMode } from "@shared";
 import {
   boolean,
   index,
@@ -11,7 +12,6 @@ import {
   uuid,
 } from "drizzle-orm/pg-core";
 import type { ChatOpsProviderType } from "@/types/chatops";
-import type { IncomingEmailSecurityMode } from "@shared";
 
 /**
  * Represents a historical version of an agent's prompt stored in the prompt_history JSONB array.

@@ -110,8 +110,9 @@ export const InsertAgentSchemaBase = createInsertSchema(
   });
 
 // Full schema with validation refinement
-export const InsertAgentSchema =
-  InsertAgentSchemaBase.superRefine(validateIncomingEmailDomain);
+export const InsertAgentSchema = InsertAgentSchemaBase.superRefine(
+  validateIncomingEmailDomain,
+);
 
 // Base schema without refinement - can be used with .partial()
 export const UpdateAgentSchemaBase = createUpdateSchema(
@@ -131,8 +132,9 @@ export const UpdateAgentSchemaBase = createUpdateSchema(
   });
 
 // Full schema with validation refinement
-export const UpdateAgentSchema =
-  UpdateAgentSchemaBase.superRefine(validateIncomingEmailDomain);
+export const UpdateAgentSchema = UpdateAgentSchemaBase.superRefine(
+  validateIncomingEmailDomain,
+);
 
 // Schema for history entry in API responses (for internal agents)
 export const AgentHistoryEntrySchema = z.object({
