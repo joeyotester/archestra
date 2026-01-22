@@ -1,6 +1,6 @@
 {
-  "id": "9e1e8441-f1a2-4191-96bf-337e76eac87f",
-  "prevId": "2664ac88-e227-4ec4-8e66-5feefe166330",
+  "id": "9289fef8-6ffd-46a3-be0e-cebadc0c0282",
+  "prevId": "b0644edc-66e4-483c-9b55-60560d701a94",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -407,12 +407,6 @@
           "notNull": true,
           "default": "gen_random_uuid()"
         },
-        "organization_id": {
-          "name": "organization_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
         "name": {
           "name": "name",
           "type": "text",
@@ -440,46 +434,6 @@
           "notNull": true,
           "default": false
         },
-        "is_internal": {
-          "name": "is_internal",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true,
-          "default": false
-        },
-        "system_prompt": {
-          "name": "system_prompt",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "user_prompt": {
-          "name": "user_prompt",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "prompt_version": {
-          "name": "prompt_version",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "default": 1
-        },
-        "prompt_history": {
-          "name": "prompt_history",
-          "type": "jsonb",
-          "primaryKey": false,
-          "notNull": false,
-          "default": "'[]'::jsonb"
-        },
-        "allowed_chatops": {
-          "name": "allowed_chatops",
-          "type": "jsonb",
-          "primaryKey": false,
-          "notNull": false,
-          "default": "'[]'::jsonb"
-        },
         "created_at": {
           "name": "created_at",
           "type": "timestamp",
@@ -495,59 +449,7 @@
           "default": "now()"
         }
       },
-      "indexes": {
-        "agents_organization_id_idx": {
-          "name": "agents_organization_id_idx",
-          "columns": [
-            {
-              "expression": "organization_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "agents_is_internal_idx": {
-          "name": "agents_is_internal_idx",
-          "columns": [
-            {
-              "expression": "is_internal",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "agents_organization_id_name_idx": {
-          "name": "agents_organization_id_name_idx",
-          "columns": [
-            {
-              "expression": "organization_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "name",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": true,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
+      "indexes": {},
       "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
@@ -968,11 +870,11 @@
           "primaryKey": false,
           "notNull": false
         },
-        "agent_id": {
-          "name": "agent_id",
+        "prompt_id": {
+          "name": "prompt_id",
           "type": "uuid",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true
         },
         "created_at": {
           "name": "created_at",
@@ -1032,11 +934,11 @@
           "method": "btree",
           "with": {}
         },
-        "chatops_channel_binding_agent_id_idx": {
-          "name": "chatops_channel_binding_agent_id_idx",
+        "chatops_channel_binding_prompt_id_idx": {
+          "name": "chatops_channel_binding_prompt_id_idx",
           "columns": [
             {
-              "expression": "agent_id",
+              "expression": "prompt_id",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -1049,12 +951,12 @@
         }
       },
       "foreignKeys": {
-        "chatops_channel_binding_agent_id_agents_id_fk": {
-          "name": "chatops_channel_binding_agent_id_agents_id_fk",
+        "chatops_channel_binding_prompt_id_prompts_id_fk": {
+          "name": "chatops_channel_binding_prompt_id_prompts_id_fk",
           "tableFrom": "chatops_channel_binding",
-          "tableTo": "agents",
+          "tableTo": "prompts",
           "columnsFrom": [
-            "agent_id"
+            "prompt_id"
           ],
           "columnsTo": [
             "id"
@@ -1215,6 +1117,12 @@
           "primaryKey": false,
           "notNull": true
         },
+        "prompt_id": {
+          "name": "prompt_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
         "chat_api_key_id": {
           "name": "chat_api_key_id",
           "type": "uuid",
@@ -1287,6 +1195,19 @@
             "id"
           ],
           "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "conversations_prompt_id_prompts_id_fk": {
+          "name": "conversations_prompt_id_prompts_id_fk",
+          "tableFrom": "conversations",
+          "tableTo": "prompts",
+          "columnsFrom": [
+            "prompt_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
           "onUpdate": "no action"
         },
         "conversations_chat_api_key_id_chat_api_keys_id_fk": {
@@ -1591,6 +1512,12 @@
           "primaryKey": false,
           "notNull": false
         },
+        "baseline_model": {
+          "name": "baseline_model",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
         "input_tokens": {
           "name": "input_tokens",
           "type": "integer",
@@ -1630,6 +1557,12 @@
         "toon_cost_savings": {
           "name": "toon_cost_savings",
           "type": "numeric(13, 10)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "toon_skip_reason": {
+          "name": "toon_skip_reason",
+          "type": "varchar",
           "primaryKey": false,
           "notNull": false
         },
@@ -2628,6 +2561,19 @@
           "primaryKey": false,
           "notNull": false
         },
+        "oauth_refresh_error": {
+          "name": "oauth_refresh_error",
+          "type": "oauth_refresh_error_enum",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "oauth_refresh_failed_at": {
+          "name": "oauth_refresh_failed_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
         "created_at": {
           "name": "created_at",
           "type": "timestamp",
@@ -3303,6 +3249,213 @@
           ]
         }
       },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.prompt_agents": {
+      "name": "prompt_agents",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "prompt_id": {
+          "name": "prompt_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "agent_prompt_id": {
+          "name": "agent_prompt_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "prompt_agent_unique": {
+          "name": "prompt_agent_unique",
+          "columns": [
+            {
+              "expression": "prompt_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "agent_prompt_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "prompt_agents_prompt_id_prompts_id_fk": {
+          "name": "prompt_agents_prompt_id_prompts_id_fk",
+          "tableFrom": "prompt_agents",
+          "tableTo": "prompts",
+          "columnsFrom": [
+            "prompt_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "prompt_agents_agent_prompt_id_prompts_id_fk": {
+          "name": "prompt_agents_agent_prompt_id_prompts_id_fk",
+          "tableFrom": "prompt_agents",
+          "tableTo": "prompts",
+          "columnsFrom": [
+            "agent_prompt_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.prompts": {
+      "name": "prompts",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "organization_id": {
+          "name": "organization_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "agent_id": {
+          "name": "agent_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "user_prompt": {
+          "name": "user_prompt",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "system_prompt": {
+          "name": "system_prompt",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "version": {
+          "name": "version",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 1
+        },
+        "history": {
+          "name": "history",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'[]'::jsonb"
+        },
+        "allowed_chatops": {
+          "name": "allowed_chatops",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'[]'::jsonb"
+        },
+        "incoming_email_enabled": {
+          "name": "incoming_email_enabled",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "incoming_email_security_mode": {
+          "name": "incoming_email_security_mode",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'private'"
+        },
+        "incoming_email_allowed_domain": {
+          "name": "incoming_email_allowed_domain",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "prompts_agent_id_agents_id_fk": {
+          "name": "prompts_agent_id_agents_id_fk",
+          "tableFrom": "prompts",
+          "tableTo": "agents",
+          "columnsFrom": [
+            "agent_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false
@@ -4193,8 +4346,8 @@
           "primaryKey": false,
           "notNull": false
         },
-        "delegate_to_agent_id": {
-          "name": "delegate_to_agent_id",
+        "prompt_agent_id": {
+          "name": "prompt_agent_id",
           "type": "uuid",
           "primaryKey": false,
           "notNull": false
@@ -4251,23 +4404,7 @@
           "default": "now()"
         }
       },
-      "indexes": {
-        "tools_delegate_to_agent_id_idx": {
-          "name": "tools_delegate_to_agent_id_idx",
-          "columns": [
-            {
-              "expression": "delegate_to_agent_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
+      "indexes": {},
       "foreignKeys": {
         "tools_agent_id_agents_id_fk": {
           "name": "tools_agent_id_agents_id_fk",
@@ -4308,12 +4445,12 @@
           "onDelete": "set null",
           "onUpdate": "no action"
         },
-        "tools_delegate_to_agent_id_agents_id_fk": {
-          "name": "tools_delegate_to_agent_id_agents_id_fk",
+        "tools_prompt_agent_id_prompt_agents_id_fk": {
+          "name": "tools_prompt_agent_id_prompt_agents_id_fk",
           "tableFrom": "tools",
-          "tableTo": "agents",
+          "tableTo": "prompt_agents",
           "columnsFrom": [
-            "delegate_to_agent_id"
+            "prompt_agent_id"
           ],
           "columnsTo": [
             "id"
@@ -4324,14 +4461,14 @@
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
-        "tools_catalog_id_name_agent_id_delegate_to_agent_id_unique": {
-          "name": "tools_catalog_id_name_agent_id_delegate_to_agent_id_unique",
+        "tools_catalog_id_name_agent_id_prompt_agent_id_unique": {
+          "name": "tools_catalog_id_name_agent_id_prompt_agent_id_unique",
           "nullsNotDistinct": false,
           "columns": [
             "catalog_id",
             "name",
             "agent_id",
-            "delegate_to_agent_id"
+            "prompt_agent_id"
           ]
         }
       },
@@ -4771,7 +4908,16 @@
       "isRLSEnabled": false
     }
   },
-  "enums": {},
+  "enums": {
+    "public.oauth_refresh_error_enum": {
+      "name": "oauth_refresh_error_enum",
+      "schema": "public",
+      "values": [
+        "refresh_failed",
+        "no_refresh_token"
+      ]
+    }
+  },
   "schemas": {},
   "sequences": {},
   "roles": {},

@@ -718,6 +718,7 @@ export async function getChatMcpTools({
           agentId,
           organizationId,
           userId,
+          skipAccessCheck: userIsProfileAdmin,
         });
 
         // Build the context for agent tool execution

@@ -18,6 +18,10 @@ ALTER TABLE "agents" ADD COLUMN "user_prompt" text;
 ALTER TABLE "agents" ADD COLUMN "prompt_version" integer DEFAULT 1;
 ALTER TABLE "agents" ADD COLUMN "prompt_history" jsonb DEFAULT '[]'::jsonb;
 ALTER TABLE "agents" ADD COLUMN "allowed_chatops" jsonb DEFAULT '[]'::jsonb;
+-- Incoming email fields (from main branch - previously on prompts table)
+ALTER TABLE "agents" ADD COLUMN "incoming_email_enabled" boolean NOT NULL DEFAULT false;
+ALTER TABLE "agents" ADD COLUMN "incoming_email_security_mode" text NOT NULL DEFAULT 'private';
+ALTER TABLE "agents" ADD COLUMN "incoming_email_allowed_domain" text;
 
 --> statement-breakpoint
 
@@ -62,6 +66,9 @@ INSERT INTO "agents" (
   "prompt_version",
   "prompt_history",
   "allowed_chatops",
+  "incoming_email_enabled",
+  "incoming_email_security_mode",
+  "incoming_email_allowed_domain",
   "created_at",
   "updated_at"
 )
@@ -83,6 +90,9 @@ SELECT
   p."version",
   p."history",
   p."allowed_chatops",
+  p."incoming_email_enabled",
+  p."incoming_email_security_mode",
+  p."incoming_email_allowed_domain",
   p."created_at",
   p."updated_at"
 FROM "prompts" p

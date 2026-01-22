@@ -14,7 +14,7 @@ import {
   InsertAgentSchema,
   PaginationQuerySchema,
   SelectAgentSchema,
-  UpdateAgentSchema,
+  UpdateAgentSchemaBase,
   UuidIdSchema,
 } from "@/types";
 
@@ -219,7 +219,7 @@ const agentRoutes: FastifyPluginAsyncZod = async (fastify) => {
         params: z.object({
           id: UuidIdSchema,
         }),
-        body: UpdateAgentSchema.partial(),
+        body: UpdateAgentSchemaBase.partial(),
         response: constructResponseSchema(SelectAgentSchema),
       },
     },

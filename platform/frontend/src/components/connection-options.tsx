@@ -65,7 +65,7 @@ export function ConnectionOptions({
                 }
               : {
                   backgroundColor: "hsl(var(--muted) / 0.3)",
-                  borderColor: "transparent",
+                  borderColor: "rgba(0, 0, 0, 0.08)",
                 }
           }
         >
@@ -117,7 +117,7 @@ export function ConnectionOptions({
                 }
               : {
                   backgroundColor: "hsl(var(--muted) / 0.3)",
-                  borderColor: "transparent",
+                  borderColor: "rgba(0, 0, 0, 0.08)",
                 }
           }
         >
@@ -162,7 +162,7 @@ export function ConnectionOptions({
                 }
               : {
                   backgroundColor: "hsl(var(--muted) / 0.3)",
-                  borderColor: "transparent",
+                  borderColor: "rgba(0, 0, 0, 0.08)",
                 }
           }
         >

@@ -2557,6 +2557,8 @@ export async function getAgentTools(context: {
   agentId: string;
   organizationId: string;
   userId?: string;
+  /** Skip user access check (for A2A/ChatOps flows where caller has elevated permissions) */
+  skipAccessCheck?: boolean;
 }): Promise<Tool[]> {
   const { agentId, organizationId, userId } = context;
 
@@ -2564,9 +2566,9 @@ export async function getAgentTools(context: {
   const allToolsWithDetails =
     await ToolModel.getDelegationToolsByAgent(agentId);
 
-  // Filter by user access if user ID is provided
+  // Filter by user access if user ID is provided (skip for A2A/ChatOps flows)
   let accessibleTools = allToolsWithDetails;
-  if (userId) {
+  if (userId && !skipAccessCheck) {
     // Check if user has profile admin permission directly (don't trust caller)
     const isAgentAdmin = await userHasPermission(
       userId,

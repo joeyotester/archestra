@@ -1,4 +1,5 @@
 import { executeA2AMessage } from "@/agents/a2a-executor";
+import { userHasPermission } from "@/auth";
 import config from "@/config";
 import logger from "@/logging";
 import AgentModel from "@/models/agent";
@@ -6,6 +7,7 @@ import AgentTeamModel from "@/models/agent-team";
 import IncomingEmailSubscriptionModel from "@/models/incoming-email-subscription";
 import ProcessedEmailModel from "@/models/processed-email";
 import TeamModel from "@/models/team";
+import UserModel from "@/models/user";
 import type {
   AgentIncomingEmailProvider,
   EmailProviderConfig,
@@ -520,6 +522,168 @@ export async function processIncomingEmail(
     );
   }
 
+  // Check if incoming email is enabled for this agent
+  if (!agent.incomingEmailEnabled) {
+    logger.warn(
+      {
+        messageId: email.messageId,
+        agentId,
+        fromAddress: email.fromAddress,
+      },
+      "[IncomingEmail] Incoming email is not enabled for this agent",
+    );
+    throw new Error(`Incoming email is not enabled for agent ${agent.name}`);
+  }
+
+  // Apply security mode validation
+  const securityMode = agent.incomingEmailSecurityMode;
+  const senderEmail = email.fromAddress.toLowerCase();
+
+  logger.debug(
+    {
+      messageId: email.messageId,
+      agentId,
+      securityMode,
+      senderEmail,
+    },
+    "[IncomingEmail] Applying security mode validation",
+  );
+
+  // Determine userId for the request (used for 'private' mode)
+  let userId: string = "system";
+
+  switch (securityMode) {
+    case "private": {
+      // Private mode: Sender must be an Archestra user with access to the agent
+      const user = await UserModel.findByEmail(senderEmail);
+      if (!user) {
+        logger.warn(
+          {
+            messageId: email.messageId,
+            agentId,
+            senderEmail,
+          },
+          "[IncomingEmail] Private mode: sender email not found in Archestra users",
+        );
+        throw new Error(
+          `Unauthorized: email sender ${senderEmail} is not a registered Archestra user`,
+        );
+      }
+
+      // Check if user is a profile admin (can access all agents)
+      const isProfileAdmin = await userHasPermission(
+        user.id,
+        agent.organizationId,
+        "profile",
+        "admin",
+      );
+
+      // Check if user has access to the agent via team membership or admin permission
+      const hasAccess = await AgentTeamModel.userHasAgentAccess(
+        user.id,
+        agentId,
+        isProfileAdmin,
+      );
+
+      if (!hasAccess) {
+        logger.warn(
+          {
+            messageId: email.messageId,
+            agentId,
+            userId: user.id,
+            senderEmail,
+            isProfileAdmin,
+          },
+          "[IncomingEmail] Private mode: user does not have access to this agent",
+        );
+        throw new Error(
+          `Unauthorized: user ${senderEmail} does not have access to this agent`,
+        );
+      }
+
+      // Use the verified user ID for execution context
+      userId = user.id;
+
+      logger.info(
+        {
+          messageId: email.messageId,
+          agentId,
+          userId: user.id,
+          senderEmail,
+          isProfileAdmin,
+        },
+        "[IncomingEmail] Private mode: sender authenticated via email",
+      );
+      break;
+    }
+
+    case "internal": {
+      // Internal mode: Sender email domain must match the allowed domain
+      const allowedDomain = agent.incomingEmailAllowedDomain?.toLowerCase();
+      if (!allowedDomain) {
+        throw new Error(
+          `Internal mode is configured but no allowed domain is set for agent ${agent.name}`,
+        );
+      }
+
+      const senderDomain = senderEmail.split("@")[1];
+      if (!senderDomain || senderDomain !== allowedDomain) {
+        logger.warn(
+          {
+            messageId: email.messageId,
+            agentId,
+            senderEmail,
+            senderDomain,
+            allowedDomain,
+          },
+          "[IncomingEmail] Internal mode: sender domain not allowed",
+        );
+        throw new Error(
+          `Unauthorized: emails from domain ${senderDomain} are not allowed for this agent. Only @${allowedDomain} is permitted.`,
+        );
+      }
+
+      logger.info(
+        {
+          messageId: email.messageId,
+          agentId,
+          senderEmail,
+          allowedDomain,
+        },
+        "[IncomingEmail] Internal mode: sender domain verified",
+      );
+      break;
+    }
+
+    case "public": {
+      // Public mode: No restrictions on sender
+      logger.info(
+        {
+          messageId: email.messageId,
+          agentId,
+          senderEmail,
+        },
+        "[IncomingEmail] Public mode: allowing email from any sender",
+      );
+      break;
+    }
+
+    default: {
+      // Unknown security mode - treat as private (most restrictive)
+      logger.warn(
+        {
+          messageId: email.messageId,
+          agentId,
+          securityMode,
+        },
+        "[IncomingEmail] Unknown security mode, treating as private",
+      );
+      throw new Error(
+        `Unknown security mode: ${securityMode}. Email rejected for security.`,
+      );
+    }
+  }
+
   // Get organization from agent's team
   const agentTeamIds = await AgentTeamModel.getTeamsForAgent(agent.id);
   if (agentTeamIds.length === 0) {
@@ -622,11 +786,14 @@ ${formattedHistory}
   );
 
   // Execute using the shared A2A service
+  // userId is determined by security mode:
+  // - private: actual user ID from email lookup
+  // - internal/public: "system" (anonymous)
   const result = await executeA2AMessage({
     agentId,
     message,
     organizationId: organization,
-    userId: "system", // Email invocations use system context
+    userId,
   });
 
   logger.info(

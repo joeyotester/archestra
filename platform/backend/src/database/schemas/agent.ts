@@ -11,6 +11,7 @@ import {
   uuid,
 } from "drizzle-orm/pg-core";
 import type { ChatOpsProviderType } from "@/types/chatops";
+import type { IncomingEmailSecurityMode } from "@shared";
 
 /**
  * Represents a historical version of an agent's prompt stored in the prompt_history JSONB array.
@@ -72,6 +73,19 @@ const agentsTable = pgTable(
     allowedChatops: jsonb("allowed_chatops")
       .$type<ChatOpsProviderType[]>()
       .default([]),
+
+    // Incoming email settings (only used when agentType = 'agent')
+    /** Whether incoming email invocation is enabled for this agent */
+    incomingEmailEnabled: boolean("incoming_email_enabled")
+      .notNull()
+      .default(false),
+    /** Security mode for incoming email: 'private', 'internal', or 'public' */
+    incomingEmailSecurityMode: text("incoming_email_security_mode")
+      .$type<IncomingEmailSecurityMode>()
+      .notNull()
+      .default("private"),
+    /** Allowed domain for 'internal' security mode (e.g., 'example.com') */
+    incomingEmailAllowedDomain: text("incoming_email_allowed_domain"),
 
     createdAt: timestamp("created_at", { mode: "date" }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { mode: "date" })

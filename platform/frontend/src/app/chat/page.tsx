@@ -884,10 +884,11 @@ export default function ChatPage() {
   }
 
   return (
-    <div className="flex h-screen w-full flex-col">
-      {/* Header spans full width - stays fixed when artifact panel opens */}
-      <StreamTimeoutWarning status={status} messages={messages} />
-      <PermissivePolicyBar />
+    <div className="flex h-screen w-full">
+      <div className="flex-1 flex flex-col min-w-0">
+        <div className="flex flex-col h-full">
+          <StreamTimeoutWarning status={status} messages={messages} />
+          <PermissivePolicyBar />
 
       <div className="sticky top-0 z-10 bg-background border-b p-2">
         <div className="flex items-start justify-between gap-2">
@@ -962,9 +963,6 @@ export default function ChatPage() {
         </div>
       </div>
 
-      {/* Content area below header - artifact panel and chat content side by side */}
-      <div className="flex flex-1 min-h-0">
-        <div className="flex-1 flex flex-col min-w-0">
           <div className="flex-1 overflow-y-auto">
             {conversationId ? (
               <ChatMessages
@@ -1194,12 +1192,6 @@ export default function ChatPage() {
             </div>
           )}
         </div>
-
-        {/* Right-side artifact panel - inside flex container so it appears alongside chat content */}
-        <ConversationArtifactPanel
-          artifact={conversation?.artifact}
-          isOpen={isArtifactOpen}
-        />
       </div>
 
       <CustomServerRequestDialog
@@ -1219,6 +1211,13 @@ export default function ChatPage() {
           conversationId={conversationId}
         />
       )}
+
+      {/* Right-side artifact panel */}
+      <ConversationArtifactPanel
+        artifact={conversation?.artifact}
+        isOpen={isArtifactOpen}
+        onToggle={toggleArtifactPanel}
+      />
 
       <AgentDialog
         open={isAgentDialogOpen}

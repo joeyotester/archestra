@@ -1,4 +1,4 @@
-import { RouteId } from "@shared";
+import { IncomingEmailSecurityModeSchema, RouteId } from "@shared";
 import type { FastifyPluginAsyncZod } from "fastify-type-provider-zod";
 import { z } from "zod";
 import {
@@ -64,22 +64,6 @@ async function isRateLimited(ip: string): Promise<boolean> {
   );
   return false;
 }
-
-/**
- * Schema for subscription status response
- */
-const SubscriptionStatusSchema = z.object({
-  isActive: z.boolean(),
-  subscription: z
-    .object({
-      id: z.string(),
-      subscriptionId: z.string(),
-      provider: z.string(),
-      webhookUrl: z.string(),
-      expiresAt: z.string().datetime(),
-    })
-    .nullable(),
-});
 
 /**
  * Schema for setup response
@@ -258,10 +242,19 @@ const incomingEmailRoutes: FastifyPluginAsyncZod = async (fastify) => {
         params: z.object({
           agentId: z.string().uuid(),
         }),
+        /**
+         * Schema for email address response
+         * Includes both global provider status and agent-level settings
+         */
         response: constructResponseSchema(
           z.object({
-            enabled: z.boolean(),
+            // Global incoming email provider status
+            providerEnabled: z.boolean(),
             emailAddress: z.string().nullable(),
+            // Agent-level incoming email settings
+            agentIncomingEmailEnabled: z.boolean(),
+            agentSecurityMode: IncomingEmailSecurityModeSchema,
+            agentAllowedDomain: z.string().nullable(),
           }),
         ),
       },
@@ -279,16 +272,22 @@ const incomingEmailRoutes: FastifyPluginAsyncZod = async (fastify) => {
 
       if (!provider) {
         return reply.send({
-          enabled: false,
+          providerEnabled: false,
           emailAddress: null,
+          agentIncomingEmailEnabled: agent.incomingEmailEnabled,
+          agentSecurityMode: agent.incomingEmailSecurityMode,
+          agentAllowedDomain: agent.incomingEmailAllowedDomain,
         });
       }
 
       const emailAddress = provider.generateEmailAddress(agentId);
 
       return reply.send({
-        enabled: true,
+        providerEnabled: true,
         emailAddress,
+        agentIncomingEmailEnabled: agent.incomingEmailEnabled,
+        agentSecurityMode: agent.incomingEmailSecurityMode,
+        agentAllowedDomain: agent.incomingEmailAllowedDomain,
       });
     },
   );
@@ -304,7 +303,20 @@ const incomingEmailRoutes: FastifyPluginAsyncZod = async (fastify) => {
         description:
           "Get the current incoming email webhook subscription status",
         tags: ["Incoming Email"],
-        response: constructResponseSchema(SubscriptionStatusSchema),
+        response: constructResponseSchema(
+          z.object({
+            isActive: z.boolean(),
+            subscription: z
+              .object({
+                id: z.string(),
+                subscriptionId: z.string(),
+                provider: z.string(),
+                webhookUrl: z.string(),
+                expiresAt: z.string().datetime(),
+              })
+              .nullable(),
+          }),
+        ),
       },
     },
     async (_, reply) => {
