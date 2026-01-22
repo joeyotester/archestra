@@ -27,7 +27,7 @@ async function createTestInternalAgent(organizationId: string) {
       id: crypto.randomUUID(),
       organizationId,
       name: `Test Internal Agent ${crypto.randomUUID().substring(0, 8)}`,
-      isInternal: true,
+      agentType: "agent",
       userPrompt: null,
       systemPrompt: "You are a helpful assistant",
     })

@@ -29,11 +29,11 @@ const agentRoutes: FastifyPluginAsyncZod = async (fastify) => {
         querystring: z
           .object({
             name: z.string().optional().describe("Filter by agent name"),
-            isInternal: z
-              .enum(["true", "false"])
+            agentType: z
+              .enum(["mcp_gateway", "agent"])
               .optional()
               .describe(
-                "Filter by internal/external status. Internal agents have prompts, external are API gateway profiles.",
+                "Filter by agent type. 'agent' = internal agents with prompts, 'mcp_gateway' = external API gateway profiles.",
               ),
           })
           .merge(PaginationQuerySchema)
@@ -52,7 +52,7 @@ const agentRoutes: FastifyPluginAsyncZod = async (fastify) => {
     },
     async (
       {
-        query: { name, isInternal, limit, offset, sortBy, sortDirection },
+        query: { name, agentType, limit, offset, sortBy, sortDirection },
         user,
         headers,
       },
@@ -68,12 +68,7 @@ const agentRoutes: FastifyPluginAsyncZod = async (fastify) => {
           { sortBy, sortDirection },
           {
             name,
-            isInternal:
-              isInternal === "true"
-                ? true
-                : isInternal === "false"
-                  ? false
-                  : undefined,
+            agentType,
           },
           user.id,
           isAgentAdmin,
@@ -90,29 +85,24 @@ const agentRoutes: FastifyPluginAsyncZod = async (fastify) => {
         description: "Get all agents without pagination",
         tags: ["Agents"],
         querystring: z.object({
-          isInternal: z
-            .enum(["true", "false"])
+          agentType: z
+            .enum(["mcp_gateway", "agent"])
             .optional()
             .describe(
-              "Filter by internal/external status. Internal agents have prompts, external are API gateway profiles.",
+              "Filter by agent type. 'agent' = internal agents with prompts, 'mcp_gateway' = external API gateway profiles.",
             ),
         }),
         response: constructResponseSchema(z.array(SelectAgentSchema)),
       },
     },
-    async ({ query: { isInternal }, headers, user }, reply) => {
+    async ({ query: { agentType }, headers, user }, reply) => {
       const { success: isAgentAdmin } = await hasPermission(
         { profile: ["admin"] },
         headers,
       );
       return reply.send(
         await AgentModel.findAll(user.id, isAgentAdmin, {
-          isInternal:
-            isInternal === "true"
-              ? true
-              : isInternal === "false"
-                ? false
-                : undefined,
+          agentType,
         }),
       );
     },
@@ -373,10 +363,10 @@ const agentRoutes: FastifyPluginAsyncZod = async (fastify) => {
         throw new ApiError(404, "Agent not found");
       }
 
-      if (!agent.isInternal) {
+      if (agent.agentType !== "agent") {
         throw new ApiError(
           400,
-          "Rollback only applies to internal agents (agents with prompts)",
+          "Rollback only applies to internal agents (agentType='agent')",
         );
       }
 

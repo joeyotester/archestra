@@ -9,7 +9,6 @@ import {
 } from "drizzle-orm/pg-core";
 import type { ChatOpsProviderType } from "@/types/chatops";
 import agentsTable from "./agent";
-import promptsTable from "./prompt";
 
 /**
  * Maps chatops channels (Teams, Slack, etc.) to Archestra agents.
@@ -38,10 +37,6 @@ const chatopsChannelBindingsTable = pgTable(
     agentId: uuid("agent_id").references(() => agentsTable.id, {
       onDelete: "cascade",
     }),
-    /** DEPRECATED: Use agentId instead. Will be removed after migration cleanup. */
-    promptId: uuid("prompt_id").references(() => promptsTable.id, {
-      onDelete: "cascade",
-    }),
     createdAt: timestamp("created_at", { mode: "date" }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { mode: "date" })
       .notNull()
@@ -61,8 +56,6 @@ const chatopsChannelBindingsTable = pgTable(
     ),
     // Index for looking up bindings by agent
     index("chatops_channel_binding_agent_id_idx").on(table.agentId),
-    // DEPRECATED: Index for looking up bindings by prompt
-    index("chatops_channel_binding_prompt_id_idx").on(table.promptId),
   ],
 );
 

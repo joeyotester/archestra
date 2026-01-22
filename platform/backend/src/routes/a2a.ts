@@ -14,7 +14,7 @@ import { ApiError, UuidIdSchema } from "@/types";
 /**
  * A2A (Agent-to-Agent) Protocol routes
  * Exposes internal agents as A2A agents with AgentCard discovery and JSON-RPC execution
- * Only internal agents (isInternal=true) can be used for A2A.
+ * Only internal agents (agentType='agent') can be used for A2A.
  */
 
 const A2AAgentCardSchema = z.object({
@@ -92,7 +92,7 @@ const a2aRoutes: FastifyPluginAsyncZod = async (fastify) => {
     {
       schema: {
         description:
-          "Get A2A AgentCard for an internal agent (must be isInternal=true)",
+          "Get A2A AgentCard for an internal agent (must be agentType='agent')",
         tags: ["A2A"],
         params: z.object({
           agentId: UuidIdSchema,
@@ -111,10 +111,10 @@ const a2aRoutes: FastifyPluginAsyncZod = async (fastify) => {
       }
 
       // Only internal agents can be used for A2A
-      if (!agent.isInternal) {
+      if (agent.agentType !== "agent") {
         throw new ApiError(
           400,
-          "Agent is not an internal agent (A2A requires internal agents with prompts)",
+          "Agent is not an internal agent (A2A requires agents with agentType='agent')",
         );
       }
 
@@ -169,7 +169,7 @@ const a2aRoutes: FastifyPluginAsyncZod = async (fastify) => {
     {
       schema: {
         description:
-          "Execute A2A JSON-RPC message on an internal agent (must be isInternal=true)",
+          "Execute A2A JSON-RPC message on an internal agent (must be agentType='agent')",
         tags: ["A2A"],
         params: z.object({
           agentId: UuidIdSchema,
@@ -199,14 +199,14 @@ const a2aRoutes: FastifyPluginAsyncZod = async (fastify) => {
       }
 
       // Only internal agents can be used for A2A
-      if (!agent.isInternal) {
+      if (agent.agentType !== "agent") {
         return reply.send({
           jsonrpc: "2.0" as const,
           id,
           error: {
             code: -32602,
             message:
-              "Agent is not an internal agent (A2A requires internal agents with prompts)",
+              "Agent is not an internal agent (A2A requires agents with agentType='agent')",
           },
         });
       }

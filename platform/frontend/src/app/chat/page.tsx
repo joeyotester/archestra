@@ -1,14 +1,7 @@
 "use client";
 
 import type { UIMessage } from "@ai-sdk/react";
-import {
-  Eye,
-  EyeOff,
-  FileText,
-  Globe,
-  PanelRightClose,
-  Plus,
-} from "lucide-react";
+import { Eye, EyeOff, FileText, Globe, PanelRightClose } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
@@ -22,16 +15,15 @@ import {
 import { toast } from "sonner";
 import { CreateCatalogDialog } from "@/app/mcp-catalog/_parts/create-catalog-dialog";
 import { CustomServerRequestDialog } from "@/app/mcp-catalog/_parts/custom-server-request-dialog";
+import { AgentDialog } from "@/components/agent-dialog";
 import { Message, MessageContent } from "@/components/ai-elements/message";
 import type { PromptInputProps } from "@/components/ai-elements/prompt-input";
 import { Response } from "@/components/ai-elements/response";
 import { AgentSelector } from "@/components/chat/agent-selector";
-import { AgentToolsDisplay } from "@/components/chat/agent-tools-display";
 import { BrowserPanel } from "@/components/chat/browser-panel";
 import { ChatMessages } from "@/components/chat/chat-messages";
 import { ConversationArtifactPanel } from "@/components/chat/conversation-artifact";
 import { InitialAgentSelector } from "@/components/chat/initial-agent-selector";
-import { PromptDialog } from "@/components/chat/prompt-dialog";
 import { PromptVersionHistoryDialog } from "@/components/chat/prompt-version-history-dialog";
 import { StreamTimeoutWarning } from "@/components/chat/stream-timeout-warning";
 import { PermissivePolicyBar } from "@/components/permissive-policy-bar";
@@ -725,7 +717,6 @@ export default function ChatPage() {
           agentId: initialAgentId,
           selectedModel: initialModel,
           selectedProvider,
-          promptId: initialPromptId ?? undefined,
           chatApiKeyId: initialApiKeyId,
         },
         {
@@ -813,7 +804,6 @@ export default function ChatPage() {
         agentId: initialAgentId,
         selectedModel: initialModel,
         selectedProvider,
-        promptId: initialPromptId ?? undefined,
         chatApiKeyId: initialApiKeyId,
       },
       {
@@ -830,7 +820,6 @@ export default function ChatPage() {
     conversationId,
     initialAgentId,
     initialModel,
-    initialPromptId,
     initialApiKeyId,
     chatModels,
     createConversationMutation,
@@ -908,7 +897,11 @@ export default function ChatPage() {
             <div className="flex-shrink-0">
               {conversationId ? (
                 <AgentSelector
-                  currentPromptId={conversation?.promptId ?? null}
+                  currentPromptId={
+                    conversation?.agent?.agentType === "agent"
+                      ? (conversation?.agentId ?? null)
+                      : null
+                  }
                   currentAgentId={conversation?.agentId ?? ""}
                   currentModel={conversation?.selectedModel ?? ""}
                 />
@@ -920,42 +913,6 @@ export default function ChatPage() {
                 />
               )}
             </div>
-
-            {/* Agent tools display - wraps internally, takes remaining space */}
-            {(conversationId ? conversation?.promptId : initialPromptId) && (
-              <AgentToolsDisplay
-                agentId={
-                  conversationId
-                    ? (conversation?.agentId ?? "")
-                    : (initialAgentId ?? "")
-                }
-                promptId={
-                  conversationId
-                    ? (conversation?.promptId ?? null)
-                    : initialPromptId
-                }
-                conversationId={conversationId}
-                addAgentsButton={
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="h-8 px-2 gap-1.5 text-xs border-dashed"
-                    onClick={() => {
-                      const agentIdToEdit = conversationId
-                        ? conversation?.promptId
-                        : initialPromptId;
-                      if (agentIdToEdit) {
-                        setEditingAgentId(agentIdToEdit);
-                        setIsAgentDialogOpen(true);
-                      }
-                    }}
-                  >
-                    <Plus className="h-3 w-3" />
-                    Add agents
-                  </Button>
-                }
-              />
-            )}
           </div>
           {/* Right side - controls stay fixed in first row */}
           <div className="flex items-center gap-2 flex-shrink-0">
@@ -1210,11 +1167,6 @@ export default function ChatPage() {
                       : initialProvider
                   }
                   textareaRef={textareaRef}
-                  onProfileChange={
-                    conversationId && conversation?.agent.id
-                      ? undefined
-                      : setInitialAgentId
-                  }
                   initialApiKeyId={
                     conversationId && conversation?.agent.id
                       ? undefined
@@ -1227,7 +1179,9 @@ export default function ChatPage() {
                   }
                   promptId={
                     conversationId && conversation?.agent.id
-                      ? (conversation?.promptId ?? null)
+                      ? conversation?.agent?.agentType === "agent"
+                        ? conversation?.agentId
+                        : null
                       : initialPromptId
                   }
                   allowFileUploads={organization?.allowChatFileUploads ?? false}
@@ -1266,7 +1220,7 @@ export default function ChatPage() {
         />
       )}
 
-      <PromptDialog
+      <AgentDialog
         open={isAgentDialogOpen}
         onOpenChange={(open) => {
           setIsAgentDialogOpen(open);
@@ -1275,6 +1229,7 @@ export default function ChatPage() {
           }
         }}
         agent={editingAgent}
+        agentType="agent"
         onViewVersionHistory={setVersionHistoryAgent}
       />
 

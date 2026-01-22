@@ -64,6 +64,11 @@ class AgentModel {
     // Assign default Archestra tools (artifact_write, todo_write) to new profiles
     await ToolModel.assignDefaultArchestraToolsToAgent(createdAgent.id);
 
+    // For internal agents, create a delegation tool so other agents can delegate to this one
+    if (createdAgent.agentType === "agent") {
+      await ToolModel.findOrCreateDelegationTool(createdAgent.id);
+    }
+
     // Get team details and tools for the created agent
     const [teamDetails, assignedTools] = await Promise.all([
       teams && teams.length > 0
@@ -88,12 +93,12 @@ class AgentModel {
   }
 
   /**
-   * Find all agents with optional filtering by isInternal
+   * Find all agents with optional filtering by agentType
    */
   static async findAll(
     userId?: string,
     isAgentAdmin?: boolean,
-    options?: { isInternal?: boolean },
+    options?: { agentType?: "mcp_gateway" | "agent" },
   ): Promise<Agent[]> {
     let query = db
       .select()
@@ -111,11 +116,9 @@ class AgentModel {
     // Build where conditions
     const whereConditions: SQL[] = [];
 
-    // Filter by isInternal if specified
-    if (options?.isInternal !== undefined) {
-      whereConditions.push(
-        eq(schema.agentsTable.isInternal, options.isInternal),
-      );
+    // Filter by agentType if specified
+    if (options?.agentType !== undefined) {
+      whereConditions.push(eq(schema.agentsTable.agentType, options.agentType));
     }
 
     // Apply access control filtering for non-agent admins
@@ -180,20 +183,18 @@ class AgentModel {
   }
 
   /**
-   * Find all agents for an organization with optional filtering by isInternal
+   * Find all agents for an organization with optional filtering by agentType
    */
   static async findByOrganizationId(
     organizationId: string,
-    options?: { isInternal?: boolean },
+    options?: { agentType?: "mcp_gateway" | "agent" },
   ): Promise<Agent[]> {
     const whereConditions: SQL[] = [
       eq(schema.agentsTable.organizationId, organizationId),
     ];
 
-    if (options?.isInternal !== undefined) {
-      whereConditions.push(
-        eq(schema.agentsTable.isInternal, options.isInternal),
-      );
+    if (options?.agentType !== undefined) {
+      whereConditions.push(eq(schema.agentsTable.agentType, options.agentType));
     }
 
     const agents = await db
@@ -251,7 +252,7 @@ class AgentModel {
   static async findByOrganizationIdAndAccessibleTeams(
     organizationId: string,
     accessibleAgentIds: string[],
-    options?: { isInternal?: boolean },
+    options?: { agentType?: "mcp_gateway" | "agent" },
   ): Promise<Agent[]> {
     if (accessibleAgentIds.length === 0) {
       return [];
@@ -262,10 +263,8 @@ class AgentModel {
       inArray(schema.agentsTable.id, accessibleAgentIds),
     ];
 
-    if (options?.isInternal !== undefined) {
-      whereConditions.push(
-        eq(schema.agentsTable.isInternal, options.isInternal),
-      );
+    if (options?.agentType !== undefined) {
+      whereConditions.push(eq(schema.agentsTable.agentType, options.agentType));
     }
 
     const agents = await db
@@ -331,7 +330,7 @@ class AgentModel {
       .from(schema.agentsTable)
       .where(
         and(
-          eq(schema.agentsTable.isInternal, true),
+          eq(schema.agentsTable.agentType, "agent"),
           sql`${schema.agentsTable.allowedChatops} @> ${JSON.stringify([provider])}::jsonb`,
         ),
       )
@@ -346,7 +345,7 @@ class AgentModel {
   static async findAllPaginated(
     pagination: PaginationQuery,
     sorting?: SortingQuery,
-    filters?: { name?: string; isInternal?: boolean },
+    filters?: { name?: string; agentType?: "mcp_gateway" | "agent" },
     userId?: string,
     isAgentAdmin?: boolean,
   ): Promise<PaginatedResult<Agent>> {
@@ -361,11 +360,9 @@ class AgentModel {
       whereConditions.push(ilike(schema.agentsTable.name, `%${filters.name}%`));
     }
 
-    // Add isInternal filter if provided
-    if (filters?.isInternal !== undefined) {
-      whereConditions.push(
-        eq(schema.agentsTable.isInternal, filters.isInternal),
-      );
+    // Add agentType filter if provided
+    if (filters?.agentType !== undefined) {
+      whereConditions.push(eq(schema.agentsTable.agentType, filters.agentType));
     }
 
     // Apply access control filtering for non-agent admins
@@ -754,7 +751,7 @@ class AgentModel {
 
   /**
    * Update an internal agent with versioning - creates a new version by pushing current to history.
-   * Only applies to internal agents (isInternal=true).
+   * Only applies to internal agents (agentType='agent').
    * The agent ID stays the same (no FK migration needed).
    */
   static async updateWithVersion(
@@ -762,7 +759,7 @@ class AgentModel {
     input: Partial<UpdateAgent>,
   ): Promise<Agent | null> {
     const agent = await AgentModel.findById(id);
-    if (!agent || !agent.isInternal) {
+    if (!agent || agent.agentType !== "agent") {
       return null;
     }
 
@@ -803,14 +800,14 @@ class AgentModel {
   /**
    * Rollback an internal agent to a specific version number.
    * Copies content from history entry to current fields and increments version.
-   * Only applies to internal agents (isInternal=true).
+   * Only applies to internal agents (agentType='agent').
    */
   static async rollback(
     id: string,
     targetVersion: number,
   ): Promise<Agent | null> {
     const agent = await AgentModel.findById(id);
-    if (!agent || !agent.isInternal) {
+    if (!agent || agent.agentType !== "agent") {
       return null;
     }
 
@@ -851,7 +848,7 @@ class AgentModel {
 
   /**
    * Get all versions of an internal agent (current + history).
-   * Only applies to internal agents (isInternal=true).
+   * Only applies to internal agents (agentType='agent').
    */
   static async getVersions(
     agentId: string,
@@ -859,7 +856,7 @@ class AgentModel {
     isAgentAdmin?: boolean,
   ): Promise<AgentVersionsResponse | null> {
     const agent = await AgentModel.findById(agentId, userId, isAgentAdmin);
-    if (!agent || !agent.isInternal) {
+    if (!agent || agent.agentType !== "agent") {
       return null;
     }
 

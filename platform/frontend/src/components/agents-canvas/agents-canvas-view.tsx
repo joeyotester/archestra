@@ -20,7 +20,7 @@ import { useTheme } from "next-themes";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { A2AConnectionInstructions } from "@/components/a2a-connection-instructions";
-import { PromptDialog } from "@/components/chat/prompt-dialog";
+import { AgentDialog } from "@/components/agent-dialog";
 import { PromptVersionHistoryDialog } from "@/components/chat/prompt-version-history-dialog";
 import {
   AlertDialog,
@@ -667,7 +667,7 @@ function AgentsCanvasViewInner() {
         </div>
       </div>
 
-      <PromptDialog
+      <AgentDialog
         open={isAgentDialogOpen}
         onOpenChange={(open) => {
           setIsAgentDialogOpen(open);
@@ -676,6 +676,7 @@ function AgentsCanvasViewInner() {
           }
         }}
         agent={editingAgent}
+        agentType="agent"
         onViewVersionHistory={(agent) => setVersionHistoryAgentId(agent.id)}
       />
 

@@ -285,7 +285,7 @@ export const RouteId = {
   SetupIncomingEmailWebhook: "setupIncomingEmailWebhook",
   RenewIncomingEmailSubscription: "renewIncomingEmailSubscription",
   DeleteIncomingEmailSubscription: "deleteIncomingEmailSubscription",
-  GetPromptEmailAddress: "getPromptEmailAddress",
+  GetAgentEmailAddress: "getAgentEmailAddress",
 
   // ChatOps Routes
   GetChatOpsStatus: "getChatOpsStatus",

@@ -52,7 +52,7 @@ export function AgentSelector({
   } | null>(null);
 
   const currentAgent = useMemo(
-    () => agents.find((a) => a.id === currentPromptId),
+    () => agents.find((a) => a.id === currentPromptId) ?? agents[0] ?? null,
     [agents, currentPromptId],
   );
 
@@ -71,10 +71,9 @@ export function AgentSelector({
     if (!pendingAgent) return;
 
     // Create a new conversation with the selected agent
-    // For internal agents, the agent ID is both the "prompt ID" and agent ID
+    // For internal agents, the agent ID is the agent itself (no separate prompt)
     const newConversation = await createConversationMutation.mutateAsync({
       agentId: pendingAgent.id ?? currentAgentId,
-      promptId: pendingAgent.id ?? undefined,
       selectedModel: currentModel,
     });
 
@@ -97,7 +96,7 @@ export function AgentSelector({
           >
             <Bot className="h-3 w-3 shrink-0 opacity-70" />
             <span className="text-xs font-medium">
-              {currentAgent?.name || "No agent selected"}
+              {currentAgent?.name ?? "Select agent"}
             </span>
             {open ? (
               <ChevronDown className="ml-1 h-3 w-3 shrink-0 opacity-50" />
@@ -112,18 +111,6 @@ export function AgentSelector({
             <CommandList>
               <CommandEmpty>No agent found.</CommandEmpty>
               <CommandGroup>
-                <CommandItem
-                  value="no-agent-selected"
-                  onSelect={() => handleAgentSelect(null, "No agent selected")}
-                >
-                  No agent selected
-                  <Check
-                    className={cn(
-                      "ml-auto h-4 w-4",
-                      currentPromptId === null ? "opacity-100" : "opacity-0",
-                    )}
-                  />
-                </CommandItem>
                 {agents.map((agent) => (
                   <CommandItem
                     key={agent.id}

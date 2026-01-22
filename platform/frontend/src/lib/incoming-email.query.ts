@@ -7,7 +7,7 @@ const {
   setupIncomingEmailWebhook,
   renewIncomingEmailSubscription,
   deleteIncomingEmailSubscription,
-  getPromptEmailAddress,
+  getAgentEmailAddress,
 } = archestraApiSdk;
 
 export const incomingEmailKeys = {
@@ -112,16 +112,15 @@ export function useAgentEmailAddress(agentId: string | null) {
     queryKey: incomingEmailKeys.promptEmailAddress(agentId ?? ""),
     queryFn: async () => {
       if (!agentId) return null;
-      // TODO: Update backend route from /api/prompts/:promptId/email-address to /api/agents/:agentId/email-address
-      const { data, error } = await getPromptEmailAddress({
-        path: { promptId: agentId },
+      const { data, error } = await getAgentEmailAddress({
+        path: { agentId },
       });
       if (error) {
         throw new Error(
           error?.error?.message || "Failed to fetch agent email address",
         );
       }
-      return data as archestraApiTypes.GetPromptEmailAddressResponses["200"];
+      return data as archestraApiTypes.GetAgentEmailAddressResponses["200"];
     },
     enabled: !!agentId,
   });

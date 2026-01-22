@@ -4,9 +4,10 @@ import {
   ARCHESTRA_MCP_SERVER_NAME,
   MCP_SERVER_TOOL_NAME_SEPARATOR,
 } from "@shared";
-import { Loader2, Plus, X } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Bot, Loader2, Plus, X } from "lucide-react";
+import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import { PromptInputButton } from "@/components/ai-elements/prompt-input";
+import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Tooltip,
@@ -14,7 +15,9 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { useInternalAgents } from "@/lib/agent.query";
 import {
+  useAgentDelegationTools,
   useConversationEnabledTools,
   useProfileToolsWithIds,
   useUpdateConversationEnabledTools,
@@ -25,9 +28,9 @@ import {
   getPendingActions,
   type PendingToolAction,
 } from "@/lib/pending-tool-state";
-import { Button } from "../ui/button";
+import { cn } from "@/lib/utils";
 
-interface ChatToolsDisplayProps {
+interface ProfileToolsDisplayProps {
   agentId: string;
   promptId?: string | null;
   /** Required for enable/disable functionality. Optional for read-only display. */
@@ -35,25 +38,44 @@ interface ChatToolsDisplayProps {
   className?: string;
   /** When true, hides enable/disable buttons and shows all tools as enabled */
   readOnly?: boolean;
+  /** Optional button to add more agents (shown in chat header) */
+  addAgentsButton?: ReactNode;
 }
 
+type ToolItem = {
+  id: string;
+  name: string;
+  description: string | null;
+};
+
 /**
- * Display tools enabled for a chat conversation with ability to disable them.
- * Use this component for chat-level tool management (enable/disable).
- * For profile-level tool assignment, use McpToolsDisplay instead.
+ * Unified display for both MCP tools and delegated agents.
+ * Use this component anywhere you need to show profile tools and agent delegations.
+ *
+ * - In chat prompt input: shows tools grouped by server with enable/disable
+ * - In chat header: shows delegated agents with enable/disable + add button
+ * - In dialog: read-only mode shows all assigned tools and agents
  *
  * When no conversation exists, pending actions are stored in localStorage
  * and applied when the conversation is created via first message.
  */
-export function ChatToolsDisplay({
+export function ProfileToolsDisplay({
   agentId,
   promptId,
   conversationId,
   className,
   readOnly = false,
-}: ChatToolsDisplayProps) {
-  const { data: profileTools = [], isLoading } =
+  addAgentsButton,
+}: ProfileToolsDisplayProps) {
+  // Fetch MCP tools
+  const { data: profileTools = [], isLoading: isLoadingTools } =
     useProfileToolsWithIds(agentId);
+
+  // Fetch delegation tools
+  const { data: delegationTools = [], isLoading: isLoadingDelegations } =
+    useAgentDelegationTools(agentId);
+
+  const { data: allAgents = [] } = useInternalAgents();
 
   // State for tooltip open state per server
   const [openTooltip, setOpenTooltip] = useState<string | null>(null);
@@ -79,12 +101,10 @@ export function ChatToolsDisplay({
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as Node;
 
-      // Check if click is within the main tooltip content
       if (tooltipContentRef.current?.contains(target)) {
         return;
       }
 
-      // Check if click is on any of the tool buttons
       const clickedButton = (target as HTMLElement).closest(
         "[data-tool-button]",
       );
@@ -92,7 +112,6 @@ export function ChatToolsDisplay({
         return;
       }
 
-      // If we got here, click was outside everything
       setOpenTooltip(null);
     };
 
@@ -102,7 +121,7 @@ export function ChatToolsDisplay({
     };
   }, []);
 
-  // Fetch enabled tools for the conversation (skip in readOnly mode or without conversationId)
+  // Fetch enabled tools for the conversation
   const { data: enabledToolsData } = useConversationEnabledTools(
     readOnly || !conversationId ? undefined : conversationId,
   );
@@ -112,13 +131,27 @@ export function ChatToolsDisplay({
   // Mutation for updating enabled tools
   const updateEnabledTools = useUpdateConversationEnabledTools();
 
-  // Default enabled tools logic (matches backend ConversationModel.create):
+  // Map delegationTools to their display names
+  const agentToolsWithNames = useMemo(() => {
+    return delegationTools.map((tool) => {
+      const agentName = tool.name.replace(/^delegate_to_/, "");
+      const matchingAgent = allAgents.find(
+        (a) => a.name.toLowerCase().replace(/\s+/g, "_") === agentName,
+      );
+      return {
+        ...tool,
+        displayName: matchingAgent?.name ?? agentName.replace(/_/g, " "),
+      };
+    });
+  }, [delegationTools, allAgents]);
+
+  // Default enabled tools logic:
   // - Disable all Archestra tools (archestra__*) by default
   // - Except archestra__todo_write and archestra__artifact_write which stay enabled
   // - All other tools (non-Archestra, agent delegation) remain enabled
   const defaultEnabledToolIds = useMemo(
     () =>
-      profileTools
+      [...profileTools, ...delegationTools]
         .filter(
           (tool) =>
             !tool.name.startsWith("archestra__") ||
@@ -126,22 +159,17 @@ export function ChatToolsDisplay({
             tool.name === "archestra__artifact_write",
         )
         .map((t) => t.id),
-    [profileTools],
+    [profileTools, delegationTools],
   );
 
-  // Compute current enabled tools:
-  // - If conversation exists with custom selection, use that
-  // - If conversation exists without custom selection, use defaults
-  // - If no conversation, apply pending actions to defaults
+  // Compute current enabled tools
   const currentEnabledToolIds = useMemo(() => {
     if (conversationId && hasCustomSelection) {
       return enabledToolIds;
     }
 
-    // Start with defaults
     const baseIds = defaultEnabledToolIds;
 
-    // If no conversation, apply pending actions for display
     if (!conversationId && localPendingActions.length > 0) {
       return applyPendingActions(baseIds, localPendingActions);
     }
@@ -155,20 +183,11 @@ export function ChatToolsDisplay({
     localPendingActions,
   ]);
 
-  // Create enabled tool IDs set for quick lookup
   const enabledToolIdsSet = new Set(currentEnabledToolIds);
 
-  // Use only profile tools (agent tools are displayed separately in the header)
-  type ToolItem = {
-    id: string;
-    name: string;
-    description: string | null;
-  };
-  const allTools: ToolItem[] = profileTools;
-
-  // Group ALL tools by MCP server name (don't filter by enabled status)
+  // Group MCP tools by server name
   const groupedTools: Record<string, ToolItem[]> = {};
-  for (const tool of allTools) {
+  for (const tool of profileTools) {
     const parts = tool.name.split(MCP_SERVER_TOOL_NAME_SEPARATOR);
     const serverName =
       parts.length > 1
@@ -188,10 +207,9 @@ export function ChatToolsDisplay({
   });
 
   // Handle enabling a tool
-  const handleEnableTool = (toolId: string, event: React.MouseEvent) => {
-    event.stopPropagation();
+  const handleEnableTool = (toolId: string, event?: React.MouseEvent) => {
+    event?.stopPropagation();
     if (!conversationId) {
-      // Store in localStorage and update local state
       const action: PendingToolAction = { type: "enable", toolId };
       addPendingAction(action, agentId, promptId ?? null);
       setLocalPendingActions((prev) => [...prev, action]);
@@ -205,10 +223,9 @@ export function ChatToolsDisplay({
   };
 
   // Handle disabling a tool
-  const handleDisableTool = (toolId: string, event: React.MouseEvent) => {
-    event.stopPropagation();
+  const handleDisableTool = (toolId: string, event?: React.MouseEvent) => {
+    event?.stopPropagation();
     if (!conversationId) {
-      // Store in localStorage and update local state
       const action: PendingToolAction = { type: "disable", toolId };
       addPendingAction(action, agentId, promptId ?? null);
       setLocalPendingActions((prev) => [...prev, action]);
@@ -227,7 +244,6 @@ export function ChatToolsDisplay({
   const handleDisableAll = (toolIds: string[], event: React.MouseEvent) => {
     event.stopPropagation();
     if (!conversationId) {
-      // Store in localStorage and update local state
       const action: PendingToolAction = { type: "disableAll", toolIds };
       addPendingAction(action, agentId, promptId ?? null);
       setLocalPendingActions((prev) => [...prev, action]);
@@ -246,7 +262,6 @@ export function ChatToolsDisplay({
   const handleEnableAll = (toolIds: string[], event: React.MouseEvent) => {
     event.stopPropagation();
     if (!conversationId) {
-      // Store in localStorage and update local state
       const action: PendingToolAction = { type: "enableAll", toolIds };
       addPendingAction(action, agentId, promptId ?? null);
       setLocalPendingActions((prev) => [...prev, action]);
@@ -261,12 +276,18 @@ export function ChatToolsDisplay({
     });
   };
 
-  // Render a single tool row
-  const renderToolRow = (
-    tool: ToolItem,
-    isDisabled: boolean,
-    _currentServerName: string,
-  ) => {
+  // Toggle agent tool
+  const handleToggleAgentTool = (toolId: string) => {
+    const isEnabled = enabledToolIdsSet.has(toolId);
+    if (isEnabled) {
+      handleDisableTool(toolId);
+    } else {
+      handleEnableTool(toolId);
+    }
+  };
+
+  // Render a single tool row (for MCP tools popup)
+  const renderToolRow = (tool: ToolItem, isDisabled: boolean) => {
     const parts = tool.name.split(MCP_SERVER_TOOL_NAME_SEPARATOR);
     const toolName = parts.length > 1 ? parts[parts.length - 1] : tool.name;
     const borderColor = isDisabled ? "border-red-500" : "border-green-500";
@@ -303,6 +324,8 @@ export function ChatToolsDisplay({
     );
   };
 
+  const isLoading = isLoadingTools || isLoadingDelegations;
+
   if (isLoading) {
     return (
       <div className={className}>
@@ -314,13 +337,16 @@ export function ChatToolsDisplay({
     );
   }
 
-  if (Object.keys(groupedTools).length === 0) {
+  const hasTools = Object.keys(groupedTools).length > 0;
+  const hasAgents = agentToolsWithNames.length > 0;
+
+  if (!hasTools && !hasAgents && !addAgentsButton) {
     return null;
   }
 
+  // Render MCP tool buttons (grouped by server)
   const toolButtons = sortedServerEntries.map(([serverName]) => {
-    // Get all tools for this server from allTools (profile tools + agent tools)
-    const allServerTools = allTools.filter((tool) => {
+    const allServerTools = profileTools.filter((tool) => {
       const parts = tool.name.split(MCP_SERVER_TOOL_NAME_SEPARATOR);
       const toolServerName =
         parts.length > 1
@@ -329,13 +355,11 @@ export function ChatToolsDisplay({
       return toolServerName === serverName;
     });
 
-    // Split into enabled and disabled using the consistent enabledToolIdsSet
-    // In readOnly mode, treat all tools as "enabled" for display purposes
     const enabledTools: ToolItem[] = [];
     const disabledTools: ToolItem[] = [];
 
     for (const tool of allServerTools) {
-      if (readOnly || enabledToolIdsSet.has(tool.id)) {
+      if (enabledToolIdsSet.has(tool.id)) {
         enabledTools.push(tool);
       } else {
         disabledTools.push(tool);
@@ -361,9 +385,7 @@ export function ChatToolsDisplay({
               {serverName}
             </span>
             <span className="text-muted-foreground text-xs">
-              {readOnly
-                ? `(${totalToolsCount})`
-                : `(${enabledTools.length}/${totalToolsCount})`}
+              ({enabledTools.length}/{totalToolsCount})
             </span>
           </PromptInputButton>
         </TooltipTrigger>
@@ -407,9 +429,7 @@ export function ChatToolsDisplay({
                   )}
                 </div>
                 <div className="space-y-1 px-2 pb-2">
-                  {enabledTools.map((tool) =>
-                    renderToolRow(tool, false, serverName),
-                  )}
+                  {enabledTools.map((tool) => renderToolRow(tool, false))}
                 </div>
               </div>
             )}
@@ -436,9 +456,7 @@ export function ChatToolsDisplay({
                   </Button>
                 </div>
                 <div className="space-y-1 px-2 pb-2">
-                  {disabledTools.map((tool) =>
-                    renderToolRow(tool, true, serverName),
-                  )}
+                  {disabledTools.map((tool) => renderToolRow(tool, true))}
                 </div>
               </div>
             )}
@@ -448,5 +466,66 @@ export function ChatToolsDisplay({
     );
   });
 
-  return <TooltipProvider>{toolButtons}</TooltipProvider>;
+  // Render agent delegation buttons
+  const agentButtons = agentToolsWithNames.map((tool) => {
+    const isEnabled = enabledToolIdsSet.has(tool.id);
+
+    if (readOnly) {
+      return (
+        <Button
+          key={tool.id}
+          variant="outline"
+          size="sm"
+          className="h-8 px-2 gap-1.5 text-xs"
+          disabled
+        >
+          <span className="h-2 w-2 rounded-full bg-green-500" />
+          <Bot className="h-3 w-3" />
+          <span>{tool.displayName}</span>
+        </Button>
+      );
+    }
+
+    return (
+      <Tooltip key={tool.id}>
+        <TooltipTrigger asChild>
+          <Button
+            variant="outline"
+            size="sm"
+            className={cn(
+              "h-8 px-2 gap-1.5 text-xs",
+              !isEnabled && "opacity-60",
+            )}
+            onClick={() => handleToggleAgentTool(tool.id)}
+          >
+            <span
+              className={cn(
+                "h-2 w-2 rounded-full",
+                isEnabled ? "bg-green-500" : "bg-red-500",
+              )}
+            />
+            <Bot className="h-3 w-3" />
+            <span>{tool.displayName}</span>
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>
+          <p>
+            {isEnabled
+              ? `Click to disable ${tool.displayName}`
+              : `Click to enable ${tool.displayName}`}
+          </p>
+        </TooltipContent>
+      </Tooltip>
+    );
+  });
+
+  return (
+    <TooltipProvider>
+      <div className={cn("flex flex-wrap items-center gap-2", className)}>
+        {toolButtons}
+        {agentButtons}
+        {addAgentsButton}
+      </div>
+    </TooltipProvider>
+  );
 }

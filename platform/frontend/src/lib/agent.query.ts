@@ -206,9 +206,9 @@ export function useLabelValues(params?: { key?: string }) {
  */
 export function useInternalAgents() {
   return useQuery({
-    queryKey: ["agents", "all", { isInternal: "true" }],
+    queryKey: ["agents", "all", { agentType: "agent" }],
     queryFn: async () => {
-      const response = await getAllAgents({ query: { isInternal: "true" } });
+      const response = await getAllAgents({ query: { agentType: "agent" } });
       return response.data ?? [];
     },
   });

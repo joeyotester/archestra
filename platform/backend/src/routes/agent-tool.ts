@@ -578,7 +578,7 @@ const agentToolRoutes: FastifyPluginAsyncZod = async (fastify) => {
         throw new ApiError(404, "Agent not found");
       }
 
-      if (!agent.isInternal) {
+      if (agent.agentType !== "agent") {
         throw new ApiError(
           400,
           "Delegations only apply to internal agents (agents with prompts)",
@@ -627,7 +627,7 @@ const agentToolRoutes: FastifyPluginAsyncZod = async (fastify) => {
         throw new ApiError(404, "Agent not found");
       }
 
-      if (!agent.isInternal) {
+      if (agent.agentType !== "agent") {
         throw new ApiError(
           400,
           "Delegations only apply to internal agents (agents with prompts)",
@@ -640,7 +640,7 @@ const agentToolRoutes: FastifyPluginAsyncZod = async (fastify) => {
         if (!targetAgent) {
           throw new ApiError(404, `Target agent ${targetAgentId} not found`);
         }
-        if (!targetAgent.isInternal) {
+        if (targetAgent.agentType !== "agent") {
           throw new ApiError(
             400,
             `Target agent ${targetAgentId} is not an internal agent`,
@@ -693,7 +693,7 @@ const agentToolRoutes: FastifyPluginAsyncZod = async (fastify) => {
         throw new ApiError(404, "Agent not found");
       }
 
-      if (!agent.isInternal) {
+      if (agent.agentType !== "agent") {
         throw new ApiError(
           400,
           "Delegations only apply to internal agents (agents with prompts)",
@@ -742,7 +742,7 @@ const agentToolRoutes: FastifyPluginAsyncZod = async (fastify) => {
               z.object({
                 id: z.string().uuid(),
                 name: z.string(),
-                isInternal: z.boolean(),
+                agentType: z.enum(["mcp_gateway", "agent"]),
               }),
             ),
           }),
@@ -752,7 +752,7 @@ const agentToolRoutes: FastifyPluginAsyncZod = async (fastify) => {
     async ({ organizationId }, reply) => {
       const [connections, agents] = await Promise.all([
         AgentToolModel.getAllDelegationConnections(organizationId),
-        AgentModel.findByOrganizationId(organizationId, { isInternal: true }),
+        AgentModel.findByOrganizationId(organizationId, { agentType: "agent" }),
       ]);
 
       return reply.send({
@@ -760,7 +760,7 @@ const agentToolRoutes: FastifyPluginAsyncZod = async (fastify) => {
         agents: agents.map((a) => ({
           id: a.id,
           name: a.name,
-          isInternal: a.isInternal,
+          agentType: a.agentType,
         })),
       });
     },

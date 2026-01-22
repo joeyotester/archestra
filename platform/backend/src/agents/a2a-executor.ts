@@ -7,7 +7,7 @@ import { AgentModel } from "@/models";
 
 export interface A2AExecuteParams {
   /**
-   * Agent ID to execute. Must be an internal agent (isInternal=true).
+   * Agent ID to execute. Must be an internal agent (agentType='agent').
    */
   agentId: string;
   message: string;
@@ -61,9 +61,9 @@ export async function executeA2AMessage(
   }
 
   // Verify agent is internal (has prompts)
-  if (!agent.isInternal) {
+  if (agent.agentType !== "agent") {
     throw new Error(
-      `Agent ${agentId} is not an internal agent (A2A requires internal agents with prompts)`,
+      `Agent ${agentId} is not an internal agent (A2A requires agents with agentType='agent')`,
     );
   }
 

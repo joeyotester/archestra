@@ -1,13 +1,18 @@
--- Migration: Merge prompts into agents with is_internal flag
+-- Migration: Merge prompts into agents with agent_type enum
 -- This migration converts prompts to internal agents and uses delegation tools via agent_tools
 
 -- ============================================================================
 -- PHASE 1: SCHEMA CHANGES
 -- ============================================================================
 
+-- 1.0 Create agent_type enum
+CREATE TYPE "public"."agent_type" AS ENUM('mcp_gateway', 'agent');
+
+--> statement-breakpoint
+
 -- 1.1 Add columns to agents table
 ALTER TABLE "agents" ADD COLUMN "organization_id" text;
-ALTER TABLE "agents" ADD COLUMN "is_internal" boolean NOT NULL DEFAULT false;
+ALTER TABLE "agents" ADD COLUMN "agent_type" "public"."agent_type" NOT NULL DEFAULT 'mcp_gateway';
 ALTER TABLE "agents" ADD COLUMN "system_prompt" text;
 ALTER TABLE "agents" ADD COLUMN "user_prompt" text;
 ALTER TABLE "agents" ADD COLUMN "prompt_version" integer DEFAULT 1;
@@ -56,7 +61,7 @@ UPDATE "agents" SET "organization_id" = (
 -- 2.2 Copy prompt fields to agents (these are the prompts that have their own agent)
 -- Each prompt has a unique agentId, so we can copy prompt data directly to agents
 UPDATE "agents" a SET
-  "is_internal" = true,
+  "agent_type" = 'agent',
   "system_prompt" = p."system_prompt",
   "user_prompt" = p."user_prompt",
   "prompt_version" = p."version",
@@ -149,5 +154,5 @@ ALTER TABLE "agents" ALTER COLUMN "organization_id" SET NOT NULL;
 -- ============================================================================
 
 CREATE INDEX "agents_organization_id_idx" ON "agents" USING btree ("organization_id");
-CREATE INDEX "agents_is_internal_idx" ON "agents" USING btree ("is_internal");
+CREATE INDEX "agents_agent_type_idx" ON "agents" USING btree ("agent_type");
 CREATE INDEX "tools_delegate_to_agent_id_idx" ON "tools" USING btree ("delegate_to_agent_id");

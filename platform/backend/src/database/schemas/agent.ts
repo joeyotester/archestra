@@ -3,16 +3,18 @@ import {
   index,
   integer,
   jsonb,
+  pgEnum,
   pgTable,
   text,
   timestamp,
+  uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
 import type { ChatOpsProviderType } from "@/types/chatops";
 
 /**
  * Represents a historical version of an agent's prompt stored in the prompt_history JSONB array.
- * Only used when is_internal = true.
+ * Only used when agent_type = 'agent'.
  */
 export interface AgentHistoryEntry {
   version: number;
@@ -22,14 +24,23 @@ export interface AgentHistoryEntry {
 }
 
 /**
+ * Agent type enum:
+ * - mcp_gateway: External profiles for API gateway routing
+ * - agent: Internal agents with prompts for chat
+ */
+export const agentTypeEnum = pgEnum("agent_type", ["mcp_gateway", "agent"]);
+
+export type AgentType = (typeof agentTypeEnum.enumValues)[number];
+
+/**
  * Unified agents table supporting both external profiles and internal agents.
  *
- * External profiles (is_internal = false):
+ * External profiles (agent_type = 'mcp_gateway'):
  *   - API gateway profiles for routing LLM traffic
  *   - Used for tool assignment and policy enforcement
  *   - Prompt fields are null
  *
- * Internal agents (is_internal = true):
+ * Internal agents (agent_type = 'agent'):
  *   - Chat agents with system/user prompts
  *   - Support version history and rollback
  *   - Can delegate to other internal agents via delegation tools
@@ -47,10 +58,10 @@ const agentsTable = pgTable(
       .notNull()
       .default(false),
 
-    // Internal/External distinction
-    isInternal: boolean("is_internal").notNull().default(false),
+    // Agent type: 'mcp_gateway' (external profile) or 'agent' (internal agent)
+    agentType: agentTypeEnum("agent_type").notNull().default("mcp_gateway"),
 
-    // Prompt fields (only used when isInternal = true)
+    // Prompt fields (only used when agentType = 'agent')
     systemPrompt: text("system_prompt"),
     userPrompt: text("user_prompt"),
     promptVersion: integer("prompt_version").default(1),
@@ -70,7 +81,12 @@ const agentsTable = pgTable(
   },
   (table) => [
     index("agents_organization_id_idx").on(table.organizationId),
-    index("agents_is_internal_idx").on(table.isInternal),
+    index("agents_agent_type_idx").on(table.agentType),
+    // Unique constraint on (organization_id, name) to prevent duplicate agent names
+    uniqueIndex("agents_organization_id_name_idx").on(
+      table.organizationId,
+      table.name,
+    ),
   ],
 );
 

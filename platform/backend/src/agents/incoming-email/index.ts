@@ -514,9 +514,9 @@ export async function processIncomingEmail(
     throw new Error(`Agent ${agentId} not found`);
   }
 
-  if (!agent.isInternal) {
+  if (agent.agentType !== "agent") {
     throw new Error(
-      `Agent ${agentId} is not an internal agent (email requires internal agents)`,
+      `Agent ${agentId} is not an internal agent (email requires agents with agentType='agent')`,
     );
   }
 

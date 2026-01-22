@@ -10,7 +10,6 @@ import {
   AgentToolModel,
   ChatApiKeyModel,
   InternalMcpCatalogModel,
-  PromptModel,
   SessionModel,
   TeamModel,
   ToolInvocationPolicyModel,
@@ -31,12 +30,10 @@ import type {
   InsertMember,
   InsertOrganization,
   InsertOrganizationRole,
-  InsertPrompt,
   InsertSession,
   InsertTeam,
   InsertUser,
   OrganizationRole,
-  Prompt,
   TeamMember,
   Tool,
   ToolInvocation,
@@ -59,7 +56,6 @@ interface TestFixtures {
   makeTeamMember: typeof makeTeamMember;
   makeAgent: typeof makeAgent;
   makeInternalAgent: typeof makeInternalAgent;
-  makePrompt: typeof makePrompt;
   makeTool: typeof makeTool;
   makeAgentTool: typeof makeAgentTool;
   makeToolPolicy: typeof makeToolPolicy;
@@ -207,27 +203,9 @@ async function makeInternalAgent(
   overrides: Partial<InsertAgent> = {},
 ): Promise<Agent> {
   return await makeAgent({
-    isInternal: true,
+    agentType: "agent",
     systemPrompt: "You are a test agent",
     userPrompt: "{{message}}",
-    ...overrides,
-  });
-}
-
-/**
- * Creates a test prompt (UI "Agent") using the Prompt model.
- * Note: In the DB, "prompts" are called "Agents" in the UI.
- * Requires an organizationId and agentId (Profile in UI).
- */
-async function makePrompt(params: {
-  organizationId: string;
-  agentId: string;
-  overrides?: Partial<InsertPrompt>;
-}): Promise<Prompt> {
-  const { organizationId, agentId, overrides = {} } = params;
-  return await PromptModel.create(organizationId, {
-    name: `Test Prompt ${crypto.randomUUID().substring(0, 8)}`,
-    agentId,
     ...overrides,
   });
 }
@@ -791,9 +769,6 @@ export const test = baseTest.extend<TestFixtures>({
   },
   makeInternalAgent: async ({}, use) => {
     await use(makeInternalAgent);
-  },
-  makePrompt: async ({}, use) => {
-    await use(makePrompt);
   },
   makeTool: async ({}, use) => {
     await use(makeTool);

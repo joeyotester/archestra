@@ -192,7 +192,7 @@ export class ChatOpsManager {
     }
 
     // Verify agent is internal (has prompts)
-    if (!agent.isInternal) {
+    if (agent.agentType !== "agent") {
       logger.warn(
         { agentId: binding.agentId, bindingId: binding.id },
         "[ChatOps] Agent is not an internal agent",

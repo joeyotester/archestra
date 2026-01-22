@@ -8,8 +8,8 @@ import { schema } from "@/database";
 import { AgentLabelWithDetailsSchema } from "./label";
 import { SelectToolSchema } from "./tool";
 
-// Re-export AgentHistoryEntry type from schema
-export type { AgentHistoryEntry } from "@/database/schemas/agent";
+// Re-export types from schema
+export type { AgentHistoryEntry, AgentType } from "@/database/schemas/agent";
 
 // Team info schema for agent responses (just id and name)
 export const AgentTeamInfoSchema = z.object({

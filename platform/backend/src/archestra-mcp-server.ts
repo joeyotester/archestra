@@ -2549,20 +2549,20 @@ export function getArchestraMcpTools(): Tool[] {
 }
 
 /**
- * Get agent delegation tools for a prompt from the database
- * Each configured agent becomes a separate tool (e.g., agent__research_bot)
- * Note: Agent tools are separate from Archestra tools - they enable prompt-to-prompt delegation
+ * Get agent delegation tools for an agent from the database
+ * Each configured delegation becomes a separate tool (e.g., delegate_to_research_bot)
+ * Note: Agent tools are separate from Archestra tools - they enable agent-to-agent delegation
  */
 export async function getAgentTools(context: {
-  promptId: string;
+  agentId: string;
   organizationId: string;
   userId?: string;
 }): Promise<Tool[]> {
-  const { promptId, organizationId, userId } = context;
+  const { agentId, organizationId, userId } = context;
 
-  // Get all agent delegation tools from the database with profile info
+  // Get all delegation tools assigned to this agent
   const allToolsWithDetails =
-    await ToolModel.getAgentDelegationToolsWithDetails(promptId);
+    await ToolModel.getDelegationToolsByAgent(agentId);
 
   // Filter by user access if user ID is provided
   let accessibleTools = allToolsWithDetails;
@@ -2578,13 +2578,13 @@ export async function getAgentTools(context: {
     const userAccessibleAgentIds =
       await AgentTeamModel.getUserAccessibleAgentIds(userId, isAgentAdmin);
     accessibleTools = allToolsWithDetails.filter((t) =>
-      userAccessibleAgentIds.includes(t.profileId),
+      userAccessibleAgentIds.includes(t.targetAgent.id),
     );
   }
 
   logger.debug(
     {
-      promptId,
+      agentId,
       organizationId,
       userId,
       allToolCount: allToolsWithDetails.length,
@@ -2596,13 +2596,13 @@ export async function getAgentTools(context: {
   // Convert DB tools to MCP Tool format
   return accessibleTools.map((t) => ({
     name: t.tool.name,
-    title: t.agentPromptName,
+    title: t.targetAgent.name,
     description:
       t.tool.description ||
-      t.agentPromptSystemPrompt?.substring(0, 500) ||
-      `Call the "${t.agentPromptName}" agent to perform tasks.`,
+      t.targetAgent.systemPrompt?.substring(0, 500) ||
+      `Call the "${t.targetAgent.name}" agent to perform tasks.`,
     inputSchema: t.tool.parameters as Tool["inputSchema"],
     annotations: {},
-    _meta: { agentPromptId: t.agentPromptId },
+    _meta: { targetAgentId: t.targetAgent.id },
   }));
 }

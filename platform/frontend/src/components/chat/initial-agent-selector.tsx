@@ -34,7 +34,7 @@ export function InitialAgentSelector({
   const [open, setOpen] = useState(false);
 
   const currentAgent = useMemo(
-    () => agents.find((a) => a.id === currentPromptId),
+    () => agents.find((a) => a.id === currentPromptId) ?? agents[0] ?? null,
     [agents, currentPromptId],
   );
 
@@ -55,7 +55,7 @@ export function InitialAgentSelector({
         >
           <Bot className="h-3 w-3 shrink-0 opacity-70" />
           <span className="text-xs font-medium">
-            {currentAgent?.name || "No agent selected"}
+            {currentAgent?.name ?? "Select agent"}
           </span>
           {open ? (
             <ChevronDown className="ml-1 h-3 w-3 shrink-0 opacity-50" />
@@ -70,18 +70,6 @@ export function InitialAgentSelector({
           <CommandList>
             <CommandEmpty>No agent found.</CommandEmpty>
             <CommandGroup>
-              <CommandItem
-                value="no-agent-selected"
-                onSelect={() => handleAgentSelect(null)}
-              >
-                No agent selected
-                <Check
-                  className={cn(
-                    "ml-auto h-4 w-4",
-                    currentPromptId === null ? "opacity-100" : "opacity-0",
-                  )}
-                />
-              </CommandItem>
               {agents.map((agent) => (
                 <CommandItem
                   key={agent.id}

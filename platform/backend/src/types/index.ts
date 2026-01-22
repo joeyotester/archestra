@@ -23,7 +23,6 @@ export * from "./member";
 export * from "./message";
 export * from "./optimization-rule";
 export * from "./organization";
-export * from "./prompt";
 export * from "./role";
 export * from "./secret";
 export * from "./secrets-manager";
