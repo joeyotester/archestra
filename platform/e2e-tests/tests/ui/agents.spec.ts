@@ -16,7 +16,15 @@ test(
 
     const AGENT_NAME = makeRandomString(10, "Test Profile");
     await goToPage(page, "/profiles");
-    await page.getByTestId(E2eTestId.CreateAgentButton).click();
+
+    // Wait for page to fully load before interacting
+    // WebKit/Firefox may need extra time for React hydration and permission checks
+    await page.waitForLoadState("networkidle");
+
+    // Wait for the Create Profile button to be visible and clickable
+    const createButton = page.getByTestId(E2eTestId.CreateAgentButton);
+    await expect(createButton).toBeVisible({ timeout: 15_000 });
+    await createButton.click();
     await page.getByRole("textbox", { name: "Name" }).fill(AGENT_NAME);
     await page.getByRole("button", { name: "Create" }).click();
 

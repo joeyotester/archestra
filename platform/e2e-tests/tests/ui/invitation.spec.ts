@@ -21,11 +21,15 @@ test.describe(
 
       // Wait for the "Invite Member" button to be visible before clicking
       // Firefox/WebKit may take longer to render buttons in CI environments
+      // The button is hidden while permission checks are loading (shows skeleton instead)
+      // Use polling to handle React hydration delays
       const inviteButton = page.getByRole("button", {
         name: /invite member/i,
-        disabled: false,
       });
-      await expect(inviteButton).toBeVisible({ timeout: 30_000 });
+      await expect(async () => {
+        await expect(inviteButton).toBeVisible({ timeout: 5000 });
+        await expect(inviteButton).toBeEnabled({ timeout: 5000 });
+      }).toPass({ timeout: 60_000, intervals: [1000, 2000, 3000] });
 
       // Click the "Invite Member" button to open the dialog
       await clickButton({ page, options: { name: /invite member/i } });
@@ -65,11 +69,15 @@ test.describe(
 
       // Wait for the "Invite Member" button to be visible before clicking
       // Firefox/WebKit may take longer to render buttons in CI environments
+      // The button is hidden while permission checks are loading (shows skeleton instead)
+      // Use polling to handle React hydration delays
       const inviteButton = page.getByRole("button", {
         name: /invite member/i,
-        disabled: false,
       });
-      await expect(inviteButton).toBeVisible({ timeout: 30_000 });
+      await expect(async () => {
+        await expect(inviteButton).toBeVisible({ timeout: 5000 });
+        await expect(inviteButton).toBeEnabled({ timeout: 5000 });
+      }).toPass({ timeout: 60_000, intervals: [1000, 2000, 3000] });
 
       // Click the "Invite Member" button to open the dialog
       await clickButton({ page, options: { name: /invite member/i } });
