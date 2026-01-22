@@ -161,12 +161,15 @@ export class ChatOpsManager {
     }
 
     // Resolve inline agent mention
-    const { agentToUse, cleanedMessageText, fallbackMessage } =
-      await this.resolveInlineAgentMention({
-        messageText: message.text,
-        defaultAgent: agent,
-        provider,
-      });
+    const {
+      agentToUse,
+      cleanedMessageText: _cleanedMessageText,
+      fallbackMessage,
+    } = await this.resolveInlineAgentMention({
+      messageText: message.text,
+      defaultAgent: agent,
+      provider,
+    });
 
     // Build context from thread history
     const contextMessages = await this.fetchThreadHistory(message, provider);
