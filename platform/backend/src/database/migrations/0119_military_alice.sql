@@ -40,57 +40,97 @@ CREATE INDEX "chatops_channel_binding_agent_id_idx" ON "chatops_channel_binding"
 -- PHASE 2: DATA MIGRATION
 -- ============================================================================
 
--- 2.1 Backfill organization_id on agents from first organization if missing
--- For existing agents, use the organization_id from the prompt that references them
-UPDATE "agents" a SET "organization_id" = (
-  SELECT p."organization_id"
-  FROM "prompts" p
-  WHERE p."agent_id" = a."id"
-  LIMIT 1
-) WHERE a."organization_id" IS NULL AND EXISTS (
-  SELECT 1 FROM "prompts" p WHERE p."agent_id" = a."id"
-);
-
--- For agents without prompts, use first organization as fallback
+-- 2.1 Backfill organization_id on existing agents (profiles) from first organization
+-- These are the MCP gateway profiles that existed before this migration
 UPDATE "agents" SET "organization_id" = (
   SELECT "id" FROM "organization" LIMIT 1
 ) WHERE "organization_id" IS NULL;
 
 --> statement-breakpoint
 
--- 2.2 Copy prompt fields to agents (these are the prompts that have their own agent)
--- Each prompt has a unique agentId, so we can copy prompt data directly to agents
-UPDATE "agents" a SET
-  "agent_type" = 'agent',
-  "system_prompt" = p."system_prompt",
-  "user_prompt" = p."user_prompt",
-  "prompt_version" = p."version",
-  "prompt_history" = p."history",
-  "allowed_chatops" = p."allowed_chatops"
+-- 2.2 INSERT new agents from prompts (prompts become their own agents)
+-- Each prompt becomes a NEW agent with agent_type='agent'
+-- We use the prompt's ID as the new agent's ID to preserve relationships
+INSERT INTO "agents" (
+  "id",
+  "organization_id",
+  "name",
+  "agent_type",
+  "system_prompt",
+  "user_prompt",
+  "prompt_version",
+  "prompt_history",
+  "allowed_chatops",
+  "created_at",
+  "updated_at"
+)
+SELECT
+  p."id",                    -- Use prompt ID as agent ID
+  p."organization_id",
+  p."name",                  -- Prompt has its own name
+  'agent',                   -- Mark as internal agent
+  p."system_prompt",
+  p."user_prompt",
+  p."version",
+  p."history",
+  p."allowed_chatops",
+  p."created_at",
+  p."updated_at"
 FROM "prompts" p
-WHERE p."agent_id" = a."id";
+ON CONFLICT ("id") DO NOTHING;
 
 --> statement-breakpoint
 
--- 2.3 Migrate prompt_agents to agent_tools with delegation tools
--- Step 1: Create delegation tools for each unique target agent (from prompt)
+-- 2.3 Copy agent_tools from profile to the new agent
+-- Each prompt referenced a profile (via profile_id), copy that profile's tool assignments
+INSERT INTO "agent_tools" (
+  "id",
+  "agent_id",
+  "tool_id",
+  "response_modifier_template",
+  "credential_source_mcp_server_id",
+  "execution_source_mcp_server_id",
+  "use_dynamic_team_credential",
+  "created_at",
+  "updated_at"
+)
+SELECT
+  gen_random_uuid(),
+  p."id",                                    -- The prompt ID (now the new agent ID)
+  at."tool_id",
+  at."response_modifier_template",
+  at."credential_source_mcp_server_id",
+  at."execution_source_mcp_server_id",
+  at."use_dynamic_team_credential",
+  NOW(),
+  NOW()
+FROM "prompts" p
+JOIN "agent_tools" at ON at."agent_id" = p."profile_id"  -- Copy from the profile
+ON CONFLICT ("agent_id", "tool_id") DO NOTHING;
+
+--> statement-breakpoint
+
+-- 2.4 Migrate prompt_agents to agent_tools with delegation tools
+-- prompt_agents linked prompts to other prompts for delegation
+-- Now we create delegation tools where the target is the prompt ID (which is now an agent ID)
+
+-- Step 1: Create delegation tools for each unique target prompt (now agent)
 INSERT INTO "tools" ("id", "name", "description", "delegate_to_agent_id", "created_at", "updated_at", "parameters")
 SELECT
   gen_random_uuid(),
-  'agent__' || LOWER(REGEXP_REPLACE(target_agent."name", '[^a-zA-Z0-9]+', '_', 'g')),
-  'Delegate task to agent: ' || target_agent."name",
-  target_agent."id",
+  'agent__' || LOWER(REGEXP_REPLACE(target_prompt."name", '[^a-zA-Z0-9]+', '_', 'g')),
+  'Delegate task to agent: ' || target_prompt."name",
+  target_prompt."id",        -- Target prompt ID = target agent ID
   NOW(),
   NOW(),
   '{"type": "object", "properties": {"message": {"type": "string", "description": "The task or message to send to the agent"}}, "required": ["message"]}'::jsonb
 FROM (
-  SELECT DISTINCT a."id", a."name"
+  SELECT DISTINCT p."id", p."name"
   FROM "prompt_agents" pa
-  JOIN "prompts" target_prompt ON pa."agent_prompt_id" = target_prompt."id"
-  JOIN "agents" a ON target_prompt."agent_id" = a."id"
-) target_agent
+  JOIN "prompts" p ON pa."agent_prompt_id" = p."id"
+) target_prompt
 WHERE NOT EXISTS (
-  SELECT 1 FROM "tools" t WHERE t."delegate_to_agent_id" = target_agent."id"
+  SELECT 1 FROM "tools" t WHERE t."delegate_to_agent_id" = target_prompt."id"
 );
 
 --> statement-breakpoint
@@ -99,32 +139,31 @@ WHERE NOT EXISTS (
 INSERT INTO "agent_tools" ("id", "agent_id", "tool_id", "created_at", "updated_at")
 SELECT
   gen_random_uuid(),
-  source_agent."id",
+  source_prompt."id",        -- Source prompt ID = source agent ID
   t."id",
   NOW(),
   NOW()
 FROM "prompt_agents" pa
 JOIN "prompts" source_prompt ON pa."prompt_id" = source_prompt."id"
-JOIN "agents" source_agent ON source_prompt."agent_id" = source_agent."id"
 JOIN "prompts" target_prompt ON pa."agent_prompt_id" = target_prompt."id"
-JOIN "agents" target_agent ON target_prompt."agent_id" = target_agent."id"
-JOIN "tools" t ON t."delegate_to_agent_id" = target_agent."id"
+JOIN "tools" t ON t."delegate_to_agent_id" = target_prompt."id"
 ON CONFLICT ("agent_id", "tool_id") DO NOTHING;
 
 --> statement-breakpoint
 
--- 2.4 Migrate chatops_channel_binding: copy agent_id from prompt
-UPDATE "chatops_channel_binding" c SET "agent_id" = (
-  SELECT p."agent_id"
-  FROM "prompts" p
-  WHERE p."id" = c."prompt_id"
-)
-WHERE c."agent_id" IS NULL AND c."prompt_id" IS NOT NULL;
+-- 2.5 Migrate chatops_channel_binding: set agent_id = prompt_id
+-- Since prompt ID = new agent ID, we can copy directly
+UPDATE "chatops_channel_binding" SET "agent_id" = "prompt_id"
+WHERE "agent_id" IS NULL AND "prompt_id" IS NOT NULL;
 
 --> statement-breakpoint
 
--- 2.5 Update conversations: ensure promptId matches what's in the agent
--- (No action needed - agentId is already set, promptId becomes redundant)
+-- 2.6 Update conversations: set agent_id to prompt_id where prompt exists
+-- Since prompt ID = new agent ID, conversations should point to the new agent
+UPDATE "conversations" SET "agent_id" = "prompt_id"
+WHERE "prompt_id" IS NOT NULL;
+
+--> statement-breakpoint
 
 -- ============================================================================
 -- PHASE 3: Add NOT NULL constraint to organization_id (after data backfill)
