@@ -3,15 +3,18 @@
 import type { archestraApiTypes } from "@shared";
 import { archestraApiSdk } from "@shared";
 import { useQuery } from "@tanstack/react-query";
-import { Bot, Loader2, Wrench, X } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Bot, Loader2, Search, X } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import {
   type ProfileLabel,
   ProfileLabels,
   type ProfileLabelsRef,
 } from "@/components/agent-labels";
-import { ChatToolsDisplay } from "@/components/chat/chat-tools-display";
+import {
+  AgentToolsEditor,
+  type AgentToolsEditorRef,
+} from "@/components/agent-tools-editor";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -21,20 +24,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
-  HoverCard,
-  HoverCardContent,
-  HoverCardTrigger,
-} from "@/components/ui/hover-card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { MultiSelectCombobox } from "@/components/ui/multi-select-combobox";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import {
   Select,
   SelectContent,
@@ -42,12 +39,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import {
   useCreateProfile,
   useInternalAgents,
-  useLabelKeys,
   useUpdateProfile,
 } from "@/lib/agent.query";
 import {
@@ -57,6 +53,7 @@ import {
 import { useHasPermissions } from "@/lib/auth.query";
 import { useChatProfileMcpTools } from "@/lib/chat.query";
 import { useChatOpsStatus } from "@/lib/chatops.query";
+import { useInternalMcpCatalog } from "@/lib/internal-mcp-catalog.query";
 
 type Agent = archestraApiTypes.GetAllAgentsResponses["200"][number];
 
@@ -83,12 +80,166 @@ function AgentToolsList({ agentId }: { agentId: string }) {
             key={tool.name}
             className="inline-flex items-center gap-1 text-xs bg-muted px-2 py-0.5 rounded"
           >
-            <Wrench className="h-3 w-3 opacity-70" />
             {tool.name}
           </span>
         ))}
       </div>
     </div>
+  );
+}
+
+// Single subagent pill with popover
+interface SubagentPillProps {
+  agent: Agent;
+  isSelected: boolean;
+  onToggle: (agentId: string) => void;
+}
+
+function SubagentPill({ agent, isSelected, onToggle }: SubagentPillProps) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <Popover open={open} onOpenChange={setOpen} modal>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          size="sm"
+          className={`h-8 px-3 gap-1.5 text-xs ${!isSelected ? "border-dashed opacity-50" : ""}`}
+        >
+          {isSelected && <span className="h-2 w-2 rounded-full bg-green-500" />}
+          <Bot className="h-3 w-3" />
+          <span className="font-medium">{agent.name}</span>
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent
+        className="w-[350px] p-0"
+        side="bottom"
+        align="start"
+        sideOffset={8}
+        avoidCollisions
+      >
+        <div className="p-4 border-b flex items-start justify-between gap-2">
+          <div className="flex-1">
+            <h4 className="font-semibold">{agent.name}</h4>
+            {agent.systemPrompt && (
+              <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
+                {agent.systemPrompt}
+              </p>
+            )}
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-6 w-6 p-0 shrink-0"
+            onClick={() => setOpen(false)}
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+
+        <div className="p-4 border-b">
+          <label
+            htmlFor={`subagent-toggle-${agent.id}`}
+            className="flex items-center gap-3 cursor-pointer"
+          >
+            <Checkbox
+              id={`subagent-toggle-${agent.id}`}
+              checked={isSelected}
+              onCheckedChange={() => onToggle(agent.id)}
+            />
+            <span className="text-sm font-medium">
+              {isSelected ? "Enabled as subagent" : "Enable as subagent"}
+            </span>
+          </label>
+        </div>
+
+        <div className="p-4">
+          <AgentToolsList agentId={agent.id} />
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+// Component to edit subagents (delegations)
+interface SubagentsEditorProps {
+  availableAgents: Agent[];
+  selectedAgentIds: string[];
+  onSelectionChange: (ids: string[]) => void;
+  currentAgentId?: string;
+  searchQuery: string;
+  showAll: boolean;
+  onShowMore: () => void;
+}
+
+function SubagentsEditor({
+  availableAgents,
+  selectedAgentIds,
+  onSelectionChange,
+  currentAgentId,
+  searchQuery,
+  showAll,
+  onShowMore,
+}: SubagentsEditorProps) {
+  // Filter out current agent from available agents
+  const filteredAgents = availableAgents.filter((a) => a.id !== currentAgentId);
+
+  // Filter by search query
+  const searchFilteredAgents = searchQuery.trim()
+    ? filteredAgents.filter((a) =>
+        a.name.toLowerCase().includes(searchQuery.toLowerCase()),
+      )
+    : filteredAgents;
+
+  // Apply show more limit (show all when searching)
+  const shouldShowAll = showAll || !!searchQuery.trim();
+  const visibleAgents =
+    shouldShowAll || searchFilteredAgents.length <= 10
+      ? searchFilteredAgents
+      : searchFilteredAgents.slice(0, 10);
+  const hiddenCount = searchFilteredAgents.length - 10;
+
+  const handleToggle = (agentId: string) => {
+    if (selectedAgentIds.includes(agentId)) {
+      onSelectionChange(selectedAgentIds.filter((id) => id !== agentId));
+    } else {
+      onSelectionChange([...selectedAgentIds, agentId]);
+    }
+  };
+
+  if (filteredAgents.length === 0) {
+    return (
+      <p className="text-sm text-muted-foreground">
+        No other agents available.
+      </p>
+    );
+  }
+
+  if (searchFilteredAgents.length === 0) {
+    return <p className="text-sm text-muted-foreground">No matching agents.</p>;
+  }
+
+  return (
+    <>
+      {visibleAgents.map((agent) => (
+        <SubagentPill
+          key={agent.id}
+          agent={agent}
+          isSelected={selectedAgentIds.includes(agent.id)}
+          onToggle={handleToggle}
+        />
+      ))}
+      {!shouldShowAll && hiddenCount > 0 && (
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-8 px-3 text-xs border-dashed"
+          onClick={onShowMore}
+        >
+          +{hiddenCount} more
+        </Button>
+      )}
+    </>
   );
 }
 
@@ -114,6 +265,7 @@ export function AgentDialog({
   onCreated,
 }: AgentDialogProps) {
   const { data: allInternalAgents = [] } = useInternalAgents();
+  const { data: catalogItems = [] } = useInternalMcpCatalog();
   const createAgent = useCreateProfile();
   const updateAgent = useUpdateProfile();
   const syncDelegations = useSyncAgentDelegations();
@@ -126,9 +278,9 @@ export function AgentDialog({
       return response.data || [];
     },
   });
-  const { data: availableKeys = [] } = useLabelKeys();
   const { data: isProfileAdmin } = useHasPermissions({ profile: ["admin"] });
   const agentLabelsRef = useRef<ProfileLabelsRef>(null);
+  const agentToolsEditorRef = useRef<AgentToolsEditorRef>(null);
 
   // Form state
   const [name, setName] = useState("");
@@ -144,19 +296,16 @@ export function AgentDialog({
   const [selectedAgentType, setSelectedAgentType] = useState<
     "mcp_gateway" | "agent"
   >(agentType);
+  const [subagentsSearch, setSubagentsSearch] = useState("");
+  const [subagentsSearchOpen, setSubagentsSearchOpen] = useState(false);
+  const [subagentsShowAll, setSubagentsShowAll] = useState(false);
+  const [toolsSearch, setToolsSearch] = useState("");
+  const [toolsSearchOpen, setToolsSearchOpen] = useState(false);
+  const [toolsShowAll, setToolsShowAll] = useState(false);
+  const [selectedToolsCount, setSelectedToolsCount] = useState(0);
 
   // Determine if this is an internal agent based on the selected type
   const isInternalAgent = selectedAgentType === "agent";
-
-  // Available agents that can be delegated to (excluding self)
-  const availableDelegationTargets = useMemo(() => {
-    return allInternalAgents
-      .filter((a) => a.id !== agent?.id)
-      .map((a) => ({
-        value: a.id,
-        label: a.name,
-      }));
-  }, [allInternalAgents, agent?.id]);
 
   // Reset form when dialog opens/closes or agent changes
   useEffect(() => {
@@ -195,6 +344,14 @@ export function AgentDialog({
         setConsiderContextUntrusted(false);
         setSelectedAgentType(agentType);
       }
+      // Reset search and counts when dialog opens
+      setSubagentsSearch("");
+      setSubagentsSearchOpen(false);
+      setSubagentsShowAll(false);
+      setToolsSearch("");
+      setToolsSearchOpen(false);
+      setToolsShowAll(false);
+      setSelectedToolsCount(0);
     }
   }, [open, agent, agentType]);
 
@@ -237,6 +394,11 @@ export function AgentDialog({
     try {
       let savedAgentId: string;
 
+      // Save tool changes FIRST (before agent update triggers refetch that clears pending changes)
+      if (agent) {
+        await agentToolsEditorRef.current?.saveChanges();
+      }
+
       if (agent) {
         // Update existing agent
         const updated = await updateAgent.mutateAsync({
@@ -275,6 +437,12 @@ export function AgentDialog({
           considerContextUntrusted,
         });
         savedAgentId = created?.id ?? "";
+
+        // Save tool changes with the new agent ID
+        if (savedAgentId) {
+          await agentToolsEditorRef.current?.saveChanges(savedAgentId);
+        }
+
         toast.success(
           isInternalAgent
             ? "Agent created successfully"
@@ -299,6 +467,9 @@ export function AgentDialog({
           targetAgentIds: [],
         });
       }
+
+      // Close dialog on success
+      onOpenChange(false);
     } catch (_error) {
       toast.error(
         isInternalAgent ? "Failed to save agent" : "Failed to save profile",
@@ -322,6 +493,7 @@ export function AgentDialog({
     createAgent,
     syncDelegations,
     onCreated,
+    onOpenChange,
   ]);
 
   const handleClose = useCallback(() => {
@@ -335,7 +507,7 @@ export function AgentDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        className="max-w-5xl h-[90vh] flex flex-col"
+        className="max-w-5xl h-[90vh] flex flex-col overflow-hidden"
         onInteractOutside={(e) => e.preventDefault()}
       >
         <DialogHeader>
@@ -363,33 +535,10 @@ export function AgentDialog({
           </DialogTitle>
         </DialogHeader>
 
-        <Tabs
-          defaultValue="general"
-          className="flex-1 flex flex-col min-h-0 overflow-hidden"
-        >
-          <TabsList className="h-auto w-full justify-start gap-4 rounded-none border-b border-border bg-transparent p-0">
-            <TabsTrigger
-              value="general"
-              className="relative rounded-none border-none bg-transparent px-0 pb-3 pt-0 text-sm font-medium text-muted-foreground shadow-none transition-colors hover:text-foreground data-[state=active]:text-foreground data-[state=active]:shadow-none [&[data-state=active]]:after:absolute [&[data-state=active]]:after:bottom-0 [&[data-state=active]]:after:left-0 [&[data-state=active]]:after:right-0 [&[data-state=active]]:after:h-0.5 [&[data-state=active]]:after:bg-primary"
-            >
-              General
-            </TabsTrigger>
-            {isInternalAgent && (
-              <TabsTrigger
-                value="agent"
-                className="relative rounded-none border-none bg-transparent px-0 pb-3 pt-0 text-sm font-medium text-muted-foreground shadow-none transition-colors hover:text-foreground data-[state=active]:text-foreground data-[state=active]:shadow-none [&[data-state=active]]:after:absolute [&[data-state=active]]:after:bottom-0 [&[data-state=active]]:after:left-0 [&[data-state=active]]:after:right-0 [&[data-state=active]]:after:h-0.5 [&[data-state=active]]:after:bg-primary"
-              >
-                Agent
-              </TabsTrigger>
-            )}
-          </TabsList>
-
-          {/* General Tab */}
-          <TabsContent
-            value="general"
-            className="flex-1 overflow-y-auto space-y-4 pt-4 px-1"
-          >
-            {/* Name - Common */}
+        <div className="-mr-6 pr-6 flex-1 overflow-y-auto space-y-6 py-4">
+          {/* Main Section */}
+          <div className="rounded-lg border bg-card p-4 space-y-4">
+            {/* Name */}
             <div className="space-y-2">
               <Label htmlFor="agentName">Name *</Label>
               <Input
@@ -403,9 +552,99 @@ export function AgentDialog({
               />
             </div>
 
-            {/* Type Selection */}
+            {/* Tools */}
             <div className="space-y-2">
-              <Label htmlFor="agentType">Type</Label>
+              <div className="flex items-center gap-2">
+                <Label>Tools ({selectedToolsCount})</Label>
+                {catalogItems.length > 10 &&
+                  (toolsSearchOpen ? (
+                    <div className="relative flex-1 max-w-[200px]">
+                      <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground" />
+                      <Input
+                        placeholder="Search..."
+                        value={toolsSearch}
+                        onChange={(e) => setToolsSearch(e.target.value)}
+                        className="h-7 pl-7 text-xs"
+                        autoFocus
+                        onBlur={() => {
+                          if (!toolsSearch) {
+                            setToolsSearchOpen(false);
+                          }
+                        }}
+                      />
+                    </div>
+                  ) : (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 w-6 p-0"
+                      onClick={() => setToolsSearchOpen(true)}
+                    >
+                      <Search className="h-3.5 w-3.5 text-muted-foreground" />
+                    </Button>
+                  ))}
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <AgentToolsEditor
+                  ref={agentToolsEditorRef}
+                  agentId={agent?.id}
+                  searchQuery={toolsSearch}
+                  showAll={toolsShowAll}
+                  onShowMore={() => setToolsShowAll(true)}
+                  onSelectedCountChange={setSelectedToolsCount}
+                />
+              </div>
+            </div>
+
+            {/* Subagents */}
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <Label>Subagents ({selectedDelegationTargetIds.length})</Label>
+                {allInternalAgents.filter((a) => a.id !== agent?.id).length >
+                  10 &&
+                  (subagentsSearchOpen ? (
+                    <div className="relative flex-1 max-w-[200px]">
+                      <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground" />
+                      <Input
+                        placeholder="Search..."
+                        value={subagentsSearch}
+                        onChange={(e) => setSubagentsSearch(e.target.value)}
+                        className="h-7 pl-7 text-xs"
+                        autoFocus
+                        onBlur={() => {
+                          if (!subagentsSearch) {
+                            setSubagentsSearchOpen(false);
+                          }
+                        }}
+                      />
+                    </div>
+                  ) : (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 w-6 p-0"
+                      onClick={() => setSubagentsSearchOpen(true)}
+                    >
+                      <Search className="h-3.5 w-3.5 text-muted-foreground" />
+                    </Button>
+                  ))}
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <SubagentsEditor
+                  availableAgents={allInternalAgents}
+                  selectedAgentIds={selectedDelegationTargetIds}
+                  onSelectionChange={setSelectedDelegationTargetIds}
+                  currentAgentId={agent?.id}
+                  searchQuery={subagentsSearch}
+                  showAll={subagentsShowAll}
+                  onShowMore={() => setSubagentsShowAll(true)}
+                />
+              </div>
+            </div>
+
+            {/* Mode */}
+            <div className="space-y-2">
+              <Label htmlFor="agentType">Mode</Label>
               <Select
                 value={selectedAgentType}
                 onValueChange={(value: "mcp_gateway" | "agent") =>
@@ -420,15 +659,96 @@ export function AgentDialog({
                   <SelectItem value="agent">Agent</SelectItem>
                 </SelectContent>
               </Select>
-              {isInternalAgent && (
-                <p className="text-sm text-muted-foreground">
-                  Agents can be used in chat with prompts and ChatOps
-                  integrations.
-                </p>
+              <p className="text-sm text-muted-foreground">
+                {isInternalAgent
+                  ? "Agents can be used internally in Chat or externally via A2A webhook, email, or MS Teams."
+                  : "MCP Gateway allows external agents to connect to MCP server tools using the MCP protocol."}
+              </p>
+            </div>
+          </div>
+
+          {/* Agent Settings Section (Internal Agents Only) */}
+          {isInternalAgent && (
+            <div className="rounded-lg border bg-card p-4 space-y-4">
+              <h3 className="font-semibold">Agent Settings</h3>
+
+              {/* System Prompt */}
+              <div className="space-y-2">
+                <Label htmlFor="systemPrompt">System Prompt</Label>
+                <Textarea
+                  id="systemPrompt"
+                  value={systemPrompt}
+                  onChange={(e) => setSystemPrompt(e.target.value)}
+                  placeholder="Enter system prompt (instructions for the LLM)"
+                  className="min-h-[150px] font-mono"
+                />
+              </div>
+
+              {/* User Prompt */}
+              <div className="space-y-2">
+                <Label htmlFor="userPrompt">User Prompt</Label>
+                <Textarea
+                  id="userPrompt"
+                  value={userPrompt}
+                  onChange={(e) => setUserPrompt(e.target.value)}
+                  placeholder="Enter user prompt (shown to user, sent to LLM)"
+                  className="min-h-[150px] font-mono"
+                />
+              </div>
+
+              {/* Agent Trigger Rules */}
+              {configuredChatopsProviders.length > 0 && (
+                <div className="space-y-2">
+                  <Label>Agent Trigger Rules</Label>
+                  <div className="space-y-3 pt-1">
+                    {configuredChatopsProviders.map((provider) => (
+                      <div
+                        key={provider.id}
+                        className="flex items-center justify-between"
+                      >
+                        <div className="space-y-0.5">
+                          <label
+                            htmlFor={`chatops-${provider.id}`}
+                            className="text-sm cursor-pointer"
+                          >
+                            {provider.displayName}
+                          </label>
+                          <p className="text-xs text-muted-foreground">
+                            Allow this agent to be triggered via{" "}
+                            {provider.displayName}
+                          </p>
+                        </div>
+                        <Switch
+                          id={`chatops-${provider.id}`}
+                          checked={allowedChatops.includes(provider.id)}
+                          onCheckedChange={(checked) => {
+                            if (checked) {
+                              setAllowedChatops([
+                                ...allowedChatops,
+                                provider.id,
+                              ]);
+                            } else {
+                              setAllowedChatops(
+                                allowedChatops.filter(
+                                  (id) => id !== provider.id,
+                                ),
+                              );
+                            }
+                          }}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
               )}
             </div>
+          )}
 
-            {/* Team Access - Common */}
+          {/* Additional Settings Section */}
+          <div className="rounded-lg border bg-card p-4 space-y-4">
+            <h3 className="font-semibold">Additional Settings</h3>
+
+            {/* Team */}
             <div className="space-y-2">
               <Label>
                 Team
@@ -456,231 +776,38 @@ export function AgentDialog({
               />
             </div>
 
-            {/* Labels - Common */}
+            {/* Labels */}
             <ProfileLabels
               ref={agentLabelsRef}
               labels={labels}
               onLabelsChange={setLabels}
-              availableKeys={availableKeys}
             />
 
-            {/* Consider Context Untrusted - Common */}
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="consider-context-untrusted"
-                checked={considerContextUntrusted}
-                onCheckedChange={(checked) =>
-                  setConsiderContextUntrusted(checked === true)
-                }
-              />
-              <div className="grid gap-1">
-                <Label
-                  htmlFor="consider-context-untrusted"
-                  className="text-sm font-medium cursor-pointer"
-                >
-                  Treat user context as untrusted
-                </Label>
-                <p className="text-sm text-muted-foreground">
-                  Enable when user prompts may contain untrusted and sensitive
-                  data.
-                </p>
-              </div>
-            </div>
-
-            {/* Internal Agent Only - ChatOps */}
-            {isInternalAgent && configuredChatopsProviders.length > 0 && (
-              <div className="space-y-2">
-                <Label>ChatOps Integrations</Label>
-                <p className="text-sm text-muted-foreground">
-                  Select which chat platforms can trigger this agent
-                </p>
-                {configuredChatopsProviders.map((provider) => (
-                  <div
-                    key={provider.id}
-                    className="flex items-center space-x-2"
+            {/* Security */}
+            <div className="space-y-2">
+              <Label>Security</Label>
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label
+                    htmlFor="consider-context-untrusted"
+                    className="text-sm font-medium cursor-pointer"
                   >
-                    <Checkbox
-                      id={`chatops-${provider.id}`}
-                      checked={allowedChatops.includes(provider.id)}
-                      onCheckedChange={(checked) => {
-                        if (checked) {
-                          setAllowedChatops([...allowedChatops, provider.id]);
-                        } else {
-                          setAllowedChatops(
-                            allowedChatops.filter((id) => id !== provider.id),
-                          );
-                        }
-                      }}
-                    />
-                    <Label
-                      htmlFor={`chatops-${provider.id}`}
-                      className="cursor-pointer font-normal"
-                    >
-                      {provider.displayName}
-                    </Label>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* Tools Section */}
-            <div className="space-y-2">
-              <Label>Tools</Label>
-              <div className="flex flex-wrap items-center gap-2">
-                {agent ? (
-                  <ChatToolsDisplay agentId={agent.id} readOnly />
-                ) : (
+                    Treat user context as untrusted
+                  </Label>
                   <p className="text-sm text-muted-foreground">
-                    Tools can be assigned after creation.
+                    Enable when user prompts may contain untrusted and sensitive
+                    data.
                   </p>
-                )}
-              </div>
-            </div>
-
-            {/* Delegated Agents Section */}
-            <div className="space-y-2">
-              <Label>Delegated Agents</Label>
-              <p className="text-sm text-muted-foreground">
-                Other agents this {isInternalAgent ? "agent" : "profile"} can
-                delegate tasks to
-              </p>
-              <div className="flex flex-wrap items-center gap-2">
-                {/* Selected delegations (both current and newly added) */}
-                {selectedDelegationTargetIds.map((delegateAgentId) => {
-                  const targetAgent = allInternalAgents.find(
-                    (a) => a.id === delegateAgentId,
-                  );
-                  const isExisting = currentDelegations.some(
-                    (d) => d.id === delegateAgentId,
-                  );
-                  return (
-                    <HoverCard
-                      key={delegateAgentId}
-                      openDelay={200}
-                      closeDelay={100}
-                    >
-                      <HoverCardTrigger asChild>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className={`h-7 px-2 gap-1.5 text-xs ${!isExisting ? "border-dashed" : ""}`}
-                        >
-                          {!isExisting && (
-                            <span className="h-2 w-2 rounded-full bg-green-500" />
-                          )}
-                          <Bot className="h-3 w-3" />
-                          <span>{targetAgent?.name || delegateAgentId}</span>
-                        </Button>
-                      </HoverCardTrigger>
-                      <HoverCardContent className="w-80" align="start">
-                        <div className="space-y-2">
-                          <div className="flex items-center justify-between">
-                            <h4 className="text-sm font-semibold">
-                              {targetAgent?.name || delegateAgentId}
-                            </h4>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-6 w-6 p-0"
-                              onClick={() =>
-                                setSelectedDelegationTargetIds(
-                                  selectedDelegationTargetIds.filter(
-                                    (id) => id !== delegateAgentId,
-                                  ),
-                                )
-                              }
-                            >
-                              <X className="h-4 w-4" />
-                            </Button>
-                          </div>
-                          <p className="text-xs text-muted-foreground">
-                            {isExisting
-                              ? "Current delegation"
-                              : "New delegation (will be saved)"}
-                          </p>
-                          <AgentToolsList agentId={delegateAgentId} />
-                        </div>
-                      </HoverCardContent>
-                    </HoverCard>
-                  );
-                })}
-
-                {/* Add agents dropdown */}
-                {availableDelegationTargets.filter(
-                  (a) => !selectedDelegationTargetIds.includes(a.value),
-                ).length > 0 && (
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="h-8 px-2 gap-1.5 text-xs border-dashed"
-                      >
-                        <Bot className="h-3 w-3" />
-                        <span>Add agent</span>
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="start">
-                      {availableDelegationTargets
-                        .filter(
-                          (a) => !selectedDelegationTargetIds.includes(a.value),
-                        )
-                        .map((targetOption) => (
-                          <DropdownMenuItem
-                            key={targetOption.value}
-                            onClick={() =>
-                              setSelectedDelegationTargetIds([
-                                ...selectedDelegationTargetIds,
-                                targetOption.value,
-                              ])
-                            }
-                          >
-                            <Bot className="h-3 w-3 mr-2" />
-                            {targetOption.label}
-                          </DropdownMenuItem>
-                        ))}
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                )}
-              </div>
-              {selectedDelegationTargetIds.length === 0 &&
-                availableDelegationTargets.length === 0 && (
-                  <p className="text-sm text-muted-foreground">
-                    No other agents available to delegate to.
-                  </p>
-                )}
-            </div>
-          </TabsContent>
-
-          {/* Agent Tab (Internal Agents Only) */}
-          {isInternalAgent && (
-            <TabsContent
-              value="agent"
-              className="flex-1 overflow-y-auto space-y-4 pt-4 px-1"
-            >
-              <div className="space-y-2">
-                <Label htmlFor="systemPrompt">System Prompt</Label>
-                <Textarea
-                  id="systemPrompt"
-                  value={systemPrompt}
-                  onChange={(e) => setSystemPrompt(e.target.value)}
-                  placeholder="Enter system prompt (instructions for the LLM)"
-                  className="min-h-[150px] font-mono"
+                </div>
+                <Switch
+                  id="consider-context-untrusted"
+                  checked={considerContextUntrusted}
+                  onCheckedChange={setConsiderContextUntrusted}
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="userPrompt">User Prompt</Label>
-                <Textarea
-                  id="userPrompt"
-                  value={userPrompt}
-                  onChange={(e) => setUserPrompt(e.target.value)}
-                  placeholder="Enter user prompt (shown to user, sent to LLM)"
-                  className="min-h-[150px] font-mono"
-                />
-              </div>
-            </TabsContent>
-          )}
-        </Tabs>
+            </div>
+          </div>
+        </div>
 
         <DialogFooter className="mt-4">
           <Button variant="outline" onClick={handleClose}>
