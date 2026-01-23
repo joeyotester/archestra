@@ -164,24 +164,54 @@ export async function goToMcpRegistryAndOpenManageToolsAndOpenTokenSelect({
     name: new RegExp(`${DEFAULT_PROFILE_NAME}.*\\(\\d+/\\d+\\)`),
   });
   await profilePill.waitFor({ state: "visible", timeout: 10_000 });
-  await profilePill.click();
 
-  // Wait for the popover to open - it contains the credential selector and tool checkboxes
-  await page.waitForLoadState("networkidle");
-  await page.waitForTimeout(500);
+  // Open popover and wait for credential selector (combobox) to appear
+  // The credential selector only appears when MCP servers are loaded for this catalog
+  // Use a retry mechanism to handle slow data loading
+  const combobox = page.getByRole("combobox");
+  const maxRetries = 3;
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    await profilePill.click();
 
-  // Ensure the first tool checkbox is checked (not just toggled)
-  // The checkbox is inside the popover, wait for it to be visible
-  const checkbox = page.getByRole("checkbox").first();
-  await checkbox.waitFor({ state: "visible", timeout: 5_000 });
-  // Only click if not already checked to avoid toggling off
-  if (!(await checkbox.isChecked())) {
-    await checkbox.click();
+    // Wait for the popover to open - it contains the credential selector and tool checkboxes
+    await page.waitForLoadState("networkidle");
+    await page.waitForTimeout(500);
+
+    // Ensure the first tool checkbox is checked (not just toggled)
+    // The checkbox is inside the popover, wait for it to be visible
+    const checkbox = page.getByRole("checkbox").first();
+    await checkbox.waitFor({ state: "visible", timeout: 5_000 });
+    // Only click if not already checked to avoid toggling off
+    if (!(await checkbox.isChecked())) {
+      await checkbox.click();
+    }
+
+    // Wait for the combobox (credential selector) to appear
+    // It may not appear immediately if MCP server data is still loading
+    try {
+      await combobox.waitFor({ state: "visible", timeout: 10_000 });
+      // Success - combobox is visible
+      break;
+    } catch {
+      if (attempt === maxRetries) {
+        // Last attempt failed, throw the error
+        throw new Error(
+          `Credential selector (combobox) did not appear after ${maxRetries} attempts. ` +
+            `This may indicate no MCP servers are available for this catalog.`,
+        );
+      }
+      // Close the popover by pressing Escape and retry
+      await page.keyboard.press("Escape");
+      await page.waitForTimeout(500);
+      // Refresh the page to get fresh data
+      await page.goto(`${UI_BASE_URL}/mcp-catalog/registry`);
+      await page.waitForLoadState("networkidle");
+      await manageToolsButton.click();
+      await page.waitForLoadState("networkidle");
+      await profilePill.waitFor({ state: "visible", timeout: 10_000 });
+    }
   }
 
-  // The combobox (credential selector) is now in the popover
-  const combobox = page.getByRole("combobox");
-  await combobox.waitFor({ state: "visible", timeout: 15_000 });
   await combobox.click();
   // Wait a brief moment for dropdown to open (dropdowns are client-side, no network request needed)
   await page.waitForTimeout(100);
