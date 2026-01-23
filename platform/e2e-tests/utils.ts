@@ -181,7 +181,7 @@ export async function goToMcpRegistryAndOpenManageToolsAndOpenTokenSelect({
 
   // The combobox (credential selector) is now in the popover
   const combobox = page.getByRole("combobox");
-  await combobox.waitFor({ state: "visible" });
+  await combobox.waitFor({ state: "visible", timeout: 15_000 });
   await combobox.click();
   // Wait a brief moment for dropdown to open (dropdowns are client-side, no network request needed)
   await page.waitForTimeout(100);
