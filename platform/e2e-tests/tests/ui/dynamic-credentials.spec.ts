@@ -101,7 +101,8 @@ test("Verify tool calling using dynamic credentials", async ({
   // Additional wait to ensure option is stable (not animating)
   await adminPage.waitForTimeout(200);
   await resolveAtCallTimeOption.click();
-  await adminPage.getByText("Assign to 1 profile").click();
+  // Click Save button at the bottom of the McpAssignmentsDialog
+  await clickButton({ page: adminPage, options: { name: "Save" } });
   await adminPage.waitForLoadState("networkidle");
 
   /**

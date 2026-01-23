@@ -228,9 +228,11 @@ test.describe("Test self-hosted MCP server with Readonly Vault", () => {
       catalogItemName: newCatalogItem.name,
     });
 
-    // Select default team credential
+    // Select default team credential from dropdown
     await adminPage.getByRole("option", { name: DEFAULT_TEAM_NAME }).click();
-    await adminPage.getByText("Assign to 1 profile").click();
+
+    // Click Save button at the bottom of the McpAssignmentsDialog
+    await clickButton({ page: adminPage, options: { name: "Save" } });
     await adminPage.waitForLoadState("networkidle");
 
     // Verify tool call result using admin static credential
@@ -303,9 +305,11 @@ test.describe("Test self-hosted MCP server with Readonly Vault", () => {
       catalogItemName: newCatalogItem.name,
     });
 
-    // Select default team credential
+    // Select default team credential from dropdown
     await adminPage.getByRole("option", { name: DEFAULT_TEAM_NAME }).click();
-    await adminPage.getByText("Assign to 1 profile").click();
+
+    // Click Save button at the bottom of the McpAssignmentsDialog
+    await clickButton({ page: adminPage, options: { name: "Save" } });
     await adminPage.waitForLoadState("networkidle");
 
     // Verify tool call result using admin static credential
