@@ -829,7 +829,7 @@ function createCohereClient(
   return {
     chat: {
       create: async (request: CohereRequest): Promise<CohereResponse> => {
-        const response = await observableFetch(`${baseUrl}/chat`, {
+        const response = await observableFetch(`${baseUrl}/v2/chat`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -851,7 +851,7 @@ function createCohereClient(
       stream: async function* (
         request: CohereRequest,
       ): AsyncIterable<CohereStreamChunk> {
-        const response = await observableFetch(`${baseUrl}/chat`, {
+        const response = await observableFetch(`${baseUrl}/v2/chat`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",

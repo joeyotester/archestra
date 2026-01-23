@@ -12,7 +12,7 @@ archestra:
     ARCHESTRA_OPENAI_BASE_URL: "http://e2e-tests-wiremock:8080/openai/v1"
     ARCHESTRA_ANTHROPIC_BASE_URL: "http://e2e-tests-wiremock:8080/anthropic"
     ARCHESTRA_GEMINI_BASE_URL: "http://e2e-tests-wiremock:8080/gemini"
-    ARCHESTRA_COHERE_BASE_URL: "http://e2e-tests-wiremock:8080/cohere/v2"
+    ARCHESTRA_COHERE_BASE_URL: "http://e2e-tests-wiremock:8080/cohere"
     ARCHESTRA_CEREBRAS_BASE_URL: "http://e2e-tests-wiremock:8080/cerebras/v1"
     ARCHESTRA_VLLM_BASE_URL: "http://e2e-tests-wiremock:8080/vllm/v1"
     ARCHESTRA_OLLAMA_BASE_URL: "http://e2e-tests-wiremock:8080/ollama/v1"
