@@ -1,7 +1,16 @@
 "use client";
 
 import type { UIMessage } from "@ai-sdk/react";
-import { Eye, EyeOff, FileText, Globe, Plus } from "lucide-react";
+import {
+  Bot,
+  Edit,
+  Eye,
+  EyeOff,
+  FileText,
+  Globe,
+  PanelRightClose,
+  Plus,
+} from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
@@ -15,23 +24,15 @@ import {
 import { toast } from "sonner";
 import { CreateCatalogDialog } from "@/app/mcp-catalog/_parts/create-catalog-dialog";
 import { CustomServerRequestDialog } from "@/app/mcp-catalog/_parts/custom-server-request-dialog";
-import { Message, MessageContent } from "@/components/ai-elements/message";
+import { AgentDialog } from "@/components/agent-dialog";
 import type { PromptInputProps } from "@/components/ai-elements/prompt-input";
-import { Response } from "@/components/ai-elements/response";
 import { AgentSelector } from "@/components/chat/agent-selector";
-import { AgentToolsDisplay } from "@/components/chat/agent-tools-display";
 import { BrowserPanel } from "@/components/chat/browser-panel";
 import { ChatMessages } from "@/components/chat/chat-messages";
 import { ConversationArtifactPanel } from "@/components/chat/conversation-artifact";
 import { InitialAgentSelector } from "@/components/chat/initial-agent-selector";
-import { McpToolsDisplay } from "@/components/chat/mcp-tools-display";
-import { PromptDialog } from "@/components/chat/prompt-dialog";
 import { PromptVersionHistoryDialog } from "@/components/chat/prompt-version-history-dialog";
-import { QueuedMessagesList } from "@/components/chat/queued-messages-list";
 import { StreamTimeoutWarning } from "@/components/chat/stream-timeout-warning";
-import { PermissivePolicyBar } from "@/components/permissive-policy-bar";
-import { WithPermissions } from "@/components/roles/with-permissions";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -40,9 +41,17 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty";
 import { Version } from "@/components/version";
 import { useChatSession } from "@/contexts/global-chat-context";
-import { useProfiles } from "@/lib/agent.query";
+import { useInternalAgents } from "@/lib/agent.query";
 import { useHasPermissions } from "@/lib/auth.query";
 import {
   useConversation,
@@ -53,7 +62,7 @@ import {
 } from "@/lib/chat.query";
 import {
   useChatModelsQuery,
-  useModelsByProvider,
+  useModelsByProviderQuery,
 } from "@/lib/chat-models.query";
 import {
   type SupportedChatProvider,
@@ -68,7 +77,6 @@ import {
   clearPendingActions,
   getPendingActions,
 } from "@/lib/pending-tool-state";
-import { usePrompt, usePrompts } from "@/lib/prompts.query";
 import ArchestraPromptInput from "./prompt-input";
 
 const CONVERSATION_QUERY_PARAM = "conversation";
@@ -107,13 +115,13 @@ export default function ChatPage() {
     Array<{ url: string; mediaType: string; filename?: string }>
   >([]);
   const newlyCreatedConversationRef = useRef<string | undefined>(undefined);
-  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const userMessageJustEdited = useRef(false);
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const autoSendTriggeredRef = useRef(false);
 
   // Dialog management for MCP installation
   const { isDialogOpened, openDialog, closeDialog } = useDialogs<
-    "custom-request" | "create-catalog"
+    "custom-request" | "create-catalog" | "edit-agent"
   >();
 
   // Check if user can create catalog items directly
@@ -124,72 +132,70 @@ export default function ChatPage() {
   // State for browser panel
   const [isBrowserPanelOpen, setIsBrowserPanelOpen] = useState(false);
 
-  // Fetch prompts for conversation prompt name lookup
-  const { data: prompts = [] } = usePrompts();
+  // Fetch internal agents for dialog editing
+  const { data: internalAgents = [] } = useInternalAgents();
 
   // Fetch profiles and models for initial chat (no conversation)
-  const { data: allProfiles = [] } = useProfiles();
-  const { modelsByProvider } = useModelsByProvider();
+  // Using non-suspense queries to avoid blocking page render
+  const { modelsByProvider, isLoading: isModelsLoading } =
+    useModelsByProviderQuery();
 
   // State for initial chat (when no conversation exists yet)
   const [initialAgentId, setInitialAgentId] = useState<string | null>(null);
-  const [initialPromptId, setInitialPromptId] = useState<string | null>(null);
   const [initialModel, setInitialModel] = useState<string>("");
   const [initialApiKeyId, setInitialApiKeyId] = useState<string | null>(null);
   // Track if URL params have been consumed (so we don't re-apply them after user clears selection)
   const urlParamsConsumedRef = useRef(false);
 
-  // Prompt edit dialog state
-  const [isPromptDialogOpen, setIsPromptDialogOpen] = useState(false);
-  const [editingPromptId, setEditingPromptId] = useState<string | null>(null);
-  const [versionHistoryPrompt, setVersionHistoryPrompt] = useState<
-    (typeof prompts)[number] | null
+  // Version history dialog state
+  const [versionHistoryAgent, setVersionHistoryAgent] = useState<
+    (typeof internalAgents)[number] | null
   >(null);
-  const { data: editingPrompt } = usePrompt(editingPromptId || "");
 
-  // Set initial agent from URL param or default when data loads
+  // Set initial agent from URL param, localStorage, or default when data loads
   useEffect(() => {
-    if (allProfiles.length === 0) return;
+    // Wait for internal agents to load - these are the chat-compatible agents
+    if (internalAgents.length === 0) return;
 
     // Only process URL params once (don't re-apply after user clears selection)
     if (!urlParamsConsumedRef.current) {
-      // Check for promptId in URL query params (e.g., from /agents canvas "Chat" button)
-      const urlPromptId = searchParams.get("promptId");
-      if (urlPromptId) {
-        const matchingPrompt = prompts.find((p) => p.id === urlPromptId);
-        if (matchingPrompt) {
-          setInitialPromptId(urlPromptId);
-          setInitialAgentId(matchingPrompt.agentId);
-          urlParamsConsumedRef.current = true;
-          return;
-        }
-      }
-
-      // Check for agentId in URL query params (legacy support)
       const urlAgentId = searchParams.get("agentId");
       if (urlAgentId) {
-        const matchingProfile = allProfiles.find((p) => p.id === urlAgentId);
-        if (matchingProfile) {
+        const matchingAgent = internalAgents.find((a) => a.id === urlAgentId);
+        if (matchingAgent) {
           setInitialAgentId(urlAgentId);
-          // Find a prompt for this agent if one exists
-          const agentPrompt = prompts.find((p) => p.agentId === urlAgentId);
-          if (agentPrompt) {
-            setInitialPromptId(agentPrompt.id);
-          }
           urlParamsConsumedRef.current = true;
           return;
         }
       }
     }
 
-    // Default to first profile if no initialAgentId set
+    // Try to restore from localStorage, then default to first internal agent
+    // Internal agents are the chat-compatible agents shown in the InitialAgentSelector
     if (!initialAgentId) {
-      setInitialAgentId(allProfiles[0].id);
+      const savedAgentId = localStorage.getItem("selected-chat-agent");
+      if (savedAgentId && internalAgents.some((a) => a.id === savedAgentId)) {
+        setInitialAgentId(savedAgentId);
+        return;
+      }
+      setInitialAgentId(internalAgents[0].id);
     }
-  }, [allProfiles, initialAgentId, searchParams, prompts]);
+  }, [initialAgentId, searchParams, internalAgents]);
 
+  // Initialize model from localStorage or default to first available
   useEffect(() => {
     if (!initialModel) {
+      const allModels = Object.values(modelsByProvider).flat();
+      if (allModels.length === 0) return;
+
+      // Try to restore from localStorage
+      const savedModelId = localStorage.getItem("selected-chat-model");
+      if (savedModelId && allModels.some((m) => m.id === savedModelId)) {
+        setInitialModel(savedModelId);
+        return;
+      }
+
+      // Fall back to first available model
       const providers = Object.keys(modelsByProvider);
       if (providers.length > 0) {
         const firstProvider = providers[0];
@@ -201,6 +207,12 @@ export default function ChatPage() {
       }
     }
   }, [modelsByProvider, initialModel]);
+
+  // Save model to localStorage when changed
+  const handleInitialModelChange = useCallback((modelId: string) => {
+    setInitialModel(modelId);
+    localStorage.setItem("selected-chat-model", modelId);
+  }, []);
 
   // Derive provider from initial model for API key filtering
   const initialProvider = useMemo((): SupportedChatProvider | undefined => {
@@ -220,7 +232,7 @@ export default function ChatPage() {
     useChatApiKeys();
   const { data: features, isLoading: isLoadingFeatures } = useFeatures();
   const { data: organization } = useOrganization();
-  const { data: chatModels = [] } = useChatModelsQuery(conversationId);
+  const { data: chatModels = [] } = useChatModelsQuery();
   // Vertex AI Gemini mode doesn't require an API key (uses ADC)
   // vLLM/Ollama may not require an API key either
   const hasAnyApiKey =
@@ -240,10 +252,15 @@ export default function ChatPage() {
       // Reset initial state when navigating to /chat without a conversation
       // This ensures a fresh state when user clicks "New chat" or navigates back
       if (!conversationParam) {
-        setInitialPromptId(null);
         // Reset initialAgentId to trigger re-selection from useEffect
         setInitialAgentId(null);
       }
+
+      // Focus textarea after navigation (e.g., from search dialog)
+      // Use requestAnimationFrame to ensure DOM is ready
+      requestAnimationFrame(() => {
+        textareaRef.current?.focus();
+      });
     }
   }, [searchParams, conversationId]);
 
@@ -306,31 +323,9 @@ export default function ChatPage() {
     [conversation, chatModels, updateConversationMutation],
   );
 
-  // Handle provider change for existing conversation - switch to first model of new provider
-  const handleProviderChange = useCallback(
-    (provider: SupportedChatProvider) => {
-      const models = modelsByProvider[provider];
-      if (models && models.length > 0) {
-        handleModelChange(models[0].id);
-      }
-    },
-    [modelsByProvider, handleModelChange],
-  );
-
-  // Handle provider change for initial chat - switch to first model of new provider
-  const handleInitialProviderChange = useCallback(
-    (provider: SupportedChatProvider) => {
-      const models = modelsByProvider[provider];
-      if (models && models.length > 0) {
-        setInitialModel(models[0].id);
-      }
-    },
-    [modelsByProvider],
-  );
-
-  // Find the specific prompt for this conversation (if any)
-  const _conversationPrompt = conversation?.promptId
-    ? prompts.find((p) => p.id === conversation.promptId)
+  // Find the specific internal agent for this conversation (if any)
+  const _conversationInternalAgent = conversation?.agentId
+    ? internalAgents.find((a) => a.id === conversation.agentId)
     : undefined;
 
   // Get current agent info
@@ -481,17 +476,6 @@ export default function ChatPage() {
     openDialog,
   ]);
 
-  // Auto-focus textarea when status becomes ready (message sent or stream finished)
-  // Also focus when queued messages change (to handle auto-sent messages)
-  useEffect(() => {
-    if (status === "ready") {
-      // Use requestAnimationFrame for more reliable focusing
-      requestAnimationFrame(() => {
-        textareaRef.current?.focus();
-      });
-    }
-  }, [status]);
-
   // Sync messages when conversation loads or changes
   useEffect(() => {
     if (!setMessages || !sendMessage) {
@@ -567,69 +551,6 @@ export default function ChatPage() {
     messages.length,
   ]);
 
-  const focusTextarea = useCallback(() => {
-    requestAnimationFrame(() => {
-      textareaRef.current?.focus();
-    });
-  }, []);
-
-  const handleSubmit = useCallback(
-    (
-      // biome-ignore lint/suspicious/noExplicitAny: AI SDK PromptInput files type is dynamic
-      message: { text?: string; files?: any[] },
-      e: React.FormEvent<HTMLFormElement>,
-    ) => {
-      e.preventDefault();
-      if (!sendMessage) return;
-
-      const hasText = message.text?.trim();
-      const hasFiles = message.files && message.files.length > 0;
-
-      if (!hasText && !hasFiles) return;
-
-      // Build message parts: text first, then file attachments
-      const parts: Array<
-        | { type: "text"; text: string }
-        | { type: "file"; url: string; mediaType: string; filename?: string }
-      > = [];
-
-      if (hasText) {
-        parts.push({ type: "text", text: hasText });
-      }
-
-      if (hasFiles) {
-        for (const file of message.files ?? []) {
-          parts.push({
-            type: "file",
-            url: file.url,
-            mediaType: file.mediaType,
-            filename: file.filename,
-          });
-        }
-      }
-
-      // If a message is currently being generated, queue this message instead
-      if (status === "submitted" || status === "streaming") {
-        chatSession?.addQueuedMessage?.({
-          id: crypto.randomUUID(),
-          role: "user",
-          parts,
-        });
-        focusTextarea();
-        return;
-      }
-
-      // Otherwise, send immediately
-      sendMessage({
-        role: "user",
-        parts,
-      });
-
-      focusTextarea();
-    },
-    [sendMessage, status, chatSession, focusTextarea],
-  );
-
   // Merge database UUIDs from backend into local message state
   // This runs after streaming completes and backend query has fetched
   useEffect(() => {
@@ -677,17 +598,16 @@ export default function ChatPage() {
       return localMsg;
     });
 
-    setMessages(mergedMessages);
-  }, [conversation, conversationId, messages, setMessages, status]);
+    setMessages(mergedMessages as UIMessage[]);
+  }, [
+    conversationId,
+    conversation?.messages,
+    conversation?.id,
+    messages,
+    setMessages,
+    status,
+  ]);
 
-  const handleDeleteQueued = useCallback(
-    (id: string) => {
-      if (chatSession?.removeQueuedMessage) {
-        chatSession.removeQueuedMessage(id);
-      }
-    },
-    [chatSession],
-  );
   // Auto-focus textarea when status becomes ready (message sent or stream finished)
   // or when conversation loads (e.g., new chat created, hard refresh)
   useLayoutEffect(() => {
@@ -696,55 +616,65 @@ export default function ChatPage() {
     }
   }, [status, conversation?.id]);
 
-  const handleSendNow = useCallback(
-    (id: string) => {
-      if (
-        !chatSession?.queuedMessages ||
-        !sendMessage ||
-        !chatSession.removeMessagesUpTo
-      ) {
-        return;
+  // Auto-focus textarea on initial page load
+  useEffect(() => {
+    // Use requestAnimationFrame to ensure DOM is ready
+    requestAnimationFrame(() => {
+      textareaRef.current?.focus();
+    });
+  }, []);
+
+  const handleSubmit: PromptInputProps["onSubmit"] = (message, e) => {
+    e.preventDefault();
+    if (status === "submitted" || status === "streaming") {
+      stop?.();
+    }
+
+    const hasText = message.text?.trim();
+    const hasFiles = message.files && message.files.length > 0;
+
+    if (
+      !sendMessage ||
+      (!hasText && !hasFiles) ||
+      status === "submitted" ||
+      status === "streaming"
+    ) {
+      return;
+    }
+
+    // Build message parts: text first, then file attachments
+    const parts: Array<
+      | { type: "text"; text: string }
+      | { type: "file"; url: string; mediaType: string; filename?: string }
+    > = [];
+
+    if (hasText) {
+      parts.push({ type: "text", text: message.text as string });
+    }
+
+    // Add file parts
+    if (hasFiles) {
+      for (const file of message.files) {
+        parts.push({
+          type: "file",
+          url: file.url,
+          mediaType: file.mediaType,
+          filename: file.filename,
+        });
       }
+    }
 
-      // Find the message in the queue
-      const queued = chatSession.queuedMessages.find((msg) => msg.id === id);
-      if (!queued) {
-        return;
-      }
+    sendMessage?.({
+      role: "user",
+      parts,
+    });
+  };
 
-      // Mark that we're manually sending to prevent auto-send from interfering
-      chatSession.setIsManuallySending?.(true);
-
-      // Stop the current stream if one is running - this cancels the ongoing response immediately
-      if (status === "streaming" || status === "submitted") {
-        stop?.();
-      }
-
-      // Remove all messages up to and including the selected one from the queue
-      // This keeps only messages that come after the selected one
-      chatSession.removeMessagesUpTo(id);
-
-      // Send the selected message immediately
-      sendMessage(queued);
-
-      // Reset the manual send flag after a brief delay so the status can settle
-      setTimeout(() => {
-        chatSession.setIsManuallySending?.(false);
-      }, 400);
-
-      focusTextarea();
-    },
-    [chatSession, sendMessage, status, stop, focusTextarea],
-  );
-
-  // Handle initial prompt change (when no conversation exists)
-  const handleInitialPromptChange = useCallback(
-    (promptId: string | null, agentId: string) => {
-      setInitialAgentId(agentId);
-      setInitialPromptId(promptId);
-    },
-    [],
-  );
+  // Handle initial agent change (when no conversation exists)
+  const handleInitialAgentChange = useCallback((agentId: string) => {
+    setInitialAgentId(agentId);
+    localStorage.setItem("selected-chat-agent", agentId);
+  }, []);
 
   // Handle initial submit (when no conversation exists)
   const handleInitialSubmit: PromptInputProps["onSubmit"] = useCallback(
@@ -767,10 +697,7 @@ export default function ChatPage() {
       pendingFilesRef.current = message.files || [];
 
       // Check if there are pending tool actions to apply
-      const pendingActions = getPendingActions(
-        initialAgentId,
-        initialPromptId ?? null,
-      );
+      const pendingActions = getPendingActions(initialAgentId);
 
       // Find the provider for the initial model
       const modelInfo = chatModels.find((m) => m.id === initialModel);
@@ -784,7 +711,6 @@ export default function ChatPage() {
           agentId: initialAgentId,
           selectedModel: initialModel,
           selectedProvider,
-          promptId: initialPromptId ?? undefined,
           chatApiKeyId: initialApiKeyId,
         },
         {
@@ -830,7 +756,6 @@ export default function ChatPage() {
     },
     [
       initialAgentId,
-      initialPromptId,
       initialModel,
       initialApiKeyId,
       chatModels,
@@ -872,7 +797,6 @@ export default function ChatPage() {
         agentId: initialAgentId,
         selectedModel: initialModel,
         selectedProvider,
-        promptId: initialPromptId ?? undefined,
         chatApiKeyId: initialApiKeyId,
       },
       {
@@ -889,7 +813,6 @@ export default function ChatPage() {
     conversationId,
     initialAgentId,
     initialModel,
-    initialPromptId,
     initialApiKeyId,
     chatModels,
     createConversationMutation,
@@ -897,9 +820,7 @@ export default function ChatPage() {
   ]);
 
   // Determine which agent ID to use for prompt input
-  const activeAgentId = conversationId
-    ? conversation?.agent?.id
-    : initialAgentId;
+  const activeAgentId = conversation?.agent?.id ?? initialAgentId;
 
   // If API key is not configured, show setup message
   // Only show after loading completes to avoid flash of incorrect content
@@ -924,6 +845,31 @@ export default function ChatPage() {
           </CardContent>
         </Card>
       </div>
+    );
+  }
+
+  // If no agents exist, show empty state
+  if (!isLoadingApiKeyCheck && internalAgents.length === 0) {
+    return (
+      <Empty className="h-full">
+        <EmptyHeader>
+          <EmptyMedia variant="icon">
+            <Bot />
+          </EmptyMedia>
+          <EmptyTitle>No agents yet</EmptyTitle>
+          <EmptyDescription>
+            Create an agent to start chatting.
+          </EmptyDescription>
+        </EmptyHeader>
+        <EmptyContent>
+          <Button asChild>
+            <Link href="/agents?create=true">
+              <Plus className="mr-2 h-4 w-4" />
+              Create Agent
+            </Link>
+          </Button>
+        </EmptyContent>
+      </Empty>
     );
   }
 
@@ -958,68 +904,44 @@ export default function ChatPage() {
       <div className="flex-1 flex flex-col min-w-0">
         <div className="flex flex-col h-full">
           <StreamTimeoutWarning status={status} messages={messages} />
-          <PermissivePolicyBar />
 
           <div className="sticky top-0 z-10 bg-background border-b p-2">
             <div className="flex items-start justify-between gap-2">
               {/* Left side - agent selector stays fixed, tools wrap internally */}
               <div className="flex items-start gap-2 min-w-0 flex-1">
                 {/* Agent/Profile selector - fixed width */}
-                <div className="flex-shrink-0">
+                <div className="flex-shrink-0 flex items-center gap-2">
                   {conversationId ? (
                     <AgentSelector
-                      currentPromptId={conversation?.promptId ?? null}
+                      currentPromptId={
+                        conversation?.agent?.agentType === "agent"
+                          ? (conversation?.agentId ?? null)
+                          : null
+                      }
                       currentAgentId={conversation?.agentId ?? ""}
                       currentModel={conversation?.selectedModel ?? ""}
                     />
                   ) : (
                     <InitialAgentSelector
-                      currentPromptId={initialPromptId}
-                      onPromptChange={handleInitialPromptChange}
-                      defaultAgentId={
-                        initialAgentId ?? allProfiles[0]?.id ?? ""
-                      }
+                      currentAgentId={initialAgentId}
+                      onAgentChange={handleInitialAgentChange}
                     />
                   )}
+                  {/* Edit agent button */}
+                  {(conversationId
+                    ? conversation?.agentId
+                    : initialAgentId) && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => openDialog("edit-agent")}
+                      title="Edit agent, tools, sub-agents"
+                      className="h-8 px-2"
+                    >
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                  )}
                 </div>
-
-                {/* Agent tools display - wraps internally, takes remaining space */}
-                {(conversationId
-                  ? conversation?.promptId
-                  : initialPromptId) && (
-                  <AgentToolsDisplay
-                    agentId={
-                      conversationId
-                        ? (conversation?.agentId ?? "")
-                        : (initialAgentId ?? "")
-                    }
-                    promptId={
-                      conversationId
-                        ? (conversation?.promptId ?? null)
-                        : initialPromptId
-                    }
-                    conversationId={conversationId}
-                    addAgentsButton={
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="h-8 px-2 gap-1.5 text-xs border-dashed"
-                        onClick={() => {
-                          const promptIdToEdit = conversationId
-                            ? conversation?.promptId
-                            : initialPromptId;
-                          if (promptIdToEdit) {
-                            setEditingPromptId(promptIdToEdit);
-                            setIsPromptDialogOpen(true);
-                          }
-                        }}
-                      >
-                        <Plus className="h-3 w-3" />
-                        Add agents
-                      </Button>
-                    }
-                  />
-                )}
               </div>
               {/* Right side - controls stay fixed in first row */}
               <div className="flex items-center gap-2 flex-shrink-0">
@@ -1034,17 +956,19 @@ export default function ChatPage() {
                     Browser
                   </Button>
                 )}
-                {!isArtifactOpen && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={toggleArtifactPanel}
-                    className="text-xs"
-                  >
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={toggleArtifactPanel}
+                  className="text-xs"
+                >
+                  {isArtifactOpen ? (
+                    <PanelRightClose className="h-3 w-3 mr-1" />
+                  ) : (
                     <FileText className="h-3 w-3 mr-1" />
-                    Show Artifact
-                  </Button>
-                )}
+                  )}
+                  {isArtifactOpen ? "Hide Artifact" : "Show Artifact"}
+                </Button>
                 <Button
                   variant="ghost"
                   size="sm"
@@ -1068,195 +992,80 @@ export default function ChatPage() {
           </div>
 
           <div className="flex-1 overflow-y-auto">
-            {conversationId ? (
-              <ChatMessages
-                conversationId={conversationId}
-                agentId={currentProfileId}
-                messages={messages}
-                hideToolCalls={hideToolCalls}
-                status={status}
-                isLoadingConversation={isLoadingConversation}
-                onMessagesUpdate={setMessages}
-                onUserMessageEdit={(
-                  editedMessage,
-                  updatedMessages,
-                  editedPartIndex,
-                ) => {
-                  // After user message is edited, set messages WITHOUT the edited one, then send it fresh
-                  if (setMessages && sendMessage) {
-                    // Set flag to prevent message sync from overwriting our state
-                    userMessageJustEdited.current = true;
-
-                    // Remove the edited message (last one) - we'll re-send it via sendMessage()
-                    const messagesWithoutEditedMessage = updatedMessages.slice(
-                      0,
-                      -1,
-                    );
-                    setMessages(messagesWithoutEditedMessage);
-
-                    // Send the edited message to generate new response (same as handleSubmit)
-                    // Use the specific part that was edited (via editedPartIndex) instead of finding
-                    // the first text part, in case the message has multiple text parts
-                    const editedPart = editedMessage.parts?.[editedPartIndex];
-                    const editedText =
-                      editedPart?.type === "text" ? editedPart.text : "";
-                    if (editedText?.trim()) {
-                      sendMessage({
-                        role: "user",
-                        parts: [{ type: "text", text: editedText }],
-                      });
+            <ChatMessages
+              conversationId={conversationId}
+              agentId={currentProfileId || initialAgentId || undefined}
+              agentName={
+                _conversationInternalAgent?.name ||
+                internalAgents.find((a) => a.id === initialAgentId)?.name
+              }
+              suggestedPrompt={
+                conversationId
+                  ? undefined
+                  : internalAgents.find((a) => a.id === initialAgentId)
+                      ?.userPrompt
+              }
+              onSuggestedPromptClick={
+                conversationId
+                  ? undefined
+                  : () => {
+                      const selectedAgent = internalAgents.find(
+                        (a) => a.id === initialAgentId,
+                      );
+                      const userPrompt = selectedAgent?.userPrompt;
+                      if (!userPrompt) return;
+                      const syntheticEvent = {
+                        preventDefault: () => {},
+                      } as React.FormEvent<HTMLFormElement>;
+                      handleInitialSubmit(
+                        { text: userPrompt, files: [] },
+                        syntheticEvent,
+                      );
                     }
-                  }
-                }}
-                error={error}
-              />
-            ) : (
-              <div className="flex items-center justify-center h-full">
-                <div className="text-center space-y-6 max-w-2xl px-4">
-                  {initialPromptId ? (
-                    // Agent selected - show prompt
-                    (() => {
-                      const selectedPrompt = prompts.find(
-                        (p) => p.id === initialPromptId,
-                      );
+              }
+              messages={messages}
+              hideToolCalls={hideToolCalls}
+              status={status}
+              isLoadingConversation={isLoadingConversation}
+              onMessagesUpdate={setMessages}
+              onUserMessageEdit={(
+                editedMessage,
+                updatedMessages,
+                editedPartIndex,
+              ) => {
+                // After user message is edited, set messages WITHOUT the edited one, then send it fresh
+                if (setMessages && sendMessage) {
+                  // Set flag to prevent message sync from overwriting our state
+                  userMessageJustEdited.current = true;
 
-                      return (
-                        <>
-                          <p className="text-lg text-muted-foreground">
-                            To start conversation with{" "}
-                            <span className="font-medium text-foreground">
-                              {selectedPrompt?.name}
-                            </span>{" "}
-                            {selectedPrompt?.userPrompt
-                              ? "click on a suggested prompt or type a new below"
-                              : "start typing below"}
-                          </p>
-                          {selectedPrompt?.userPrompt && (
-                            <button
-                              type="button"
-                              onClick={() => {
-                                const userPrompt = selectedPrompt.userPrompt;
-                                if (!userPrompt) return;
-                                const syntheticEvent = {
-                                  preventDefault: () => {},
-                                } as React.FormEvent<HTMLFormElement>;
-                                handleInitialSubmit(
-                                  { text: userPrompt, files: [] },
-                                  syntheticEvent,
-                                );
-                              }}
-                              className="w-full text-left cursor-pointer hover:opacity-80 transition-opacity"
-                            >
-                              <Message
-                                from="assistant"
-                                className="max-w-none justify-center"
-                              >
-                                <MessageContent className="max-w-none text-center">
-                                  <Response>
-                                    {selectedPrompt.userPrompt}
-                                  </Response>
-                                </MessageContent>
-                              </Message>
-                            </button>
-                          )}
-                          <p className="text-sm text-muted-foreground">
-                            <button
-                              type="button"
-                              onClick={() =>
-                                handleInitialPromptChange(
-                                  null,
-                                  allProfiles[0]?.id ?? "",
-                                )
-                              }
-                              className="underline hover:text-foreground"
-                            >
-                              back to agent selection
-                            </button>
-                          </p>
-                        </>
-                      );
-                    })()
-                  ) : (
-                    // No agent selected - show agent list
-                    <>
-                      <p className="text-lg text-muted-foreground">
-                        {prompts.length > 0
-                          ? "To start conversation select an agent or start typing below"
-                          : "To start conversation start typing below"}
-                      </p>
-                      {prompts.length > 0 ? (
-                        <div className="flex flex-wrap justify-center gap-2">
-                          {prompts.map((prompt) => (
-                            <Button
-                              key={prompt.id}
-                              variant="outline"
-                              size="sm"
-                              className="h-8 px-3 text-sm"
-                              onClick={() =>
-                                handleInitialPromptChange(
-                                  prompt.id,
-                                  prompt.agentId,
-                                )
-                              }
-                            >
-                              {prompt.name}
-                            </Button>
-                          ))}
-                        </div>
-                      ) : (
-                        <p className="text-sm text-muted-foreground">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setEditingPromptId(null);
-                              setIsPromptDialogOpen(true);
-                            }}
-                            className="underline hover:text-foreground"
-                          >
-                            create agent
-                          </button>
-                        </p>
-                      )}
-                    </>
-                  )}
-                </div>
-              </div>
-            )}
+                  // Remove the edited message (last one) - we'll re-send it via sendMessage()
+                  const messagesWithoutEditedMessage = updatedMessages.slice(
+                    0,
+                    -1,
+                  );
+                  setMessages(messagesWithoutEditedMessage);
+
+                  // Send the edited message to generate new response (same as handleSubmit)
+                  // Use the specific part that was edited (via editedPartIndex) instead of finding
+                  // the first text part, in case the message has multiple text parts
+                  const editedPart = editedMessage.parts?.[editedPartIndex];
+                  const editedText =
+                    editedPart?.type === "text" ? editedPart.text : "";
+                  if (editedText?.trim()) {
+                    sendMessage({
+                      role: "user",
+                      parts: [{ type: "text", text: editedText }],
+                    });
+                  }
+                }
+              }}
+              error={error}
+            />
           </div>
 
           {activeAgentId && (
             <div className="sticky bottom-0 bg-background border-t p-4">
-              <div className="max-w-3xl mx-auto space-y-3">
-                {currentProfileId && (
-                  <WithPermissions
-                    permissions={{ profile: ["read"] }}
-                    noPermissionHandle="tooltip"
-                  >
-                    {({ hasPermission }) => {
-                      return hasPermission ===
-                        undefined ? null : hasPermission ? (
-                        <McpToolsDisplay
-                          agentId={currentProfileId}
-                          className="text-xs text-muted-foreground"
-                        />
-                      ) : (
-                        <Badge variant="outline" className="text-xs my-2">
-                          Unable to show the list of tools
-                        </Badge>
-                      );
-                    }}
-                  </WithPermissions>
-                )}
-                {chatSession?.queuedMessages &&
-                  chatSession.queuedMessages.length > 0 && (
-                    <div className="mb-2">
-                      <QueuedMessagesList
-                        messages={chatSession.queuedMessages}
-                        onDelete={handleDeleteQueued}
-                        onSendNow={handleSendNow}
-                      />
-                    </div>
-                  )}
+              <div className="max-w-4xl mx-auto space-y-3">
                 <ArchestraPromptInput
                   onSubmit={
                     conversationId && conversation?.agent.id
@@ -1278,7 +1087,7 @@ export default function ChatPage() {
                   onModelChange={
                     conversationId && conversation?.agent.id
                       ? handleModelChange
-                      : setInitialModel
+                      : handleInitialModelChange
                   }
                   messageCount={
                     conversationId && conversation?.agent.id
@@ -1301,17 +1110,7 @@ export default function ChatPage() {
                       ? currentProvider
                       : initialProvider
                   }
-                  onProviderChange={
-                    conversationId && conversation?.agent.id
-                      ? handleProviderChange
-                      : handleInitialProviderChange
-                  }
                   textareaRef={textareaRef}
-                  onProfileChange={
-                    conversationId && conversation?.agent.id
-                      ? undefined
-                      : setInitialAgentId
-                  }
                   initialApiKeyId={
                     conversationId && conversation?.agent.id
                       ? undefined
@@ -1322,12 +1121,9 @@ export default function ChatPage() {
                       ? undefined
                       : setInitialApiKeyId
                   }
-                  promptId={
-                    conversationId && conversation?.agent.id
-                      ? (conversation?.promptId ?? null)
-                      : initialPromptId
-                  }
                   allowFileUploads={organization?.allowChatFileUploads ?? false}
+                  isModelsLoading={isModelsLoading}
+                  onEditAgent={() => openDialog("edit-agent")}
                 />
                 <div className="text-center">
                   <Version inline />
@@ -1347,6 +1143,20 @@ export default function ChatPage() {
         onClose={() => closeDialog("create-catalog")}
         onSuccess={() => router.push("/mcp-catalog/registry")}
       />
+      <AgentDialog
+        open={isDialogOpened("edit-agent")}
+        onOpenChange={(open) => {
+          if (!open) closeDialog("edit-agent");
+        }}
+        agent={
+          conversationId && conversation
+            ? _conversationInternalAgent
+            : initialAgentId
+              ? internalAgents.find((a) => a.id === initialAgentId)
+              : undefined
+        }
+        agentType="agent"
+      />
 
       {isBrowserPanelOpen && isBrowserStreamingEnabled && hasPlaywrightMcp && (
         <BrowserPanel
@@ -1363,26 +1173,14 @@ export default function ChatPage() {
         onToggle={toggleArtifactPanel}
       />
 
-      <PromptDialog
-        open={isPromptDialogOpen}
-        onOpenChange={(open) => {
-          setIsPromptDialogOpen(open);
-          if (!open) {
-            setEditingPromptId(null);
-          }
-        }}
-        prompt={editingPrompt}
-        onViewVersionHistory={setVersionHistoryPrompt}
-      />
-
       <PromptVersionHistoryDialog
-        open={!!versionHistoryPrompt}
+        open={!!versionHistoryAgent}
         onOpenChange={(open) => {
           if (!open) {
-            setVersionHistoryPrompt(null);
+            setVersionHistoryAgent(null);
           }
         }}
-        prompt={versionHistoryPrompt}
+        agent={versionHistoryAgent}
       />
     </div>
   );

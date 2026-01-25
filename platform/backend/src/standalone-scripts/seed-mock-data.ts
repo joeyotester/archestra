@@ -73,7 +73,7 @@ async function seedMockData() {
   // Step 2: Create agents
   logger.info("\nCreating agents...");
   await AgentModel.getAgentOrCreateDefault(); // always recreate default agent
-  const agentData = generateMockAgents();
+  const agentData = generateMockAgents(org.id);
 
   await db.insert(schema.agentsTable).values(agentData);
   logger.info(`✅ Created ${agentData.length} agents`);
@@ -132,7 +132,8 @@ async function seedMockData() {
   // Show statistics
   const blockedCount = interactionData.filter((i) => {
     if ("choices" in i.response) {
-      return i.response.choices[0]?.message?.refusal;
+      const message = i.response.choices[0]?.message;
+      return message && "refusal" in message && message.refusal;
     }
     return false;
   }).length;

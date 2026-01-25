@@ -6,15 +6,26 @@ import {
   TokenPriceModel,
 } from "@/models";
 import { getTokenizer } from "@/tokenizers";
-import type { Agent, Anthropic, Cerebras, Gemini, OpenAi, Vllm } from "@/types";
+import type {
+  Agent,
+  Anthropic,
+  Cerebras,
+  Cohere,
+  Gemini,
+  OpenAi,
+  Vllm,
+  Zhipuai,
+} from "@/types";
 
 type ProviderMessages = {
   anthropic: Anthropic.Types.MessagesRequest["messages"];
   cerebras: Cerebras.Types.ChatCompletionsRequest["messages"];
+  cohere: Cohere.Types.ChatRequest["messages"];
   gemini: Gemini.Types.GenerateContentRequest["contents"];
   openai: OpenAi.Types.ChatCompletionsRequest["messages"];
   vllm: Vllm.Types.ChatCompletionsRequest["messages"];
   ollama: Vllm.Types.ChatCompletionsRequest["messages"];
+  zhipuai: Zhipuai.Types.ChatCompletionsRequest["messages"];
 };
 
 /**

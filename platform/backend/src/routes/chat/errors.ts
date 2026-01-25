@@ -10,6 +10,7 @@ import {
   RetryableErrorCodes,
   type SupportedProvider,
   VllmErrorTypes,
+  ZhipuaiErrorTypes,
 } from "@shared";
 import { APICallError, RetryError } from "ai";
 import logger from "@/logging";
@@ -79,6 +80,11 @@ interface ParsedOpenAIError {
 
 interface ParsedAnthropicError {
   type?: string;
+  message?: string;
+}
+
+interface ParsedZhipuaiError {
+  code?: string;
   message?: string;
 }
 
@@ -156,6 +162,29 @@ function parseAnthropicError(
       return {
         type: parsed.type,
         message: parsed.message,
+      };
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Parse Zhipuai error response body.
+ * Zhipuai errors have structure: { error: { code, message } }
+ * Zhipuai uses numeric string codes (e.g., "1211", "1305")
+ * Since Zhipuai is OpenAI-compatible, the error format follows OpenAI structure
+ *
+ * @see https://docs.z.ai/api-reference/api-code#errors
+ */
+function parseZhipuaiError(responseBody: string): ParsedZhipuaiError | null {
+  try {
+    const parsed = JSON.parse(responseBody);
+    if (parsed?.error) {
+      return {
+        code: parsed.error.code,
+        message: parsed.error.message,
       };
     }
     return null;
@@ -367,6 +396,39 @@ function parseGeminiError(responseBody: string): ParsedGeminiError | null {
   }
 }
 
+// Cohere Error Types and Parser
+
+interface ParsedCohereError {
+  message?: string;
+}
+
+/**
+ *
+ *  Errors in Cohere have this structure: { message: string }
+ * @see https://docs.cohere.com/reference/errors
+ */
+function parseCohereError(responseBody: string): ParsedCohereError | null {
+  try {
+    const parsed = JSON.parse(responseBody);
+    if (parsed?.message) {
+      return {
+        message: parsed.message,
+      };
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+function mapCohereErrorToCode(
+  statusCode: number | undefined,
+  _parsedError: ParsedCohereError | null,
+): ChatErrorCode {
+  // Cohere uses standard HTTP status codes
+  return mapStatusCodeToErrorCode(statusCode);
+}
+
 // =============================================================================
 // Provider-Specific Error Mappers
 // =============================================================================
@@ -485,6 +547,72 @@ function mapAnthropicErrorToCode(
     return ChatErrorCode.ServerError;
   }
 
+  return mapStatusCodeToErrorCode(statusCode);
+}
+
+/**
+ * Map Zhipuai error to ChatErrorCode.
+ * Uses error.code field from the API response.
+ * Zhipuai uses numeric string codes for different error types.
+ *
+ * Error codes documented at:
+ * @see https://docs.z.ai/api-reference/api-code#errors
+ *
+ * Error categories:
+ * - 500: Internal server error
+ * - 1000-1004: Authentication errors
+ * - 1110-1121: Account errors (inactive, locked, balance)
+ * - 1200-1234: API call errors (parameters, models, network)
+ * - 1300-1309: Policy blocks (content filter, rate limits)
+ */
+function mapZhipuaiErrorToCode(
+  statusCode: number | undefined,
+  parsedError: ParsedZhipuaiError | null,
+): ChatErrorCode {
+  const errorCode = parsedError?.code;
+
+  if (errorCode) {
+    switch (errorCode) {
+      // Authentication errors (1000-1004)
+      case ZhipuaiErrorTypes.AUTHENTICATION_FAILED:
+      case ZhipuaiErrorTypes.INVALID_AUTH_TOKEN:
+      case ZhipuaiErrorTypes.AUTH_TOKEN_EXPIRED:
+        return ChatErrorCode.Authentication;
+
+      // Account/permission errors
+      case ZhipuaiErrorTypes.ACCOUNT_LOCKED:
+      case ZhipuaiErrorTypes.INSUFFICIENT_BALANCE:
+      case ZhipuaiErrorTypes.NO_PERMISSION:
+        return ChatErrorCode.PermissionDenied;
+
+      // Model/API not found
+      case ZhipuaiErrorTypes.MODEL_NOT_FOUND:
+        return ChatErrorCode.NotFound;
+
+      // Rate limiting (multiple variants)
+      case ZhipuaiErrorTypes.RATE_LIMIT:
+      case ZhipuaiErrorTypes.HIGH_CONCURRENCY:
+      case ZhipuaiErrorTypes.HIGH_FREQUENCY:
+        return ChatErrorCode.RateLimit;
+
+      // Content filtering
+      case ZhipuaiErrorTypes.CONTENT_FILTERED:
+        return ChatErrorCode.ContentFiltered;
+
+      // Invalid request parameters
+      case ZhipuaiErrorTypes.INVALID_API_PARAMETERS:
+      case ZhipuaiErrorTypes.INVALID_PARAMETER:
+        return ChatErrorCode.InvalidRequest;
+
+      // Server/network errors
+      case ZhipuaiErrorTypes.INTERNAL_ERROR:
+      case ZhipuaiErrorTypes.NETWORK_ERROR:
+      case ZhipuaiErrorTypes.API_OFFLINE:
+        return ChatErrorCode.ServerError;
+    }
+  }
+
+  // Fall back to HTTP status code
   return mapStatusCodeToErrorCode(statusCode);
 }
 
@@ -626,7 +754,9 @@ function mapStatusCodeToErrorCode(
 type ParsedProviderError =
   | ParsedOpenAIError
   | ParsedAnthropicError
-  | ParsedGeminiError;
+  | ParsedGeminiError
+  | ParsedCohereError
+  | ParsedZhipuaiError;
 
 type ErrorParser = (responseBody: string) => ParsedProviderError | null;
 type ErrorMapper = (
@@ -664,6 +794,26 @@ function mapGeminiErrorWrapper(
   return mapGeminiErrorToCode(
     statusCode,
     parsedError as ParsedGeminiError | null,
+  );
+}
+
+function mapCohereErrorWrapper(
+  statusCode: number | undefined,
+  parsedError: ParsedProviderError | null,
+): ChatErrorCode {
+  return mapCohereErrorToCode(
+    statusCode,
+    parsedError as ParsedCohereError | null,
+  );
+}
+
+function mapZhipuaiErrorWrapper(
+  statusCode: number | undefined,
+  parsedError: ParsedProviderError | null,
+): ChatErrorCode {
+  return mapZhipuaiErrorToCode(
+    statusCode,
+    parsedError as ParsedZhipuaiError | null,
   );
 }
 
@@ -823,8 +973,10 @@ const providerParsers: Record<SupportedProvider, ErrorParser> = {
   anthropic: parseAnthropicError,
   gemini: parseGeminiError,
   cerebras: parseOpenAIError, // Cerebras uses OpenAI-compatible API
+  cohere: parseCohereError,
   vllm: parseVllmError,
   ollama: parseOllamaError,
+  zhipuai: parseZhipuaiError,
 };
 
 /**
@@ -837,8 +989,10 @@ const providerMappers: Record<SupportedProvider, ErrorMapper> = {
   anthropic: mapAnthropicErrorWrapper,
   gemini: mapGeminiErrorWrapper,
   cerebras: mapOpenAIErrorWrapper, // Cerebras uses OpenAI-compatible API
+  cohere: mapCohereErrorWrapper,
   vllm: mapVllmErrorWrapper,
   ollama: mapOllamaErrorWrapper,
+  zhipuai: mapZhipuaiErrorWrapper,
 };
 
 // =============================================================================

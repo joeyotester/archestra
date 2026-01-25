@@ -91,6 +91,14 @@ const PROVIDER_CONFIG: Record<
     consoleUrl: "https://cloud.cerebras.ai/platform",
     consoleName: "Cerebras Cloud",
   },
+  cohere: {
+    name: "Cohere",
+    icon: "/icons/cohere.png",
+    placeholder: "...",
+    enabled: true,
+    consoleUrl: "https://dashboard.cohere.com/api-keys",
+    consoleName: "Cohere Dashboard",
+  },
   vllm: {
     name: "vLLM",
     icon: "/icons/vllm.png",
@@ -106,6 +114,14 @@ const PROVIDER_CONFIG: Record<
     enabled: true,
     consoleUrl: "https://ollama.ai/",
     consoleName: "Ollama",
+  },
+  zhipuai: {
+    name: "Zhipu AI",
+    icon: "/icons/zhipuai.png",
+    placeholder: "...",
+    enabled: true,
+    consoleUrl: "https://z.ai/model-api",
+    consoleName: "Zhipu AI Platform",
   },
 } as const;
 

@@ -1,9 +1,13 @@
-import { CacheKey, cacheManager } from "@/cache-manager";
+import { executeA2AMessage } from "@/agents/a2a-executor";
+import { userHasPermission } from "@/auth";
 import config from "@/config";
 import logger from "@/logging";
-import { AgentTeamModel, PromptModel, TeamModel } from "@/models";
+import AgentModel from "@/models/agent";
+import AgentTeamModel from "@/models/agent-team";
 import IncomingEmailSubscriptionModel from "@/models/incoming-email-subscription";
-import { executeA2AMessage } from "@/services/a2a-executor";
+import ProcessedEmailModel from "@/models/processed-email";
+import TeamModel from "@/models/team";
+import UserModel from "@/models/user";
 import type {
   AgentIncomingEmailProvider,
   EmailProviderConfig,
@@ -11,41 +15,50 @@ import type {
   IncomingEmail,
   SubscriptionInfo,
 } from "@/types";
-import { EMAIL_DEDUP_CACHE_TTL_MS } from "./constants";
+import {
+  DEFAULT_AGENT_EMAIL_NAME,
+  MAX_EMAIL_BODY_SIZE,
+  PROCESSED_EMAIL_RETENTION_MS,
+} from "./constants";
 import { OutlookEmailProvider } from "./outlook-provider";
 
 export type {
   AgentIncomingEmailProvider,
+  ConversationMessage,
   EmailProviderConfig,
   EmailProviderType,
+  EmailReplyOptions,
   IncomingEmail,
   SubscriptionInfo,
 } from "@/types";
 export {
-  EMAIL_DEDUP_CACHE_TTL_MS,
   EMAIL_SUBSCRIPTION_RENEWAL_INTERVAL,
   MAX_EMAIL_BODY_SIZE,
+  PROCESSED_EMAIL_CLEANUP_INTERVAL_MS,
+  PROCESSED_EMAIL_RETENTION_MS,
 } from "./constants";
 export { OutlookEmailProvider } from "./outlook-provider";
 
 /**
- * Check if an email has already been processed recently
- * Uses the shared CacheManager for TTL-based caching
+ * Atomically check and mark an email as processed using database.
+ * Uses INSERT with unique constraint for distributed deduplication across pods.
+ *
+ * @param messageId - The email provider's message ID
+ * @returns true if successfully marked (first to process), false if already processed
  */
-export async function isEmailAlreadyProcessed(
+export async function tryMarkEmailAsProcessed(
   messageId: string,
 ): Promise<boolean> {
-  const cacheKey = `${CacheKey.ProcessedEmail}-${messageId}` as const;
-  const cached = await cacheManager.get<boolean>(cacheKey);
-  return cached === true;
+  return ProcessedEmailModel.tryMarkAsProcessed(messageId);
 }
 
 /**
- * Mark an email as processed with TTL
+ * Clean up old processed email records.
+ * Should be called periodically to prevent unbounded table growth.
  */
-export async function markEmailAsProcessed(messageId: string): Promise<void> {
-  const cacheKey = `${CacheKey.ProcessedEmail}-${messageId}` as const;
-  await cacheManager.set(cacheKey, true, EMAIL_DEDUP_CACHE_TTL_MS);
+export async function cleanupOldProcessedEmails(): Promise<void> {
+  const olderThan = new Date(Date.now() - PROCESSED_EMAIL_RETENTION_MS);
+  await ProcessedEmailModel.cleanupOldRecords(olderThan);
 }
 
 /**
@@ -434,28 +447,43 @@ export function getEmailProviderInfo(): {
 }
 
 /**
+ * Options for processing incoming emails
+ */
+export interface ProcessIncomingEmailOptions {
+  /**
+   * Whether to send the agent's response back via email reply
+   * @default false
+   */
+  sendReply?: boolean;
+}
+
+/**
  * Process an incoming email and invoke the appropriate agent
+ * @param email - The incoming email to process
+ * @param provider - The email provider instance
+ * @param options - Optional processing options
+ * @returns The agent's response text if sendReply is enabled
  */
 export async function processIncomingEmail(
   email: IncomingEmail,
   provider: AgentIncomingEmailProvider | null,
-): Promise<void> {
+  options: ProcessIncomingEmailOptions = {},
+): Promise<string | undefined> {
+  const { sendReply: shouldSendReply = false } = options;
   if (!provider) {
     throw new Error("No email provider configured");
   }
 
-  // Deduplication: check if we've already processed this email recently
-  // Microsoft Graph may send multiple notifications for the same email
-  if (await isEmailAlreadyProcessed(email.messageId)) {
+  // Atomic deduplication: try to mark email as processed using database unique constraint
+  // This prevents race conditions when multiple pods receive the same webhook notification
+  const isFirstToProcess = await tryMarkEmailAsProcessed(email.messageId);
+  if (!isFirstToProcess) {
     logger.info(
       { messageId: email.messageId },
-      "[IncomingEmail] Skipping duplicate email (already processed recently)",
+      "[IncomingEmail] Skipping duplicate email (already processed by another pod)",
     );
-    return;
+    return undefined;
   }
-
-  // Mark as processed immediately to prevent concurrent processing
-  await markEmailAsProcessed(email.messageId);
 
   logger.info(
     {
@@ -467,51 +495,275 @@ export async function processIncomingEmail(
     "[IncomingEmail] Processing incoming email",
   );
 
-  // Extract promptId from the email address
-  let promptId: string | null = null;
+  // Extract agentId from the email address (this is an internal agent ID)
+  let agentId: string | null = null;
 
   if (provider.providerId === "outlook") {
     const outlookProvider = provider as OutlookEmailProvider;
-    promptId = outlookProvider.extractPromptIdFromEmail(email.toAddress);
+    // Note: method still named extractPromptIdFromEmail for backwards compat, but returns agentId
+    agentId = outlookProvider.extractPromptIdFromEmail(email.toAddress);
   }
 
-  if (!promptId) {
+  if (!agentId) {
     throw new Error(
-      `Could not extract promptId from email address: ${email.toAddress}`,
+      `Could not extract agentId from email address: ${email.toAddress}`,
     );
   }
 
-  // Verify prompt exists
-  const prompt = await PromptModel.findById(promptId);
-  if (!prompt) {
-    throw new Error(`Prompt ${promptId} not found`);
+  // Verify agent exists and is internal (only internal agents can handle emails)
+  const agent = await AgentModel.findById(agentId);
+  if (!agent) {
+    throw new Error(`Agent ${agentId} not found`);
+  }
+
+  if (agent.agentType !== "agent") {
+    throw new Error(
+      `Agent ${agentId} is not an internal agent (email requires agents with agentType='agent')`,
+    );
+  }
+
+  // Check if incoming email is enabled for this agent
+  if (!agent.incomingEmailEnabled) {
+    logger.warn(
+      {
+        messageId: email.messageId,
+        agentId,
+        fromAddress: email.fromAddress,
+      },
+      "[IncomingEmail] Incoming email is not enabled for this agent",
+    );
+    throw new Error(`Incoming email is not enabled for agent ${agent.name}`);
+  }
+
+  // Apply security mode validation
+  const securityMode = agent.incomingEmailSecurityMode;
+  const senderEmail = email.fromAddress.toLowerCase();
+
+  logger.debug(
+    {
+      messageId: email.messageId,
+      agentId,
+      securityMode,
+      senderEmail,
+    },
+    "[IncomingEmail] Applying security mode validation",
+  );
+
+  // Determine userId for the request (used for 'private' mode)
+  let userId: string = "system";
+
+  switch (securityMode) {
+    case "private": {
+      // Private mode: Sender must be an Archestra user with access to the agent
+      const user = await UserModel.findByEmail(senderEmail);
+      if (!user) {
+        logger.warn(
+          {
+            messageId: email.messageId,
+            agentId,
+            senderEmail,
+          },
+          "[IncomingEmail] Private mode: sender email not found in Archestra users",
+        );
+        throw new Error(
+          `Unauthorized: email sender ${senderEmail} is not a registered Archestra user`,
+        );
+      }
+
+      // Check if user is a profile admin (can access all agents)
+      const isProfileAdmin = await userHasPermission(
+        user.id,
+        agent.organizationId,
+        "profile",
+        "admin",
+      );
+
+      // Check if user has access to the agent via team membership or admin permission
+      const hasAccess = await AgentTeamModel.userHasAgentAccess(
+        user.id,
+        agentId,
+        isProfileAdmin,
+      );
+
+      if (!hasAccess) {
+        logger.warn(
+          {
+            messageId: email.messageId,
+            agentId,
+            userId: user.id,
+            senderEmail,
+            isProfileAdmin,
+          },
+          "[IncomingEmail] Private mode: user does not have access to this agent",
+        );
+        throw new Error(
+          `Unauthorized: user ${senderEmail} does not have access to this agent`,
+        );
+      }
+
+      // Use the verified user ID for execution context
+      userId = user.id;
+
+      logger.info(
+        {
+          messageId: email.messageId,
+          agentId,
+          userId: user.id,
+          senderEmail,
+          isProfileAdmin,
+        },
+        "[IncomingEmail] Private mode: sender authenticated via email",
+      );
+      break;
+    }
+
+    case "internal": {
+      // Internal mode: Sender email domain must match the allowed domain
+      const allowedDomain = agent.incomingEmailAllowedDomain?.toLowerCase();
+      if (!allowedDomain) {
+        throw new Error(
+          `Internal mode is configured but no allowed domain is set for agent ${agent.name}`,
+        );
+      }
+
+      const senderDomain = senderEmail.split("@")[1];
+      if (!senderDomain || senderDomain !== allowedDomain) {
+        logger.warn(
+          {
+            messageId: email.messageId,
+            agentId,
+            senderEmail,
+            senderDomain,
+            allowedDomain,
+          },
+          "[IncomingEmail] Internal mode: sender domain not allowed",
+        );
+        throw new Error(
+          `Unauthorized: emails from domain ${senderDomain} are not allowed for this agent. Only @${allowedDomain} is permitted.`,
+        );
+      }
+
+      logger.info(
+        {
+          messageId: email.messageId,
+          agentId,
+          senderEmail,
+          allowedDomain,
+        },
+        "[IncomingEmail] Internal mode: sender domain verified",
+      );
+      break;
+    }
+
+    case "public": {
+      // Public mode: No restrictions on sender
+      logger.info(
+        {
+          messageId: email.messageId,
+          agentId,
+          senderEmail,
+        },
+        "[IncomingEmail] Public mode: allowing email from any sender",
+      );
+      break;
+    }
+
+    default: {
+      // Unknown security mode - treat as private (most restrictive)
+      logger.warn(
+        {
+          messageId: email.messageId,
+          agentId,
+          securityMode,
+        },
+        "[IncomingEmail] Unknown security mode, treating as private",
+      );
+      throw new Error(
+        `Unknown security mode: ${securityMode}. Email rejected for security.`,
+      );
+    }
   }
 
   // Get organization from agent's team
-  const agentTeamIds = await AgentTeamModel.getTeamsForAgent(prompt.agentId);
+  const agentTeamIds = await AgentTeamModel.getTeamsForAgent(agent.id);
   if (agentTeamIds.length === 0) {
-    throw new Error(`No teams found for agent ${prompt.agentId}`);
+    throw new Error(`No teams found for agent ${agent.id}`);
   }
 
   const teams = await TeamModel.findByIds(agentTeamIds);
   if (teams.length === 0 || !teams[0].organizationId) {
-    throw new Error(`No organization found for agent ${prompt.agentId}`);
+    throw new Error(`No organization found for agent ${agent.id}`);
   }
   const organization = teams[0].organizationId;
 
+  // Fetch conversation history if this is part of a thread
+  let conversationContext = "";
+  if (email.conversationId && provider.getConversationHistory) {
+    try {
+      const history = await provider.getConversationHistory(
+        email.conversationId,
+        email.messageId,
+      );
+
+      if (history.length > 0) {
+        logger.info(
+          {
+            messageId: email.messageId,
+            conversationId: email.conversationId,
+            historyCount: history.length,
+          },
+          "[IncomingEmail] Including conversation history in agent context",
+        );
+
+        // Format conversation history for the agent
+        const formattedHistory = history
+          .map((msg) => {
+            const role = msg.isAgentMessage ? "You (Agent)" : "User";
+            const name = msg.fromName ? ` (${msg.fromName})` : "";
+            return `[${role}${name}]: ${msg.body.trim()}`;
+          })
+          .join("\n\n---\n\n");
+
+        conversationContext = `<conversation_history>
+The following is the previous conversation in this email thread. Use this context to understand the full conversation.
+
+${formattedHistory}
+</conversation_history>
+
+`;
+      }
+    } catch (error) {
+      logger.warn(
+        {
+          messageId: email.messageId,
+          conversationId: email.conversationId,
+          error: error instanceof Error ? error.message : String(error),
+        },
+        "[IncomingEmail] Failed to fetch conversation history, continuing without it",
+      );
+    }
+  }
+
   // Use email body as the message to invoke the agent
   // If body is empty, use the subject line
-  let message = email.body.trim() || email.subject || "No message content";
+  const currentMessage =
+    email.body.trim() || email.subject || "No message content";
+
+  // Combine conversation context with current message
+  let message = conversationContext
+    ? `${conversationContext}[Current message from user]: ${currentMessage}`
+    : currentMessage;
 
   // Truncate message if it exceeds the maximum size to prevent excessive LLM context usage
-  const { MAX_EMAIL_BODY_SIZE } = await import("./constants");
   if (Buffer.byteLength(message, "utf8") > MAX_EMAIL_BODY_SIZE) {
     // Truncate to MAX_EMAIL_BODY_SIZE bytes and add truncation notice
     const encoder = new TextEncoder();
     const decoder = new TextDecoder("utf8", { fatal: false });
     const encoded = encoder.encode(message);
     const truncated = decoder.decode(encoded.slice(0, MAX_EMAIL_BODY_SIZE));
-    message = `${truncated}\n\n[Message truncated - original size exceeded ${MAX_EMAIL_BODY_SIZE / 1024}KB limit]`;
+    message = `${truncated}\n\n[Message truncated - original size exceeded ${
+      MAX_EMAIL_BODY_SIZE / 1024
+    }KB limit]`;
     logger.warn(
       {
         messageId: email.messageId,
@@ -524,25 +776,29 @@ export async function processIncomingEmail(
 
   logger.info(
     {
-      promptId,
-      agentId: prompt.agentId,
+      agentId,
+      agentName: agent.name,
       organizationId: organization,
       messageLength: message.length,
+      hasConversationHistory: conversationContext.length > 0,
     },
     "[IncomingEmail] Invoking agent with email content",
   );
 
   // Execute using the shared A2A service
+  // userId is determined by security mode:
+  // - private: actual user ID from email lookup
+  // - internal/public: "system" (anonymous)
   const result = await executeA2AMessage({
-    promptId,
+    agentId,
     message,
     organizationId: organization,
-    userId: "system", // Email invocations use system context
+    userId,
   });
 
   logger.info(
     {
-      promptId,
+      agentId,
       messageId: result.messageId,
       responseLength: result.text.length,
       finishReason: result.finishReason,
@@ -550,6 +806,41 @@ export async function processIncomingEmail(
     "[IncomingEmail] Agent execution completed",
   );
 
-  // TODO: Optionally send the response back via email
-  // This would require implementing reply functionality in the provider
+  // Optionally send the agent's response back via email reply
+  if (shouldSendReply && result.text) {
+    try {
+      // Use the agent name for the email reply
+      const replyAgentName = agent.name || DEFAULT_AGENT_EMAIL_NAME;
+
+      const replyId = await provider.sendReply({
+        originalEmail: email,
+        body: result.text,
+        agentName: replyAgentName,
+      });
+
+      logger.info(
+        {
+          agentId,
+          originalMessageId: email.messageId,
+          replyId,
+        },
+        "[IncomingEmail] Sent email reply with agent response",
+      );
+    } catch (error) {
+      // Log but don't fail the entire operation if reply fails
+      logger.error(
+        {
+          agentId,
+          originalMessageId: email.messageId,
+          error: error instanceof Error ? error.message : String(error),
+        },
+        "[IncomingEmail] Failed to send email reply",
+      );
+    }
+
+    return result.text;
+  }
+
+  // No reply sent - return undefined explicitly for clarity
+  return undefined;
 }
