@@ -1,0 +1,119 @@
+# LightRAG Multi-Workspace Setup
+# One LightRAG server per team for data isolation
+# All instances share the same Neo4j and Qdrant backends
+# Start with: tilt trigger lightrag-server
+#
+# Ports:
+#   - 9621: Default workspace (fallback)
+#   - 9622: Engineering Team
+#   - 9623: HR Team
+#   - 9624: Marketing Team
+#   - 9625: Sales Team
+
+x-lightrag-common: &lightrag-common
+  image: ghcr.io/hkuds/lightrag:latest
+  extra_hosts:
+    - "host.docker.internal:host-gateway"
+  restart: unless-stopped
+  environment: &lightrag-env
+    HOST: "0.0.0.0"
+    LOG_LEVEL: "INFO"
+    # Storage backends
+    LIGHTRAG_KV_STORAGE: "JsonKVStorage"
+    LIGHTRAG_DOC_STATUS_STORAGE: "JsonDocStatusStorage"
+    LIGHTRAG_GRAPH_STORAGE: "Neo4JStorage"
+    LIGHTRAG_VECTOR_STORAGE: "QdrantVectorDBStorage"
+    # Neo4j
+    NEO4J_URI: "${LIGHTRAG_NEO4J_URI?LIGHTRAG_NEO4J_URI is required}"
+    NEO4J_USERNAME: "${LIGHTRAG_NEO4J_USERNAME:-neo4j}"
+    NEO4J_PASSWORD: "${LIGHTRAG_NEO4J_PASSWORD?LIGHTRAG_NEO4J_PASSWORD is required}"
+    # Qdrant
+    QDRANT_URL: "${LIGHTRAG_QDRANT_URL}"
+    QDRANT_API_KEY: "${LIGHTRAG_QDRANT_API_KEY}"
+    # LLM
+    LLM_BINDING: "openai"
+    LLM_MODEL: "${LIGHTRAG_LLM_MODEL:-gpt-4o-mini}"
+    LLM_BINDING_API_KEY: "${OPENAI_API_KEY}"
+    # Embeddings
+    EMBEDDING_BINDING: "openai"
+    EMBEDDING_MODEL: "${LIGHTRAG_EMBEDDING_MODEL:-text-embedding-3-small}"
+    EMBEDDING_DIM: "${LIGHTRAG_EMBEDDING_DIM:-1536}"
+    EMBEDDING_BINDING_API_KEY: "${OPENAI_API_KEY}"
+
+services:
+  # Default workspace (fallback for teams without specific instance)
+  lightrag-default:
+    <<: *lightrag-common
+    container_name: lightrag-default
+    ports:
+      - "9621:9621"
+    volumes:
+      - lightrag-data-default:/app/data
+    environment:
+      <<: *lightrag-env
+      PORT: "9621"
+      WORKING_DIR: "/app/data"
+      WORKSPACE: "default"
+
+  # Engineering Team: e4e72458-2aa9-433f-bbb0-fc9e558b5b00
+  lightrag-engineering:
+    <<: *lightrag-common
+    container_name: lightrag-engineering
+    ports:
+      - "9622:9622"
+    volumes:
+      - lightrag-data-engineering:/app/data
+    environment:
+      <<: *lightrag-env
+      PORT: "9622"
+      WORKING_DIR: "/app/data"
+      WORKSPACE: "e4e72458-2aa9-433f-bbb0-fc9e558b5b00"
+
+  # HR Team: f092c07a-fade-4c0a-b3da-735da19110bb
+  lightrag-hr:
+    <<: *lightrag-common
+    container_name: lightrag-hr
+    ports:
+      - "9623:9623"
+    volumes:
+      - lightrag-data-hr:/app/data
+    environment:
+      <<: *lightrag-env
+      PORT: "9623"
+      WORKING_DIR: "/app/data"
+      WORKSPACE: "f092c07a-fade-4c0a-b3da-735da19110bb"
+
+  # Marketing Team: f58226af-42bb-4337-9894-fb180ceecd19
+  lightrag-marketing:
+    <<: *lightrag-common
+    container_name: lightrag-marketing
+    ports:
+      - "9624:9624"
+    volumes:
+      - lightrag-data-marketing:/app/data
+    environment:
+      <<: *lightrag-env
+      PORT: "9624"
+      WORKING_DIR: "/app/data"
+      WORKSPACE: "f58226af-42bb-4337-9894-fb180ceecd19"
+
+  # Sales Team: 75f494ef-691c-458c-9e63-5e214a6002bb
+  lightrag-sales:
+    <<: *lightrag-common
+    container_name: lightrag-sales
+    ports:
+      - "9625:9625"
+    volumes:
+      - lightrag-data-sales:/app/data
+    environment:
+      <<: *lightrag-env
+      PORT: "9625"
+      WORKING_DIR: "/app/data"
+      WORKSPACE: "75f494ef-691c-458c-9e63-5e214a6002bb"
+
+volumes:
+  lightrag-data-default:
+  lightrag-data-engineering:
+  lightrag-data-hr:
+  lightrag-data-marketing:
+  lightrag-data-sales:

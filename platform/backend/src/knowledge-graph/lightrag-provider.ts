@@ -16,6 +16,8 @@ export interface LightRAGConfig {
   apiUrl: string;
   /** Optional API key for authentication */
   apiKey?: string;
+  /** Workspace-specific URLs for team-level data isolation */
+  workspaceUrls?: Map<string, string>;
 }
 
 /**
@@ -222,6 +224,17 @@ export class LightRAGProvider implements KnowledgeGraphProvider {
   }
 
   /**
+   * Get the API URL for a specific workspace
+   * Returns workspace-specific URL if configured, otherwise falls back to default
+   */
+  private getUrlForWorkspace(workspace?: string): string {
+    if (workspace && this.config.workspaceUrls?.has(workspace)) {
+      return this.config.workspaceUrls.get(workspace)!;
+    }
+    return this.config.apiUrl;
+  }
+
+  /**
    * Initialize the provider
    */
   async initialize(): Promise<void> {
@@ -267,12 +280,9 @@ export class LightRAGProvider implements KnowledgeGraphProvider {
         headers["X-API-Key"] = this.config.apiKey;
       }
 
-      // Add workspace header for data isolation (team-level)
-      if (workspace) {
-        headers["LIGHTRAG-WORKSPACE"] = workspace;
-      }
-
-      const url = joinUrl(this.config.apiUrl, "/documents/text");
+      // Use workspace-specific URL if configured
+      const baseUrl = this.getUrlForWorkspace(workspace);
+      const url = joinUrl(baseUrl, "/documents/text");
 
       // Build metadata object - include filename if provided, preserve other metadata
       const metadataObj = {
@@ -320,6 +330,7 @@ export class LightRAGProvider implements KnowledgeGraphProvider {
         {
           filename,
           workspace: workspace ?? "default",
+          baseUrl,
           status: result.status,
           message: result.message,
         },
@@ -369,12 +380,14 @@ export class LightRAGProvider implements KnowledgeGraphProvider {
         headers["X-API-Key"] = this.config.apiKey;
       }
 
-      // Add workspace header for data isolation (team-level)
-      if (workspace) {
-        headers["LIGHTRAG-WORKSPACE"] = workspace;
-      }
+      // Use workspace-specific URL if configured
+      const baseUrl = this.getUrlForWorkspace(workspace);
+      const url = joinUrl(baseUrl, "/query");
 
-      const url = joinUrl(this.config.apiUrl, "/query");
+      logger.info(
+        { workspace: workspace ?? "default", baseUrl, mode },
+        "[KnowledgeGraph] Querying LightRAG",
+      );
       const response = await fetchWithRetry(
         url,
         {

@@ -36,7 +36,7 @@ export type QueryMode = z.infer<typeof QueryModeSchema>;
 export interface QueryOptions {
   /** Query mode (local, global, hybrid, naive). Defaults to hybrid. */
   mode?: QueryMode;
-  /** Workspace for data isolation (typically team ID). If not provided, uses default workspace. */
+  /** Workspace/team ID for data isolation (routes to team-specific LightRAG instance) */
   workspace?: string;
 }
 
@@ -73,7 +73,7 @@ export interface InsertDocumentParams {
   filename?: string;
   /** Optional metadata to associate with the document */
   metadata?: Record<string, unknown>;
-  /** Workspace for data isolation (typically team ID). If not provided, uses default workspace. */
+  /** Workspace/team ID for data isolation (routes to team-specific LightRAG instance) */
   workspace?: string;
 }
 
@@ -143,5 +143,7 @@ export interface KnowledgeGraphConfig {
     apiUrl: string;
     /** Optional API key for authentication */
     apiKey?: string;
+    /** Workspace-specific URLs for team-level data isolation (teamId -> URL) */
+    workspaceUrls?: Map<string, string>;
   };
 }

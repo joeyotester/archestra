@@ -166,15 +166,16 @@ const chatRoutes: FastifyPluginAsyncZod = async (fastify) => {
 
       // Extract and ingest documents to knowledge graph (fire and forget)
       // This runs asynchronously to avoid blocking the chat response
-      // Pass agentId for team-based workspace isolation
-      extractAndIngestDocuments(messages, conversation.agentId).catch(
-        (error) => {
-          logger.warn(
-            { error: error instanceof Error ? error.message : String(error) },
-            "[Chat] Background document ingestion failed",
-          );
-        },
-      );
+      // Pass agentId for workspace isolation (documents go to agent's team workspace)
+      extractAndIngestDocuments(
+        messages,
+        conversation.agentId ?? undefined,
+      ).catch((error) => {
+        logger.warn(
+          { error: error instanceof Error ? error.message : String(error) },
+          "[Chat] Background document ingestion failed",
+        );
+      });
 
       // Use agent ID as external agent ID if available, otherwise use header value
       // This allows agent names to be displayed in LLM proxy logs

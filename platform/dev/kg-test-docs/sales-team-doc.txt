@@ -1,0 +1,28 @@
+# Sales Team Strategy Document
+
+## Q4 2024 Sales Pipeline
+
+This document contains confidential sales information.
+
+### Deal Intelligence Code
+Sales team deal tracking system uses:
+SALES-MEGA-DEAL-2024
+
+### Major Accounts in Pipeline
+1. Acme Corporation - $2.5M annual contract
+2. TechGiant Inc - $1.8M annual contract
+3. Global Systems Ltd - $3.2M annual contract
+
+### Pricing Strategy (Internal Only)
+- Enterprise tier: $50,000/month base + usage
+- Professional tier: $15,000/month base + usage
+- Startup tier: $5,000/month flat rate
+
+### Commission Structure
+- Base quota: $500,000/quarter
+- Commission rate: 8% on all closed deals
+- Accelerator: 12% for deals over quota
+
+### Contact
+Sales Department: sales@archestra.ai
+This information is strictly confidential to Sales Team members only.

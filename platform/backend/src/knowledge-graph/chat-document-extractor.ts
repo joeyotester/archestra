@@ -1,5 +1,5 @@
 import logger from "@/logging";
-import { AgentTeamModel } from "@/models";
+import AgentTeamModel from "@/models/agent-team";
 import {
   MAX_CONCURRENT_INGESTIONS,
   MAX_DOCUMENT_SIZE_BYTES,
@@ -236,7 +236,7 @@ function extractDocumentContent(part: MessagePart): {
  * first team is used as the workspace for data isolation.
  *
  * @param messages - Array of messages from the chat request
- * @param agentId - Optional agent ID to determine workspace for data isolation
+ * @param agentId - Optional agent/profile ID for workspace isolation (documents go to agent's team workspace)
  */
 export async function extractAndIngestDocuments(
   messages: unknown[],
@@ -245,35 +245,6 @@ export async function extractAndIngestDocuments(
   // Check if knowledge graph is enabled
   if (!isKnowledgeGraphEnabled()) {
     return;
-  }
-
-  // Get workspace from agent's team (for data isolation)
-  let workspace: string | undefined;
-  if (agentId) {
-    try {
-      const teamIds = await AgentTeamModel.getTeamsForAgent(agentId);
-      if (teamIds.length > 0) {
-        // Use first team as workspace
-        workspace = teamIds[0];
-        logger.debug(
-          { agentId, workspace, teamCount: teamIds.length },
-          "[KnowledgeGraph] Using team workspace for document ingestion",
-        );
-      } else {
-        logger.debug(
-          { agentId },
-          "[KnowledgeGraph] Agent has no teams, using default workspace",
-        );
-      }
-    } catch (error) {
-      logger.warn(
-        {
-          agentId,
-          error: error instanceof Error ? error.message : String(error),
-        },
-        "[KnowledgeGraph] Failed to get agent teams, using default workspace",
-      );
-    }
   }
 
   // Cast to Message array
@@ -314,6 +285,30 @@ export async function extractAndIngestDocuments(
 
   if (documentsToIngest.length === 0) {
     return;
+  }
+
+  // Determine workspace from agent's team assignment
+  let workspace: string | undefined;
+  if (agentId) {
+    try {
+      const teamIds = await AgentTeamModel.getTeamsForAgent(agentId);
+      if (teamIds.length > 0) {
+        // Use the first team as the workspace (most agents have one team)
+        workspace = teamIds[0];
+        logger.debug(
+          { agentId, workspace, teamCount: teamIds.length },
+          "[KnowledgeGraph] Using team workspace for document ingestion",
+        );
+      }
+    } catch (error) {
+      logger.warn(
+        {
+          agentId,
+          error: error instanceof Error ? error.message : String(error),
+        },
+        "[KnowledgeGraph] Failed to fetch agent teams for workspace isolation",
+      );
+    }
   }
 
   logger.info(

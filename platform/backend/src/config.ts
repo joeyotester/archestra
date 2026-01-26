@@ -232,6 +232,28 @@ const parseKnowledgeGraphProvider = ():
 };
 
 /**
+ * Parse workspace URLs for team-level knowledge graph isolation
+ * Format: "teamId1:http://url1,teamId2:http://url2"
+ */
+const parseWorkspaceUrls = (
+  envValue: string | undefined,
+): Map<string, string> => {
+  const map = new Map<string, string>();
+  if (!envValue) return map;
+
+  const pairs = envValue.split(",");
+  for (const pair of pairs) {
+    const [workspace, url] = pair.split(":", 2);
+    if (workspace && url) {
+      // Reconstruct URL in case it had colons (http://...)
+      const fullUrl = pair.substring(workspace.length + 1);
+      map.set(workspace.trim(), fullUrl.trim());
+    }
+  }
+  return map;
+};
+
+/**
  * Parse body limit from environment variable.
  * Supports numeric bytes (e.g., "52428800") or human-readable format (e.g., "50MB", "100KB").
  */
@@ -397,6 +419,11 @@ export default {
     lightrag: {
       apiUrl: process.env.ARCHESTRA_KNOWLEDGE_GRAPH_LIGHTRAG_API_URL || "",
       apiKey: process.env.ARCHESTRA_KNOWLEDGE_GRAPH_LIGHTRAG_API_KEY,
+      // Workspace-specific URLs for team-level data isolation
+      // Format: ARCHESTRA_KNOWLEDGE_GRAPH_LIGHTRAG_WORKSPACE_URLS="teamId1:http://url1,teamId2:http://url2"
+      workspaceUrls: parseWorkspaceUrls(
+        process.env.ARCHESTRA_KNOWLEDGE_GRAPH_LIGHTRAG_WORKSPACE_URLS,
+      ),
     },
   },
   auth: {

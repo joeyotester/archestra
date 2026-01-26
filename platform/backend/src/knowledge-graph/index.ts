@@ -250,7 +250,7 @@ export async function cleanupKnowledgeGraphProvider(): Promise<void> {
  * @param content - The document content to ingest
  * @param filename - Optional filename for the document
  * @param metadata - Optional metadata to associate with the document
- * @param workspace - Optional workspace for data isolation (typically team ID)
+ * @param workspace - Optional workspace/team ID for data isolation
  * @returns true if ingestion was successful/queued, false otherwise
  */
 export async function ingestDocument(params: {

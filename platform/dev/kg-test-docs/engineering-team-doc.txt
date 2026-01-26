@@ -1,0 +1,19 @@
+# Engineering Team Internal Document
+
+## Project Alpha Technical Specifications
+
+This document contains confidential engineering information for Project Alpha.
+
+### Secret Configuration
+The engineering team uses the following secret key for internal services:
+ENG-SECRET-KEY-12345
+
+### Architecture Overview
+- Microservices architecture with 12 services
+- Kubernetes deployment on GKE
+- PostgreSQL for primary database
+- Redis for caching layer
+
+### Access Control
+Only members of the Engineering Team should have access to this document.
+Contact: engineering@archestra.ai

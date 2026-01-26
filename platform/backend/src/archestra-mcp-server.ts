@@ -1666,12 +1666,12 @@ export async function executeArchestraTool(
         };
       }
 
-      // Get workspace from profile's team (for data isolation)
+      // Determine workspace from profile's team assignment for data isolation
       let workspace: string | undefined;
       try {
         const teamIds = await AgentTeamModel.getTeamsForAgent(profile.id);
         if (teamIds.length > 0) {
-          // Use first team as workspace
+          // Use the first team as the workspace (most profiles have one team)
           workspace = teamIds[0];
         }
       } catch (error) {
@@ -1680,7 +1680,7 @@ export async function executeArchestraTool(
             profileId: profile.id,
             error: error instanceof Error ? error.message : String(error),
           },
-          "Failed to get profile teams for KG workspace, using default",
+          "Failed to fetch profile teams for workspace isolation",
         );
       }
 

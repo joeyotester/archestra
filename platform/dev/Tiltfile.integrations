@@ -42,7 +42,7 @@ local_resource(
   auto_init=False
 )
 
-# LightRAG API Server (manual trigger)
+# LightRAG API Server - Single instance (manual trigger)
 # Start with: tilt trigger lightrag-server
 # API & Web UI: http://localhost:9621
 # Connects to Neo4j (graph) + Qdrant (vector), local KV storage (persistent volume)
@@ -50,6 +50,21 @@ local_resource(
 local_resource(
   'lightrag-server',
   serve_cmd='docker compose -f lightrag/docker-compose.yml up',
+  serve_dir='.',
+  labels=['integrations'],
+  trigger_mode=TRIGGER_MODE_MANUAL,
+  auto_init=False,
+  resource_deps=['lightrag-storage']
+)
+
+# LightRAG Multi-Workspace - One instance per team for data isolation (manual trigger)
+# Start with: tilt trigger lightrag-multi-workspace
+# Ports: 9621 (default), 9622 (engineering), 9623 (hr), 9624 (marketing), 9625 (sales)
+# Each instance has its own WORKSPACE env var for data isolation
+# Required .env: LIGHTRAG_NEO4J_URI, LIGHTRAG_NEO4J_PASSWORD, LIGHTRAG_QDRANT_URL, OPENAI_API_KEY
+local_resource(
+  'lightrag-multi-workspace',
+  serve_cmd='docker compose -f lightrag/docker-compose.multi-workspace.yml up',
   serve_dir='.',
   labels=['integrations'],
   trigger_mode=TRIGGER_MODE_MANUAL,
