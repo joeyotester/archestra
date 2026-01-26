@@ -459,7 +459,7 @@ export function ArchestraCatalogTab({
             </div>
           ) : (
             <>
-              <div className="grid gap-4 md:grid-cols-2 overflow-y-auto pr-2">
+              <div className="grid gap-4 md:grid-cols-2 overflow-y-auto">
                 {filteredServers.map((server, index) => (
                   <ServerCard
                     key={`${server.name}-${index}`}
