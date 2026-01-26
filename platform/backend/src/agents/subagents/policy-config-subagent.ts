@@ -44,6 +44,8 @@ export class PolicyConfigSubagent {
   // System subagent identifier
   static readonly SUBAGENT_ID = "policy-configuration-subagent";
   static readonly SUBAGENT_NAME = "Policy Configuration Subagent";
+  // Default model for policy analysis (Sonnet is fast and cost-effective for this task)
+  static readonly DEFAULT_MODEL = "claude-sonnet-4-20250514";
 
   // Analysis prompt template (exposed for UI display)
   static readonly ANALYSIS_PROMPT_TEMPLATE =
@@ -154,7 +156,7 @@ Examples:
     try {
       // Make LLM call with structured output
       const result = await generateObject({
-        model: anthropic(config.chat.defaultModel),
+        model: anthropic(model),
         schema: PolicyConfigSchema,
         prompt,
       });
@@ -181,6 +183,7 @@ Examples:
         result: result.object,
         organizationId,
         duration,
+        model,
       }).catch((error) => {
         logger.error(
           {
@@ -197,7 +200,7 @@ Examples:
         {
           toolName: tool.name,
           mcpServerName,
-          model: config.chat.defaultModel,
+          model,
           error: error instanceof Error ? error.message : String(error),
           stack: error instanceof Error ? error.stack : undefined,
           subagentId: PolicyConfigSubagent.SUBAGENT_ID,
@@ -237,8 +240,9 @@ Examples:
     result: PolicyConfig;
     organizationId: string;
     duration: number;
+    model: string;
   }): Promise<void> {
-    const { tool, prompt, result } = params;
+    const { tool, prompt, result, model } = params;
 
     logger.debug(
       {
@@ -259,7 +263,7 @@ Examples:
         profileId: systemAgent.id,
         externalAgentId: PolicyConfigSubagent.SUBAGENT_ID,
         type: "anthropic:messages",
-        model: config.chat.defaultModel,
+        model,
         request: {
           messages: [
             {
@@ -267,7 +271,7 @@ Examples:
               content: prompt,
             },
           ],
-          model: config.chat.defaultModel,
+          model,
           max_tokens: 1024,
         },
         response: {
@@ -280,7 +284,7 @@ Examples:
               text: JSON.stringify(result, null, 2),
             },
           ],
-          model: config.chat.defaultModel,
+          model,
           stop_reason: "end_turn",
           stop_sequence: null,
           usage: {

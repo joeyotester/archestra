@@ -1128,10 +1128,16 @@ export function AgentDialog({
                       </SelectContent>
                     </Select>
                     {!llmProvider && (
-                      <p className="text-xs text-muted-foreground">
-                        Resolves from: user's key → team key → org key →
-                        ARCHESTRA_CHAT_&lt;PROVIDER&gt;_API_KEY.
-                      </p>
+                      <div className="text-xs text-muted-foreground space-y-1">
+                        <p>
+                          Resolves from: user's key → team key → org key →
+                          ARCHESTRA_CHAT_&lt;PROVIDER&gt;_API_KEY.
+                        </p>
+                        <p>
+                          Model depends on provider: Claude Opus 4.1, Gemini 2.5
+                          Pro, GPT-4o, or Command R.
+                        </p>
+                      </div>
                     )}
                   </div>
 

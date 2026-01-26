@@ -89,9 +89,9 @@ export function ChatApiKeySelector({
   // Check if Vertex AI is enabled for Gemini (uses ADC, no API key needed)
   const geminiVertexAiEnabled = useFeatureFlag("geminiVertexAiEnabled");
 
-  // Fetch API keys for the current provider only
+  // Fetch ALL API keys (not filtered by provider) so user can switch providers
   const { data: availableKeys = [], isLoading: isLoadingKeys } =
-    useAvailableChatApiKeys(currentProvider);
+    useAvailableChatApiKeys();
 
   // Check if Vertex AI is currently selected
   const isVertexAiSelected =
@@ -111,7 +111,7 @@ export function ChatApiKeySelector({
   // Track if we've already auto-selected to prevent infinite loops
   const hasAutoSelectedRef = useRef(false);
 
-  // Group keys by scope (personal, team, org_wide)
+  // Group keys by scope (personal, team, org_wide) - used for auto-selection priority
   const keysByScope = useMemo(() => {
     const grouped: Record<ChatApiKeyScope, ChatApiKey[]> = {
       personal: [],
@@ -121,6 +121,20 @@ export function ChatApiKeySelector({
 
     for (const key of availableKeys) {
       grouped[key.scope].push(key);
+    }
+
+    return grouped;
+  }, [availableKeys]);
+
+  // Group keys by provider for display
+  const keysByProvider = useMemo(() => {
+    const grouped: Record<string, ChatApiKey[]> = {};
+
+    for (const key of availableKeys) {
+      if (!grouped[key.provider]) {
+        grouped[key.provider] = [];
+      }
+      grouped[key.provider].push(key);
     }
 
     return grouped;
@@ -151,21 +165,32 @@ export function ChatApiKeySelector({
       currentConversationChatApiKey &&
       availableKeys.some((k) => k.id === currentConversationChatApiKeyId);
 
+    // Filter keys by current provider for auto-selection
+    const keysForCurrentProvider = currentProvider
+      ? availableKeys.filter((k) => k.provider === currentProvider)
+      : availableKeys;
+
     // Try to find key from localStorage (per-provider key)
     const localStorageKey = currentProvider
       ? `${LOCAL_STORAGE_KEY}-${currentProvider}`
       : LOCAL_STORAGE_KEY;
     const keyIdFromLocalStorage = localStorage.getItem(localStorageKey);
     const keyFromLocalStorage = keyIdFromLocalStorage
-      ? availableKeys.find((k) => k.id === keyIdFromLocalStorage)
+      ? keysForCurrentProvider.find((k) => k.id === keyIdFromLocalStorage)
       : null;
+
+    // Find first key for current provider by scope priority
+    const personalKey = keysForCurrentProvider.find(
+      (k) => k.scope === "personal",
+    );
+    const teamKey = keysForCurrentProvider.find((k) => k.scope === "team");
+    const orgWideKey = keysForCurrentProvider.find(
+      (k) => k.scope === "org_wide",
+    );
     const keyToSelect =
-      keyFromLocalStorage ||
-      keysByScope.personal[0] ||
-      keysByScope.team[0] ||
-      keysByScope.org_wide[0];
+      keyFromLocalStorage || personalKey || teamKey || orgWideKey;
     const keyToSelectValid =
-      keyToSelect && availableKeys.some((k) => k.id === keyToSelect.id);
+      keyToSelect && keysForCurrentProvider.some((k) => k.id === keyToSelect.id);
 
     // Auto-select first key if no valid key is selected
     if (!currentKeyValid && keyToSelectValid) {
@@ -335,13 +360,16 @@ export function ChatApiKeySelector({
                   </CommandItem>
                 </CommandGroup>
               )}
-              {/* Show all keys for the current provider */}
-              {availableKeys.length > 0 && (
-                <CommandGroup>
-                  {availableKeys.map((key) => (
+              {/* Show all keys grouped by provider */}
+              {Object.entries(keysByProvider).map(([provider, keys]) => (
+                <CommandGroup
+                  key={provider}
+                  heading={provider.charAt(0).toUpperCase() + provider.slice(1)}
+                >
+                  {keys.map((key) => (
                     <CommandItem
                       key={key.id}
-                      value={`${key.name} ${key.teamName || ""}`}
+                      value={`${provider} ${key.name} ${key.teamName || ""}`}
                       onSelect={() => handleSelectKey(key.id)}
                       className="cursor-pointer"
                     >
@@ -363,7 +391,7 @@ export function ChatApiKeySelector({
                     </CommandItem>
                   ))}
                 </CommandGroup>
-              )}
+              ))}
             </CommandList>
           </Command>
         </PopoverContent>

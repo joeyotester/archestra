@@ -2,7 +2,7 @@
 
 import { providerDisplayNames, type SupportedProvider } from "@shared";
 import { CheckIcon, Loader2 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   ModelSelectorContent,
   ModelSelectorEmpty,
@@ -104,15 +104,30 @@ export function ModelSelector({
     onModelChange(model);
   };
 
-  // Check if selectedModel is in the available models
-  const allAvailableModelIds = useMemo(
+  // Check if selectedModel is in the available models (exact or substring match)
+  const allAvailableModels = useMemo(
     () =>
       availableProviders.flatMap(
-        (provider) => modelsByProvider[provider]?.map((m) => m.id) ?? [],
+        (provider) => modelsByProvider[provider] ?? [],
       ),
     [availableProviders, modelsByProvider],
   );
-  const isModelAvailable = allAvailableModelIds.includes(selectedModel);
+  const exactMatch = allAvailableModels.find((m) => m.id === selectedModel);
+  // If no exact match, try to find a model that starts with the selected model ID
+  // e.g., "gemini-2.5-pro" matches "gemini-2.5-pro-001"
+  const substringMatch = !exactMatch
+    ? allAvailableModels.find((m) => m.id.startsWith(selectedModel))
+    : null;
+  const matchedModel = exactMatch || substringMatch;
+  const isModelAvailable = !!matchedModel;
+
+  // Auto-switch to the matched model if there's a substring match but not exact match
+  // This handles cases like "gemini-2.5-pro" -> "gemini-2.5-pro-001"
+  useEffect(() => {
+    if (substringMatch && !exactMatch && !isLoading) {
+      onModelChange(substringMatch.id);
+    }
+  }, [substringMatch, exactMatch, isLoading, onModelChange]);
 
   // If loading, show loading state
   if (isLoading) {
