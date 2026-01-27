@@ -19,6 +19,14 @@ describe("BrowserStreamService URL handling", () => {
       tabIndex: 0,
     });
 
+    // Mock resizeBrowser to avoid database call
+    vi.spyOn(
+      browserService as unknown as {
+        resizeBrowser: () => Promise<void>;
+      },
+      "resizeBrowser",
+    ).mockResolvedValue();
+
     // Mock findScreenshotTool to return a tool name
     vi.spyOn(
       browserService as unknown as {
@@ -81,6 +89,14 @@ describe("BrowserStreamService URL handling", () => {
       tabIndex: 0,
     });
 
+    // Mock resizeBrowser to avoid database call
+    vi.spyOn(
+      browserService as unknown as {
+        resizeBrowser: () => Promise<void>;
+      },
+      "resizeBrowser",
+    ).mockResolvedValue();
+
     // Mock findScreenshotTool to return a tool name
     vi.spyOn(
       browserService as unknown as {
@@ -133,6 +149,14 @@ describe("BrowserStreamService URL handling", () => {
       success: true,
       tabIndex: 0,
     });
+
+    // Mock resizeBrowser to avoid database call
+    vi.spyOn(
+      browserService as unknown as {
+        resizeBrowser: () => Promise<void>;
+      },
+      "resizeBrowser",
+    ).mockResolvedValue();
 
     vi.spyOn(
       browserService as unknown as {
