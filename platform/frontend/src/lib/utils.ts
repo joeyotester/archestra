@@ -1,5 +1,6 @@
 import { type ClassValue, clsx } from "clsx";
 import { format } from "date-fns";
+import { toast } from "sonner";
 import { twMerge } from "tailwind-merge";
 
 export const DEFAULT_TABLE_LIMIT = 10;
@@ -25,4 +26,39 @@ export function formatDate({
   dateFormat?: string;
 }) {
   return format(new Date(date), dateFormat);
+}
+
+/**
+ * Extract error message from API error response and show a toast notification.
+ * Handles different API error structures gracefully.
+ *
+ * @param error - The API error object (can have error.error as string or object with message)
+ * @param fallbackMessage - Default message if no error message can be extracted
+ */
+export function showErrorToastFromApiError(
+  error: unknown,
+  fallbackMessage = "An error occurred",
+): void {
+  let message = fallbackMessage;
+
+  if (error && typeof error === "object") {
+    const apiError = error as {
+      error?: string | { message?: string } | null;
+      message?: string;
+    };
+
+    if (typeof apiError.error === "string") {
+      message = apiError.error;
+    } else if (
+      apiError.error &&
+      typeof apiError.error === "object" &&
+      apiError.error.message
+    ) {
+      message = apiError.error.message;
+    } else if (apiError.message) {
+      message = apiError.message;
+    }
+  }
+
+  toast.error(message);
 }

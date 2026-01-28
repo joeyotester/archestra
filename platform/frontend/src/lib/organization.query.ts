@@ -9,6 +9,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { appearanceKeys } from "@/lib/appearance.query";
 import { authClient } from "@/lib/clients/auth/auth-client";
+import { showErrorToastFromApiError } from "./utils";
 
 /**
  * Query key factory for organization-related queries
@@ -194,21 +195,19 @@ export function useCreateInvitation(organizationId: string | undefined) {
       });
 
       if (response.error) {
-        throw new Error(
-          response.error.message || "Failed to generate invitation link",
+        showErrorToastFromApiError(
+          response.error,
+          "Failed to generate invitation link",
         );
+        return null;
       }
 
       return response.data;
     },
-    onSuccess: () => {
+    onSuccess: (result) => {
+      if (!result) return; // Error already shown via toast
       toast.success("Invitation link generated", {
         description: "Share this link with the person you want to invite",
-      });
-    },
-    onError: (error) => {
-      toast.error("Error", {
-        description: error.message || "Failed to generate invitation link",
       });
     },
   });
@@ -241,10 +240,14 @@ export function useOrganizationOnboardingStatus(enabled: boolean) {
   return useQuery({
     queryKey: organizationKeys.onboardingStatus(),
     queryFn: async () => {
-      const { data } = await archestraApiSdk.getOnboardingStatus();
+      const { data, error } = await archestraApiSdk.getOnboardingStatus();
 
-      if (!data) {
-        throw new Error("Failed to fetch organization onboarding status");
+      if (error || !data) {
+        showErrorToastFromApiError(
+          error,
+          "Failed to fetch organization onboarding status",
+        );
+        return null;
       }
 
       return data;
@@ -266,16 +269,18 @@ export function useUpdateOrganization(
     mutationFn: async (
       data: archestraApiTypes.UpdateOrganizationData["body"],
     ) => {
-      const { data: updatedOrganization } =
+      const { data: updatedOrganization, error } =
         await archestraApiSdk.updateOrganization({ body: data });
 
-      if (!updatedOrganization) {
-        throw new Error(onErrorMessage);
+      if (error || !updatedOrganization) {
+        showErrorToastFromApiError(error, onErrorMessage);
+        return null;
       }
 
       return updatedOrganization;
     },
     onSuccess: (updatedOrganization) => {
+      if (!updatedOrganization) return; // Error already shown via toast
       // Update organization details cache
       queryClient.setQueryData(organizationKeys.details(), updatedOrganization);
       // Update appearance cache immediately with the new values
@@ -287,9 +292,6 @@ export function useUpdateOrganization(
       // Invalidate features cache since globalToolPolicy comes from organization record
       queryClient.invalidateQueries({ queryKey: ["features"] });
       toast.success(onSuccessMessage);
-    },
-    onError: (_error) => {
-      toast.error(onErrorMessage);
     },
   });
 }

@@ -5,6 +5,7 @@ import {
 } from "@shared";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
+import { showErrorToastFromApiError } from "./utils";
 
 const { getChatModels } = archestraApiSdk;
 
@@ -28,12 +29,8 @@ export function useChatModels() {
     queryFn: async () => {
       const { data, error } = await getChatModels();
       if (error) {
-        console.error("[DEBUG chat-models] API error:", error);
-        throw new Error(
-          typeof error.error === "string"
-            ? error.error
-            : error.error?.message || "Failed to fetch chat models",
-        );
+        showErrorToastFromApiError(error, "Failed to fetch chat models");
+        return [] as ChatModel[];
       }
       return (data ?? []) as ChatModel[];
     },

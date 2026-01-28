@@ -1,6 +1,7 @@
 import { archestraApiSdk, type archestraApiTypes } from "@shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { showErrorToastFromApiError } from "./utils";
 
 const {
   getIncomingEmailStatus,
@@ -23,9 +24,11 @@ export function useIncomingEmailStatus() {
     queryFn: async () => {
       const { data, error } = await getIncomingEmailStatus();
       if (error) {
-        throw new Error(
-          error?.error?.message || "Failed to fetch incoming email status",
+        showErrorToastFromApiError(
+          error,
+          "Failed to fetch incoming email status",
         );
+        return null;
       }
       return data as archestraApiTypes.GetIncomingEmailStatusResponses["200"];
     },
@@ -41,18 +44,15 @@ export function useSetupIncomingEmailWebhook() {
         body: { webhookUrl },
       });
       if (response.error) {
-        throw new Error(
-          response.error?.error?.message || "Failed to setup webhook",
-        );
+        showErrorToastFromApiError(response.error, "Failed to setup webhook");
+        return null;
       }
       return response.data as archestraApiTypes.SetupIncomingEmailWebhookResponses["200"];
     },
-    onSuccess: () => {
+    onSuccess: (result) => {
+      if (!result) return; // Error already shown via toast
       toast.success("Webhook subscription created successfully");
       queryClient.invalidateQueries({ queryKey: incomingEmailKeys.status() });
-    },
-    onError: (error: Error) => {
-      toast.error(error.message || "Failed to setup webhook");
     },
   });
 }
@@ -64,18 +64,18 @@ export function useRenewIncomingEmailSubscription() {
     mutationFn: async () => {
       const response = await renewIncomingEmailSubscription();
       if (response.error) {
-        throw new Error(
-          response.error?.error?.message || "Failed to renew subscription",
+        showErrorToastFromApiError(
+          response.error,
+          "Failed to renew subscription",
         );
+        return null;
       }
       return response.data as archestraApiTypes.RenewIncomingEmailSubscriptionResponses["200"];
     },
-    onSuccess: () => {
+    onSuccess: (result) => {
+      if (!result) return; // Error already shown via toast
       toast.success("Subscription renewed successfully");
       queryClient.invalidateQueries({ queryKey: incomingEmailKeys.status() });
-    },
-    onError: (error: Error) => {
-      toast.error(error.message || "Failed to renew subscription");
     },
   });
 }
@@ -87,18 +87,18 @@ export function useDeleteIncomingEmailSubscription() {
     mutationFn: async () => {
       const response = await deleteIncomingEmailSubscription();
       if (response.error) {
-        throw new Error(
-          response.error?.error?.message || "Failed to delete subscription",
+        showErrorToastFromApiError(
+          response.error,
+          "Failed to delete subscription",
         );
+        return null;
       }
       return response.data as archestraApiTypes.DeleteIncomingEmailSubscriptionResponses["200"];
     },
-    onSuccess: () => {
+    onSuccess: (result) => {
+      if (result === null) return; // Error already shown via toast
       toast.success("Subscription deleted successfully");
       queryClient.invalidateQueries({ queryKey: incomingEmailKeys.status() });
-    },
-    onError: (error: Error) => {
-      toast.error(error.message || "Failed to delete subscription");
     },
   });
 }
@@ -116,9 +116,11 @@ export function useAgentEmailAddress(agentId: string | null) {
         path: { agentId },
       });
       if (error) {
-        throw new Error(
-          error?.error?.message || "Failed to fetch agent email address",
+        showErrorToastFromApiError(
+          error,
+          "Failed to fetch agent email address",
         );
+        return null;
       }
       return data as archestraApiTypes.GetAgentEmailAddressResponses["200"];
     },

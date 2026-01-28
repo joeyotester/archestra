@@ -326,7 +326,7 @@ export function ArchestraCatalogTab({
   // Flatten all pages into a single array of servers
   const servers = useMemo(() => {
     if (!data) return [];
-    return data.pages.flatMap((page) => page.servers);
+    return data.pages.flatMap((page) => page?.servers ?? []);
   }, [data]);
 
   // Apply client-side type filter only (categories are filtered backend-side)

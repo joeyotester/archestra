@@ -536,48 +536,29 @@ export function AgentDialog({
     // Save any unsaved label before submitting
     const updatedLabels = agentLabelsRef.current?.saveUnsavedLabel() || labels;
 
-    try {
-      let savedAgentId: string;
+    let savedAgentId: string;
 
-      // Save tool changes FIRST (before agent update triggers refetch that clears pending changes)
-      if (agent) {
-        await agentToolsEditorRef.current?.saveChanges();
-      }
+    // Save tool changes FIRST (before agent update triggers refetch that clears pending changes)
+    if (agent) {
+      await agentToolsEditorRef.current?.saveChanges();
+    }
 
-      // Build email settings for internal agents (always save, backend controls enforcement)
-      const emailSettings = isInternalAgent
-        ? {
-            incomingEmailEnabled,
-            incomingEmailSecurityMode,
-            ...(incomingEmailSecurityMode === "internal" && {
-              incomingEmailAllowedDomain: incomingEmailAllowedDomain.trim(),
-            }),
-          }
-        : {};
+    // Build email settings for internal agents (always save, backend controls enforcement)
+    const emailSettings = isInternalAgent
+      ? {
+          incomingEmailEnabled,
+          incomingEmailSecurityMode,
+          ...(incomingEmailSecurityMode === "internal" && {
+            incomingEmailAllowedDomain: incomingEmailAllowedDomain.trim(),
+          }),
+        }
+      : {};
 
-      if (agent) {
-        // Update existing agent
-        const updated = await updateAgent.mutateAsync({
-          id: agent.id,
-          data: {
-            name: trimmedName,
-            agentType: agentType,
-            ...(isInternalAgent && {
-              userPrompt: trimmedUserPrompt || undefined,
-              systemPrompt: trimmedSystemPrompt || undefined,
-              allowedChatops,
-            }),
-            teams: assignedTeamIds,
-            labels: updatedLabels,
-            ...(showSecurity && { considerContextUntrusted }),
-            ...emailSettings,
-          },
-        });
-        savedAgentId = updated?.id ?? agent.id;
-        toast.success(getSuccessMessage(agentType, true));
-      } else {
-        // Create new agent
-        const created = await createAgent.mutateAsync({
+    if (agent) {
+      // Update existing agent
+      const updated = await updateAgent.mutateAsync({
+        id: agent.id,
+        data: {
           name: trimmedName,
           agentType: agentType,
           ...(isInternalAgent && {
@@ -589,42 +570,67 @@ export function AgentDialog({
           labels: updatedLabels,
           ...(showSecurity && { considerContextUntrusted }),
           ...emailSettings,
-        });
-        savedAgentId = created?.id ?? "";
-
-        // Save tool changes with the new agent ID
-        if (savedAgentId) {
-          await agentToolsEditorRef.current?.saveChanges(savedAgentId);
-        }
-
-        toast.success(getSuccessMessage(agentType, false));
-        // Notify parent about creation (for opening connection dialog, etc.)
-        if (onCreated && created) {
-          onCreated({ id: created.id, name: created.name });
-        }
+        },
+      });
+      if (!updated) {
+        toast.error(
+          isInternalAgent ? "Failed to save agent" : "Failed to save profile",
+        );
+        return;
       }
-
-      // Sync delegations
-      if (savedAgentId && selectedDelegationTargetIds.length > 0) {
-        await syncDelegations.mutateAsync({
-          agentId: savedAgentId,
-          targetAgentIds: selectedDelegationTargetIds,
-        });
-      } else if (savedAgentId && agent && currentDelegations.length > 0) {
-        // Clear delegations if none selected but there were some before
-        await syncDelegations.mutateAsync({
-          agentId: savedAgentId,
-          targetAgentIds: [],
-        });
+      savedAgentId = updated.id;
+      toast.success(getSuccessMessage(agentType, true));
+    } else {
+      // Create new agent
+      const created = await createAgent.mutateAsync({
+        name: trimmedName,
+        agentType: agentType,
+        ...(isInternalAgent && {
+          userPrompt: trimmedUserPrompt || undefined,
+          systemPrompt: trimmedSystemPrompt || undefined,
+          allowedChatops,
+        }),
+        teams: assignedTeamIds,
+        labels: updatedLabels,
+        ...(showSecurity && { considerContextUntrusted }),
+        ...emailSettings,
+      });
+      if (!created) {
+        toast.error(
+          isInternalAgent ? "Failed to save agent" : "Failed to save profile",
+        );
+        return;
       }
+      savedAgentId = created.id;
 
-      // Close dialog on success
-      onOpenChange(false);
-    } catch (_error) {
-      toast.error(
-        isInternalAgent ? "Failed to save agent" : "Failed to save profile",
-      );
+      // Save tool changes with the new agent ID
+      await agentToolsEditorRef.current?.saveChanges(savedAgentId);
+
+      toast.success(getSuccessMessage(agentType, false));
+      // Notify parent about creation (for opening connection dialog, etc.)
+      if (onCreated) {
+        onCreated({ id: created.id, name: created.name });
+      }
     }
+
+    // Sync delegations
+    if (selectedDelegationTargetIds.length > 0) {
+      const syncResult = await syncDelegations.mutateAsync({
+        agentId: savedAgentId,
+        targetAgentIds: selectedDelegationTargetIds,
+      });
+      if (!syncResult) return; // Error already shown via toast
+    } else if (agent && currentDelegations.length > 0) {
+      // Clear delegations if none selected but there were some before
+      const syncResult = await syncDelegations.mutateAsync({
+        agentId: savedAgentId,
+        targetAgentIds: [],
+      });
+      if (!syncResult) return; // Error already shown via toast
+    }
+
+    // Close dialog on success
+    onOpenChange(false);
   }, [
     name,
     userPrompt,

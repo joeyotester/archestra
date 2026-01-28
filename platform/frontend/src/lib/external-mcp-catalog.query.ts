@@ -1,6 +1,7 @@
 import { archestraCatalogSdk, type archestraCatalogTypes } from "@shared";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import type { SelectedCategory } from "@/app/mcp-catalog/_parts/CatalogFilters";
+import { showErrorToastFromApiError } from "./utils";
 
 type SearchResponse =
   archestraCatalogTypes.SearchMcpServerCatalogResponses[200];
@@ -25,7 +26,7 @@ export function useMcpRegistryServersInfinite(
       categoryParam,
       limit,
     ],
-    queryFn: async ({ pageParam = 0 }): Promise<SearchResponse> => {
+    queryFn: async ({ pageParam = 0 }): Promise<SearchResponse | undefined> => {
       const response = await archestraCatalogSdk.searchMcpServerCatalog({
         query: {
           q: search?.trim(),
@@ -36,12 +37,17 @@ export function useMcpRegistryServersInfinite(
           worksInArchestra: true,
         },
       });
-      if (!response.data) {
-        throw new Error("No data returned from Archestra catalog");
+      if (response.error || !response.data) {
+        showErrorToastFromApiError(
+          response.error,
+          "Failed to fetch servers from catalog",
+        );
+        return undefined;
       }
       return response.data;
     },
     getNextPageParam: (lastPage) => {
+      if (!lastPage) return undefined;
       return lastPage.hasMore ? lastPage.offset + lastPage.limit : undefined;
     },
     initialPageParam: 0,
@@ -77,8 +83,12 @@ export function useMcpServerCategories() {
       archestraCatalogTypes.GetMcpServerCategoriesResponse["categories"]
     > => {
       const response = await archestraCatalogSdk.getMcpServerCategories();
-      if (!response.data) {
-        throw new Error("No categories returned from Archestra catalog");
+      if (response.error || !response.data) {
+        showErrorToastFromApiError(
+          response.error,
+          "Failed to fetch categories from catalog",
+        );
+        return [];
       }
       return response.data.categories;
     },

@@ -1,5 +1,6 @@
 import { archestraApiSdk, type archestraApiTypes } from "@shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { showErrorToastFromApiError } from "./utils";
 
 const {
   assignToolToAgent,
@@ -293,18 +294,18 @@ export function useAutoConfigurePolicies() {
         body: { toolIds },
       });
 
-      if (!result.data) {
-        const errorMessage =
-          typeof result.error?.error === "string"
-            ? result.error.error
-            : (result.error?.error as { message?: string })?.message ||
-              "Failed to auto-configure policies";
-        throw new Error(errorMessage);
+      if (result.error || !result.data) {
+        showErrorToastFromApiError(
+          result.error,
+          "Failed to auto-configure policies",
+        );
+        return null;
       }
 
       return result.data;
     },
-    onSuccess: () => {
+    onSuccess: (result) => {
+      if (!result) return; // Error already shown via toast
       // Invalidate queries to refetch with new policies
       queryClient.invalidateQueries({
         queryKey: ["agent-tools"],
@@ -388,14 +389,13 @@ export function useSyncAgentDelegations() {
         body: { targetAgentIds },
       });
       if (response.error) {
-        throw new Error(
-          (response.error as { error?: { message?: string } })?.error
-            ?.message || "Failed to sync delegations",
-        );
+        showErrorToastFromApiError(response.error, "Failed to sync delegations");
+        return null;
       }
       return response.data;
     },
-    onSuccess: (_, variables) => {
+    onSuccess: (result, variables) => {
+      if (!result) return; // Error already shown via toast
       queryClient.invalidateQueries({
         queryKey: agentDelegationsQueryKeys.byAgent(variables.agentId),
       });
@@ -434,14 +434,16 @@ export function useRemoveAgentDelegation() {
         path: { agentId, targetAgentId },
       });
       if (response.error) {
-        throw new Error(
-          (response.error as { error?: { message?: string } })?.error
-            ?.message || "Failed to remove delegation",
+        showErrorToastFromApiError(
+          response.error,
+          "Failed to remove delegation",
         );
+        return null;
       }
       return response.data;
     },
-    onSuccess: (_, variables) => {
+    onSuccess: (result, variables) => {
+      if (result === null) return; // Error already shown via toast
       queryClient.invalidateQueries({
         queryKey: agentDelegationsQueryKeys.byAgent(variables.agentId),
       });

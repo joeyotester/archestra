@@ -1,6 +1,6 @@
 import { archestraApiSdk, type archestraApiTypes } from "@shared";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { toast } from "sonner";
+import { showErrorToastFromApiError } from "./utils";
 
 const { getSecretsType, checkSecretsConnectivity, getSecret } = archestraApiSdk;
 
@@ -30,7 +30,7 @@ export function useGetSecret(secretId: string | null | undefined) {
       }
       const response = await getSecret({ path: { id: secretId } });
       if (response.error) {
-        toast.error(response.error?.error?.message || "Failed to fetch secret");
+        showErrorToastFromApiError(response.error, "Failed to fetch secret");
         return null;
       }
       return response.data;
@@ -44,10 +44,11 @@ export function useCheckSecretsConnectivity() {
     mutationFn: async () => {
       const response = await checkSecretsConnectivity();
       if (response.error) {
-        throw new Error(
-          response.error?.error?.message ||
-            "Failed to check secrets connectivity",
+        showErrorToastFromApiError(
+          response.error,
+          "Failed to check secrets connectivity",
         );
+        return null;
       }
       return response.data as archestraApiTypes.CheckSecretsConnectivityResponses["200"];
     },

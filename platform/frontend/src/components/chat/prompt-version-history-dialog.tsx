@@ -38,16 +38,16 @@ export function PromptVersionHistoryDialog({
   const handleRollback = async (version: number) => {
     if (!agent) return;
 
-    try {
-      await rollbackMutation.mutateAsync({
-        id: agent.id,
-        version,
-      });
-      toast.success("Rolled back to selected version");
-      onOpenChange(false);
-    } catch (_error) {
+    const result = await rollbackMutation.mutateAsync({
+      id: agent.id,
+      version,
+    });
+    if (!result) {
       toast.error("Failed to rollback to version");
+      return;
     }
+    toast.success("Rolled back to selected version");
+    onOpenChange(false);
   };
 
   const current = versions?.current;

@@ -70,7 +70,7 @@ export default function SecretsSettingsPage() {
             </Alert>
           )}
 
-          {checkConnectivityMutation.isSuccess && (
+          {checkConnectivityMutation.isSuccess && checkConnectivityMutation.data && (
             <Alert>
               <AlertTitle>Connection Successful</AlertTitle>
               <AlertDescription>

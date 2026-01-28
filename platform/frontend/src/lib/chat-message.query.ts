@@ -1,6 +1,6 @@
 import { archestraApiSdk } from "@shared";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
+import { showErrorToastFromApiError } from "./utils";
 
 const { updateChatMessage } = archestraApiSdk;
 
@@ -25,24 +25,17 @@ export function useUpdateChatMessage(conversationId: string) {
       });
 
       if (error) {
-        const errorMessage =
-          typeof error.error === "string"
-            ? error.error
-            : (error.error as { message?: string })?.message ||
-              "Failed to update message";
-        throw new Error(errorMessage);
+        showErrorToastFromApiError(error, "Failed to update message");
+        return null;
       }
 
       return data;
     },
-    onSuccess: () => {
+    onSuccess: (result) => {
+      if (!result) return; // Error already shown via toast
       queryClient.invalidateQueries({
         queryKey: ["conversation", conversationId],
       });
-    },
-    onError: (error: Error) => {
-      console.error("Update message error:", error);
-      toast.error(error.message);
     },
   });
 }

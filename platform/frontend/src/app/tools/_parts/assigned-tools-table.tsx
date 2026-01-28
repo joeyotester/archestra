@@ -326,36 +326,33 @@ export function AssignedToolsTable({
       return;
     }
 
-    try {
-      const result = await autoConfigureMutation.mutateAsync(toolIds);
+    const result = await autoConfigureMutation.mutateAsync(toolIds);
 
-      const successCount = result.results.filter(
-        (r: { success: boolean }) => r.success,
-      ).length;
-      const failureCount = result.results.filter(
-        (r: { success: boolean }) => !r.success,
-      ).length;
-
-      if (failureCount === 0) {
-        toast.success(
-          `Default policies configured for ${successCount} tool(s). Custom policies are preserved.`,
-        );
-      } else {
-        toast.warning(
-          `Default policies configured for ${successCount} tool(s), failed ${failureCount}. Custom policies are preserved.`,
-        );
-      }
-
-      // Reset bulk action dropdowns to placeholder
-      setBulkCallPolicyValue("");
-      setBulkResultPolicyValue("");
-    } catch (error) {
-      const errorMessage =
-        error instanceof Error
-          ? error.message
-          : "Failed to auto-configure policies";
-      toast.error(errorMessage);
+    if (!result) {
+      // Error already shown via toast in the mutation
+      return;
     }
+
+    const successCount = result.results.filter(
+      (r: { success: boolean }) => r.success,
+    ).length;
+    const failureCount = result.results.filter(
+      (r: { success: boolean }) => !r.success,
+    ).length;
+
+    if (failureCount === 0) {
+      toast.success(
+        `Default policies configured for ${successCount} tool(s). Custom policies are preserved.`,
+      );
+    } else {
+      toast.warning(
+        `Default policies configured for ${successCount} tool(s), failed ${failureCount}. Custom policies are preserved.`,
+      );
+    }
+
+    // Reset bulk action dropdowns to placeholder
+    setBulkCallPolicyValue("");
+    setBulkResultPolicyValue("");
   }, [selectedTools, autoConfigureMutation]);
 
   const clearSelection = useCallback(() => {

@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo } from "react";
 import { toast } from "sonner";
 import { authClient } from "./clients/auth/auth-client";
+import { showErrorToastFromApiError } from "./utils";
 
 const {
   deleteMcpServer,
@@ -265,16 +266,18 @@ export function useMcpServerLogs(mcpServerId: string | null) {
     queryKey: ["mcp-servers", mcpServerId, "logs"],
     queryFn: async () => {
       if (!mcpServerId) return null;
-      try {
-        const response = await getMcpServerLogs({
-          path: { id: mcpServerId },
-          query: { lines: 100 },
-        });
-        return response.data ?? null;
-      } catch (error) {
-        console.error("Failed to fetch MCP server logs:", error);
-        throw error;
+      const response = await getMcpServerLogs({
+        path: { id: mcpServerId },
+        query: { lines: 100 },
+      });
+      if (response.error) {
+        showErrorToastFromApiError(
+          response.error,
+          "Failed to fetch MCP server logs",
+        );
+        return null;
       }
+      return response.data ?? null;
     },
     enabled: !!mcpServerId,
     refetchOnWindowFocus: false,

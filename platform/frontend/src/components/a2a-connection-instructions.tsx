@@ -5,6 +5,7 @@ import { archestraApiSdk } from "@shared";
 import { Check, Copy, Eye, EyeOff, Loader2, Mail } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 import { toast } from "sonner";
+import { showErrorToastFromApiError } from "@/lib/utils";
 import { CodeText } from "@/components/code-text";
 import { ConnectionBaseUrlSelect } from "@/components/connection-base-url-select";
 import { Button } from "@/components/ui/button";
@@ -138,39 +139,40 @@ export function A2AConnectionInstructions({
     }
 
     setIsLoadingToken(true);
-    try {
-      let tokenValue: string;
+    let tokenValue: string | null = null;
 
-      if (isPersonalTokenSelected) {
-        // Fetch personal token value
-        const response = await archestraApiSdk.getUserTokenValue();
-        if (response.error || !response.data) {
-          throw new Error("Failed to fetch personal token value");
-        }
-        tokenValue = (response.data as { value: string }).value;
-      } else {
-        // Fetch team token value
-        if (!selectedTeamToken) {
-          setIsLoadingToken(false);
-          return;
-        }
-        const response = await archestraApiSdk.getTokenValue({
-          path: { tokenId: selectedTeamToken.id },
-        });
-        if (response.error || !response.data) {
-          throw new Error("Failed to fetch token value");
-        }
-        tokenValue = (response.data as { value: string }).value;
+    if (isPersonalTokenSelected) {
+      // Fetch personal token value
+      const response = await archestraApiSdk.getUserTokenValue();
+      if (response.error || !response.data) {
+        showErrorToastFromApiError(
+          response.error,
+          "Failed to fetch personal token value",
+        );
+        setIsLoadingToken(false);
+        return;
       }
-
-      setExposedTokenValue(tokenValue);
-      setShowExposedToken(true);
-    } catch (error) {
-      toast.error("Failed to fetch token");
-      console.error(error);
-    } finally {
-      setIsLoadingToken(false);
+      tokenValue = (response.data as { value: string }).value;
+    } else {
+      // Fetch team token value
+      if (!selectedTeamToken) {
+        setIsLoadingToken(false);
+        return;
+      }
+      const response = await archestraApiSdk.getTokenValue({
+        path: { tokenId: selectedTeamToken.id },
+      });
+      if (response.error || !response.data) {
+        showErrorToastFromApiError(response.error, "Failed to fetch token");
+        setIsLoadingToken(false);
+        return;
+      }
+      tokenValue = (response.data as { value: string }).value;
     }
+
+    setExposedTokenValue(tokenValue);
+    setShowExposedToken(true);
+    setIsLoadingToken(false);
   }, [isPersonalTokenSelected, selectedTeamToken, showExposedToken]);
 
   const handleCopyUrl = useCallback(async () => {
