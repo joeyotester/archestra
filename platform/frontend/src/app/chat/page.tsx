@@ -61,10 +61,7 @@ import {
   useUpdateConversation,
   useUpdateConversationEnabledTools,
 } from "@/lib/chat.query";
-import {
-  useChatModelsQuery,
-  useModelsByProviderQuery,
-} from "@/lib/chat-models.query";
+import { useChatModels, useModelsByProvider } from "@/lib/chat-models.query";
 import {
   type SupportedChatProvider,
   useChatApiKeys,
@@ -132,9 +129,8 @@ export default function ChatPage() {
     useInternalAgents();
 
   // Fetch profiles and models for initial chat (no conversation)
-  // Using non-suspense queries to avoid blocking page render
-  const { modelsByProvider, isLoading: isModelsLoading } =
-    useModelsByProviderQuery();
+  const { modelsByProvider, isPending: isModelsLoading } =
+    useModelsByProvider();
 
   // State for initial chat (when no conversation exists yet)
   const [initialAgentId, setInitialAgentId] = useState<string | null>(null);
@@ -210,6 +206,28 @@ export default function ChatPage() {
     localStorage.setItem("selected-chat-model", modelId);
   }, []);
 
+  // Handle provider change from API key selector - auto-select a model from new provider
+  const handleInitialProviderChange = useCallback(
+    (newProvider: SupportedChatProvider) => {
+      const providerModels = modelsByProvider[newProvider];
+      if (providerModels && providerModels.length > 0) {
+        // Try to restore from localStorage for this provider
+        const savedModelKey = `selected-chat-model-${newProvider}`;
+        const savedModelId = localStorage.getItem(savedModelKey);
+        if (savedModelId && providerModels.some((m) => m.id === savedModelId)) {
+          setInitialModel(savedModelId);
+          localStorage.setItem("selected-chat-model", savedModelId);
+          return;
+        }
+        // Fall back to first model for this provider
+        const firstModel = providerModels[0];
+        setInitialModel(firstModel.id);
+        localStorage.setItem("selected-chat-model", firstModel.id);
+      }
+    },
+    [modelsByProvider],
+  );
+
   // Derive provider from initial model for API key filtering
   const initialProvider = useMemo((): SupportedChatProvider | undefined => {
     if (!initialModel) return undefined;
@@ -228,7 +246,7 @@ export default function ChatPage() {
     useChatApiKeys();
   const { data: features, isLoading: isLoadingFeatures } = useFeatures();
   const { data: organization } = useOrganization();
-  const { data: chatModels = [] } = useChatModelsQuery();
+  const { data: chatModels = [] } = useChatModels();
   // Vertex AI Gemini mode doesn't require an API key (uses ADC)
   // vLLM/Ollama may not require an API key either
   const hasAnyApiKey =
@@ -315,6 +333,22 @@ export default function ChatPage() {
     return model?.provider as SupportedChatProvider | undefined;
   }, [conversation?.selectedModel, chatModels]);
 
+  // Get selected model's context length for the context indicator
+  const selectedModelContextLength = useMemo((): number | null => {
+    const modelId = conversation?.selectedModel ?? initialModel;
+    if (!modelId) return null;
+    const model = chatModels.find((m) => m.id === modelId);
+    return model?.capabilities?.contextLength ?? null;
+  }, [conversation?.selectedModel, initialModel, chatModels]);
+
+  // Get selected model's input modalities for file upload filtering
+  const selectedModelInputModalities = useMemo(() => {
+    const modelId = conversation?.selectedModel ?? initialModel;
+    if (!modelId) return null;
+    const model = chatModels.find((m) => m.id === modelId);
+    return model?.capabilities?.inputModalities ?? null;
+  }, [conversation?.selectedModel, initialModel, chatModels]);
+
   // Mutation for updating conversation model
   const updateConversationMutation = useUpdateConversation();
 
@@ -343,6 +377,34 @@ export default function ChatPage() {
       );
     },
     [conversation, chatModels, updateConversationMutation],
+  );
+
+  // Handle provider change from API key selector - auto-select a model from new provider
+  const handleProviderChange = useCallback(
+    (newProvider: SupportedChatProvider) => {
+      if (!conversation) return;
+
+      const providerModels = modelsByProvider[newProvider];
+      if (providerModels && providerModels.length > 0) {
+        // Select first model from the new provider
+        const firstModel = providerModels[0];
+        updateConversationMutation.mutate(
+          {
+            id: conversation.id,
+            selectedModel: firstModel.id,
+            selectedProvider: newProvider,
+          },
+          {
+            onError: (error) => {
+              toast.error(
+                `Failed to change model: ${error instanceof Error ? error.message : "Unknown error"}`,
+              );
+            },
+          },
+        );
+      }
+    },
+    [conversation, modelsByProvider, updateConversationMutation],
   );
 
   // Find the specific internal agent for this conversation (if any)
@@ -461,6 +523,10 @@ export default function ChatPage() {
   const pendingCustomServerToolCall = chatSession?.pendingCustomServerToolCall;
   const setPendingCustomServerToolCall =
     chatSession?.setPendingCustomServerToolCall;
+  const tokenUsage = chatSession?.tokenUsage;
+
+  // Use actual token usage when available from the stream (no fallback to estimation)
+  const tokensUsed = tokenUsage?.totalTokens;
 
   useEffect(() => {
     if (
@@ -1156,9 +1222,17 @@ export default function ChatPage() {
                       ? undefined
                       : setInitialApiKeyId
                   }
+                  onProviderChange={
+                    conversationId && conversation?.agent.id
+                      ? handleProviderChange
+                      : handleInitialProviderChange
+                  }
                   allowFileUploads={organization?.allowChatFileUploads ?? false}
                   isModelsLoading={isModelsLoading}
                   onEditAgent={() => openDialog("edit-agent")}
+                  tokensUsed={tokensUsed}
+                  maxContextLength={selectedModelContextLength}
+                  inputModalities={selectedModelInputModalities}
                 />
                 <div className="text-center">
                   <Version inline />

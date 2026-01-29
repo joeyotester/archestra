@@ -1,7 +1,7 @@
 "use client";
 
 import { providerDisplayNames, type SupportedProvider } from "@shared";
-import { Check, ChevronDown, Copy } from "lucide-react";
+import { Check, Copy, MoreHorizontal } from "lucide-react";
 import { useCallback, useState } from "react";
 import { toast } from "sonner";
 import { CodeText } from "@/components/code-text";
@@ -67,15 +67,18 @@ const PROVIDER_CONFIG: Record<
   "claude-code": { label: "Claude Code", isCommand: true },
 };
 
-/** Providers to show as buttons (subset of all providers) */
-const VISIBLE_PROVIDERS: ProviderOption[] = [
+/** Featured providers to show as primary buttons */
+const PRIMARY_PROVIDERS: ProviderOption[] = [
   "openai",
-  "gemini",
   "anthropic",
-  "cerebras",
+  "gemini",
   "claude-code",
-  "mistral",
 ];
+
+/** All other providers to show in the overflow dropdown */
+const DROPDOWN_PROVIDERS: ProviderOption[] = (
+  Object.keys(PROVIDER_CONFIG) as ProviderOption[]
+).filter((provider) => !PRIMARY_PROVIDERS.includes(provider));
 
 interface ProxyConnectionInstructionsProps {
   agentId?: string;
@@ -89,6 +92,7 @@ export function ProxyConnectionInstructions({
   const [connectionUrl, setConnectionUrl] = useState<string>(
     externalProxyUrls.length >= 1 ? externalProxyUrls[0] : internalProxyUrl,
   );
+  const [popoverOpen, setPopoverOpen] = useState(false);
 
   const getProviderPath = (provider: ProviderOption) =>
     provider === "claude-code" ? "anthropic" : provider;
@@ -104,7 +108,7 @@ export function ProxyConnectionInstructions({
   return (
     <div className="space-y-3">
       <ButtonGroup>
-        {VISIBLE_PROVIDERS.map((provider) => (
+        {PRIMARY_PROVIDERS.map((provider) => (
           <Button
             key={provider}
             variant={selectedProvider === provider ? "default" : "outline"}
@@ -114,16 +118,41 @@ export function ProxyConnectionInstructions({
             {PROVIDER_CONFIG[provider].label}
           </Button>
         ))}
-        <Popover>
+        <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
           <PopoverTrigger asChild>
-            <Button variant="outline" size="sm">
-              <ChevronDown className="h-4 w-4" />
+            <Button
+              variant={
+                DROPDOWN_PROVIDERS.includes(selectedProvider)
+                  ? "default"
+                  : "outline"
+              }
+              size="sm"
+              aria-label="More providers"
+            >
+              {DROPDOWN_PROVIDERS.includes(selectedProvider)
+                ? PROVIDER_CONFIG[selectedProvider].label
+                : null}
+              <MoreHorizontal className="h-4 w-4" />
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="w-auto p-2">
-            <p className="text-xs text-muted-foreground px-2 py-1">
-              More providers coming soon
-            </p>
+          <PopoverContent
+            className="w-auto p-1 flex flex-col"
+            aria-label="Additional providers"
+          >
+            {DROPDOWN_PROVIDERS.map((provider) => (
+              <Button
+                key={provider}
+                variant={selectedProvider === provider ? "default" : "ghost"}
+                size="sm"
+                className="justify-start"
+                onClick={() => {
+                  setSelectedProvider(provider);
+                  setPopoverOpen(false);
+                }}
+              >
+                {PROVIDER_CONFIG[provider].label}
+              </Button>
+            ))}
           </PopoverContent>
         </Popover>
       </ButtonGroup>
@@ -140,7 +169,7 @@ export function ProxyConnectionInstructions({
             Run Claude Code with the Archestra proxy:
           </p>
           <div className="bg-primary/5 rounded-md px-3 py-2 border border-primary/20 flex items-center gap-2">
-            <CodeText className="text-xs text-primary flex-1">
+            <CodeText className="text-xs text-primary flex-1 break-all">
               {claudeCodeCommand}
             </CodeText>
             <CopyButton
