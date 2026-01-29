@@ -670,11 +670,7 @@ function ModelsTable() {
         accessorKey: "modelId",
         header: "Model ID",
         cell: ({ row }) => (
-          <div className="flex items-center gap-2">
-            <span className="font-mono text-sm">{row.original.modelId}</span>
-            {row.original.isFastest && <FastestModelBadge />}
-            {row.original.isBest && <BestModelBadge />}
-          </div>
+          <span className="font-mono text-sm">{row.original.modelId}</span>
         ),
       },
       {
@@ -703,6 +699,22 @@ function ModelsTable() {
                   <span className="truncate">{apiKey.name}</span>
                 </Badge>
               ))}
+            </div>
+          );
+        },
+      },
+      {
+        id: "modelMarkers",
+        header: "",
+        cell: ({ row }) => {
+          const { isFastest, isBest } = row.original;
+          if (!isFastest && !isBest) {
+            return null;
+          }
+          return (
+            <div className="flex items-center gap-1">
+              {isBest && <BestModelBadge />}
+              {isFastest && <FastestModelBadge />}
             </div>
           );
         },
