@@ -41,6 +41,7 @@ The endpoint `http://localhost:9050/metrics` exposes Prometheus-formatted metric
 
 - `llm_request_duration_seconds` - LLM API request duration by provider, external_agent_id, llm_proxy_id, llm_proxy_name, and status code
 - `llm_tokens_total` - Token consumption by provider, external_agent_id, llm_proxy_id, llm_proxy_name, and type (input/output)
+- `llm_cost_total` - Estimated cost in USD by provider, external_agent_id, llm_proxy_id, llm_proxy_name, and model. Tracks spending across models and LLM proxies.
 - `llm_time_to_first_token_seconds` - Time to first token (TTFT) for streaming requests, by provider, external_agent_id, llm_proxy_id, llm_proxy_name, and model. Helps developers choose models with lower initial response latency.
 - `llm_tokens_per_second` - Output tokens per second throughput, by provider, external_agent_id, llm_proxy_id, llm_proxy_name, and model. Allows comparing model response speeds for latency-sensitive applications.
 - `llm_blocked_tool_total` - Total tool calls blocked by policy, by llm_proxy_id, llm_proxy_name, tool_name, mcp_server_name, and credential_name
