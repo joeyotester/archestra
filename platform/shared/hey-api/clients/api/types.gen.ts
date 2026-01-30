@@ -314,9 +314,6 @@ export type OpenAiChatCompletionResponseInput = {
                 arguments: string;
                 name: string;
             } | unknown;
-            /**
-             * https://github.com/openai/openai-node/blob/v6.0.0/src/resources/chat/completions/completions.ts#L1197
-             */
             tool_calls?: Array<{
                 id: string;
                 type: 'function';
@@ -337,7 +334,7 @@ export type OpenAiChatCompletionResponseInput = {
                     input: string;
                     name: string;
                 };
-            }>;
+            }> | unknown;
         };
     }>;
     created: number;
@@ -2161,9 +2158,6 @@ export type MistralChatCompletionResponseInput = {
                 arguments: string;
                 name: string;
             } | unknown;
-            /**
-             * https://github.com/openai/openai-node/blob/v6.0.0/src/resources/chat/completions/completions.ts#L1197
-             */
             tool_calls?: Array<{
                 id: string;
                 type: 'function';
@@ -2184,7 +2178,7 @@ export type MistralChatCompletionResponseInput = {
                     input: string;
                     name: string;
                 };
-            }>;
+            }> | unknown;
         };
     }>;
     created: number;
@@ -2228,9 +2222,6 @@ export type MistralChatCompletionResponseInput = {
                 arguments: string;
                 name: string;
             } | unknown;
-            /**
-             * https://github.com/openai/openai-node/blob/v6.0.0/src/resources/chat/completions/completions.ts#L1197
-             */
             tool_calls?: Array<{
                 id: string;
                 type: 'function';
@@ -2251,7 +2242,7 @@ export type MistralChatCompletionResponseInput = {
                     input: string;
                     name: string;
                 };
-            }>;
+            }> | unknown;
         };
     }> | number | 'chat.completion' | string | unknown | {
         completion_tokens: number;
@@ -3091,67 +3082,6 @@ export type ZhipuaiChatCompletionResponseInput = {
     }>;
 };
 
-export type WebSocketMessageInput = {
-    type: string;
-    payload: {
-        [key: string]: unknown;
-    };
-} | {
-    type: string;
-    payload: {
-        conversationId: string;
-        tabIndex?: number;
-    };
-} | {
-    type: string;
-    payload: {
-        conversationId: string;
-    };
-} | {
-    type: string;
-    payload: {
-        conversationId: string;
-        url: string;
-    };
-} | {
-    type: string;
-    payload: {
-        conversationId: string;
-        element?: string;
-        x?: number;
-        y?: number;
-    };
-} | {
-    type: string;
-    payload: {
-        conversationId: string;
-        text: string;
-        element?: string;
-    };
-} | {
-    type: string;
-    payload: {
-        conversationId: string;
-        key: string;
-    };
-} | {
-    type: string;
-    payload: {
-        conversationId: string;
-    };
-} | {
-    type: string;
-    payload: {
-        conversationId: string;
-    };
-} | {
-    type: string;
-    payload: {
-        conversationId: string;
-        zoomPercent: number;
-    };
-};
-
 export type OpenAiChatCompletionRequest = {
     model: string;
     /**
@@ -3462,9 +3392,6 @@ export type OpenAiChatCompletionResponse = {
                 arguments: string;
                 name: string;
             } | unknown;
-            /**
-             * https://github.com/openai/openai-node/blob/v6.0.0/src/resources/chat/completions/completions.ts#L1197
-             */
             tool_calls?: Array<{
                 id: string;
                 type: 'function';
@@ -3485,7 +3412,7 @@ export type OpenAiChatCompletionResponse = {
                     input: string;
                     name: string;
                 };
-            }>;
+            }> | unknown;
         };
     }>;
     created: number;
@@ -5309,9 +5236,6 @@ export type MistralChatCompletionResponse = {
                 arguments: string;
                 name: string;
             } | unknown;
-            /**
-             * https://github.com/openai/openai-node/blob/v6.0.0/src/resources/chat/completions/completions.ts#L1197
-             */
             tool_calls?: Array<{
                 id: string;
                 type: 'function';
@@ -5332,7 +5256,7 @@ export type MistralChatCompletionResponse = {
                     input: string;
                     name: string;
                 };
-            }>;
+            }> | unknown;
         };
     }>;
     created: number;
@@ -5376,9 +5300,6 @@ export type MistralChatCompletionResponse = {
                 arguments: string;
                 name: string;
             } | unknown;
-            /**
-             * https://github.com/openai/openai-node/blob/v6.0.0/src/resources/chat/completions/completions.ts#L1197
-             */
             tool_calls?: Array<{
                 id: string;
                 type: 'function';
@@ -5399,7 +5320,7 @@ export type MistralChatCompletionResponse = {
                     input: string;
                     name: string;
                 };
-            }>;
+            }> | unknown;
         };
     }> | number | 'chat.completion' | string | unknown | {
         completion_tokens: number;
@@ -6239,67 +6160,6 @@ export type ZhipuaiChatCompletionResponse = {
     }>;
 };
 
-export type WebSocketMessage = {
-    type: string;
-    payload: {
-        [key: string]: never;
-    };
-} | {
-    type: string;
-    payload: {
-        conversationId: string;
-        tabIndex?: number;
-    };
-} | {
-    type: string;
-    payload: {
-        conversationId: string;
-    };
-} | {
-    type: string;
-    payload: {
-        conversationId: string;
-        url: string;
-    };
-} | {
-    type: string;
-    payload: {
-        conversationId: string;
-        element?: string;
-        x?: number;
-        y?: number;
-    };
-} | {
-    type: string;
-    payload: {
-        conversationId: string;
-        text: string;
-        element?: string;
-    };
-} | {
-    type: string;
-    payload: {
-        conversationId: string;
-        key: string;
-    };
-} | {
-    type: string;
-    payload: {
-        conversationId: string;
-    };
-} | {
-    type: string;
-    payload: {
-        conversationId: string;
-    };
-} | {
-    type: string;
-    payload: {
-        conversationId: string;
-        zoomPercent: number;
-    };
-};
-
 export type GetHealthData = {
     body?: never;
     path?: never;
@@ -6513,6 +6373,7 @@ export type GetAgentsResponses = {
             allowedChatops: string | number | boolean | null | {
                 [key: string]: unknown;
             } | Array<unknown> | null;
+            description: string | null;
             incomingEmailEnabled: boolean;
             incomingEmailSecurityMode: 'private' | 'internal' | 'public';
             incomingEmailAllowedDomain: string | null;
@@ -6584,6 +6445,7 @@ export type CreateAgentData = {
         allowedChatops?: string | number | boolean | null | {
             [key: string]: unknown;
         } | Array<unknown> | null;
+        description?: string | null;
         incomingEmailEnabled?: boolean;
         incomingEmailSecurityMode?: 'private' | 'internal' | 'public';
         incomingEmailAllowedDomain?: string | null;
@@ -6680,6 +6542,7 @@ export type CreateAgentResponses = {
         allowedChatops: string | number | boolean | null | {
             [key: string]: unknown;
         } | Array<unknown> | null;
+        description: string | null;
         incomingEmailEnabled: boolean;
         incomingEmailSecurityMode: 'private' | 'internal' | 'public';
         incomingEmailAllowedDomain: string | null;
@@ -6825,6 +6688,7 @@ export type GetAllAgentsResponses = {
         allowedChatops: string | number | boolean | null | {
             [key: string]: unknown;
         } | Array<unknown> | null;
+        description: string | null;
         incomingEmailEnabled: boolean;
         incomingEmailSecurityMode: 'private' | 'internal' | 'public';
         incomingEmailAllowedDomain: string | null;
@@ -6961,6 +6825,7 @@ export type GetDefaultMcpGatewayResponses = {
         allowedChatops: string | number | boolean | null | {
             [key: string]: unknown;
         } | Array<unknown> | null;
+        description: string | null;
         incomingEmailEnabled: boolean;
         incomingEmailSecurityMode: 'private' | 'internal' | 'public';
         incomingEmailAllowedDomain: string | null;
@@ -7097,6 +6962,7 @@ export type GetDefaultLlmProxyResponses = {
         allowedChatops: string | number | boolean | null | {
             [key: string]: unknown;
         } | Array<unknown> | null;
+        description: string | null;
         incomingEmailEnabled: boolean;
         incomingEmailSecurityMode: 'private' | 'internal' | 'public';
         incomingEmailAllowedDomain: string | null;
@@ -7314,6 +7180,7 @@ export type GetAgentResponses = {
         allowedChatops: string | number | boolean | null | {
             [key: string]: unknown;
         } | Array<unknown> | null;
+        description: string | null;
         incomingEmailEnabled: boolean;
         incomingEmailSecurityMode: 'private' | 'internal' | 'public';
         incomingEmailAllowedDomain: string | null;
@@ -7376,6 +7243,7 @@ export type UpdateAgentData = {
         allowedChatops?: string | number | boolean | null | {
             [key: string]: unknown;
         } | Array<unknown> | null;
+        description?: string | null;
         incomingEmailEnabled?: boolean;
         incomingEmailSecurityMode?: 'private' | 'internal' | 'public';
         incomingEmailAllowedDomain?: string | null;
@@ -7474,6 +7342,7 @@ export type UpdateAgentResponses = {
         allowedChatops: string | number | boolean | null | {
             [key: string]: unknown;
         } | Array<unknown> | null;
+        description: string | null;
         incomingEmailEnabled: boolean;
         incomingEmailSecurityMode: 'private' | 'internal' | 'public';
         incomingEmailAllowedDomain: string | null;
@@ -7613,6 +7482,7 @@ export type GetAgentVersionsResponses = {
             allowedChatops: string | number | boolean | null | {
                 [key: string]: unknown;
             } | Array<unknown> | null;
+            description: string | null;
             incomingEmailEnabled: boolean;
             incomingEmailSecurityMode: 'private' | 'internal' | 'public';
             incomingEmailAllowedDomain: string | null;
@@ -7763,6 +7633,7 @@ export type RollbackAgentResponses = {
         allowedChatops: string | number | boolean | null | {
             [key: string]: unknown;
         } | Array<unknown> | null;
+        description: string | null;
         incomingEmailEnabled: boolean;
         incomingEmailSecurityMode: 'private' | 'internal' | 'public';
         incomingEmailAllowedDomain: string | null;
@@ -8733,6 +8604,7 @@ export type GetAgentDelegationsResponses = {
     200: Array<{
         id: string;
         name: string;
+        description: string | null;
         systemPrompt: string | null;
     }>;
 };
@@ -10386,6 +10258,1447 @@ export type BulkUpsertDefaultResultPolicyResponses = {
 
 export type BulkUpsertDefaultResultPolicyResponse = BulkUpsertDefaultResultPolicyResponses[keyof BulkUpsertDefaultResultPolicyResponses];
 
+export type BedrockConverseWithDefaultAgentData = {
+    body: {
+        modelId: string;
+        messages?: Array<{
+            role: 'user' | 'assistant';
+            content: Array<{
+                text: string;
+            } | {
+                image: {
+                    format: 'png' | 'jpeg' | 'gif' | 'webp';
+                    source: {
+                        bytes: string;
+                    } | {
+                        s3Location: {
+                            uri: string;
+                            bucketOwner?: string;
+                        };
+                    };
+                };
+            } | {
+                document: {
+                    format: 'pdf' | 'csv' | 'doc' | 'docx' | 'xls' | 'xlsx' | 'html' | 'txt' | 'md';
+                    name: string;
+                    source: {
+                        bytes: string;
+                    } | {
+                        s3Location: {
+                            uri: string;
+                            bucketOwner?: string;
+                        };
+                    };
+                };
+            } | {
+                guardContent: {
+                    text: {
+                        text: string;
+                        qualifiers?: Array<'grounding_source' | 'query' | 'guard_content'>;
+                    };
+                };
+            } | {
+                toolUse: {
+                    toolUseId: string;
+                    name: string;
+                    input: {
+                        [key: string]: unknown;
+                    };
+                };
+            } | {
+                toolResult: {
+                    toolUseId: string;
+                    content: Array<{
+                        text: string;
+                    } | {
+                        image: {
+                            format: 'png' | 'jpeg' | 'gif' | 'webp';
+                            source: {
+                                bytes: string;
+                            } | {
+                                s3Location: {
+                                    uri: string;
+                                    bucketOwner?: string;
+                                };
+                            };
+                        };
+                    } | {
+                        json: {
+                            [key: string]: unknown;
+                        };
+                    } | {
+                        document: {
+                            format: 'pdf' | 'csv' | 'doc' | 'docx' | 'xls' | 'xlsx' | 'html' | 'txt' | 'md';
+                            name: string;
+                            source: {
+                                bytes: string;
+                            } | {
+                                s3Location: {
+                                    uri: string;
+                                    bucketOwner?: string;
+                                };
+                            };
+                        };
+                    }>;
+                    status?: 'success' | 'error';
+                };
+            }>;
+        }>;
+        system?: Array<{
+            text: string;
+        } | {
+            guardContent: {
+                text: {
+                    text: string;
+                    qualifiers?: Array<'grounding_source' | 'query' | 'guard_content'>;
+                };
+            };
+        }>;
+        inferenceConfig?: {
+            maxTokens?: number;
+            temperature?: number;
+            topP?: number;
+            stopSequences?: Array<string>;
+        };
+        toolConfig?: {
+            tools: Array<{
+                toolSpec: {
+                    name: string;
+                    description?: string;
+                    inputSchema: {
+                        json: {
+                            [key: string]: unknown;
+                        };
+                    };
+                };
+            }>;
+            toolChoice?: {
+                auto?: {
+                    [key: string]: unknown;
+                };
+            } | {
+                any?: {
+                    [key: string]: unknown;
+                };
+            } | {
+                tool: {
+                    name: string;
+                };
+            };
+        };
+        guardrailConfig?: {
+            guardrailIdentifier: string;
+            guardrailVersion: string;
+            trace?: 'enabled' | 'disabled';
+        };
+        additionalModelRequestFields?: {
+            [key: string]: unknown;
+        };
+        additionalModelResponseFieldPaths?: Array<string>;
+        promptVariables?: {
+            [key: string]: {
+                text: string;
+            } | {
+                json: {
+                    [key: string]: unknown;
+                };
+            };
+        };
+        performanceConfig?: {
+            latency?: 'optimized';
+        };
+        serviceTier?: {
+            type?: 'default' | 'throughput';
+        };
+        requestMetadata?: {
+            [key: string]: string;
+        };
+        _isStreaming?: boolean;
+    };
+    headers?: {
+        /**
+         * The user agent of the client
+         */
+        'user-agent'?: string;
+        /**
+         * Authorization header with Bearer token
+         */
+        authorization?: string;
+    };
+    path?: never;
+    query?: never;
+    url: '/v1/bedrock/converse';
+};
+
+export type BedrockConverseWithDefaultAgentErrors = {
+    /**
+     * Default Response
+     */
+    400: {
+        error: {
+            message: string;
+            type: 'api_validation_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    401: {
+        error: {
+            message: string;
+            type: 'api_authentication_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    403: {
+        error: {
+            message: string;
+            type: 'api_authorization_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    404: {
+        error: {
+            message: string;
+            type: 'api_not_found_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    409: {
+        error: {
+            message: string;
+            type: 'api_conflict_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    500: {
+        error: {
+            message: string;
+            type: 'api_internal_server_error';
+        };
+    };
+};
+
+export type BedrockConverseWithDefaultAgentError = BedrockConverseWithDefaultAgentErrors[keyof BedrockConverseWithDefaultAgentErrors];
+
+export type BedrockConverseWithDefaultAgentResponses = {
+    /**
+     * Default Response
+     */
+    200: {
+        $metadata?: {
+            httpStatusCode?: number;
+            requestId?: string;
+            attempts?: number;
+            totalRetryDelay?: number;
+        };
+        output: {
+            message?: {
+                role: 'assistant';
+                content: Array<{
+                    text: string;
+                } | {
+                    toolUse: {
+                        toolUseId: string;
+                        name: string;
+                        input: {
+                            [key: string]: unknown;
+                        };
+                    };
+                }>;
+            };
+        };
+        stopReason: 'end_turn' | 'tool_use' | 'max_tokens' | 'stop_sequence' | 'guardrail_intervened' | 'content_filtered' | 'model_context_window_exceeded';
+        usage: {
+            inputTokens: number;
+            outputTokens: number;
+            totalTokens?: number;
+            cacheReadInputTokens?: number;
+            cacheWriteInputTokens?: number;
+        };
+        metrics?: {
+            latencyMs?: number;
+        };
+        additionalModelResponseFields?: {
+            [key: string]: unknown;
+        };
+        trace?: {
+            guardrail?: {
+                inputAssessment?: {
+                    [key: string]: unknown;
+                };
+                outputAssessments?: {
+                    [key: string]: unknown;
+                };
+                modelOutput?: Array<string>;
+                actionReason?: string;
+            };
+            promptRouter?: {
+                invokedModelId?: string;
+            };
+        };
+        performanceConfig?: {
+            latency?: 'optimized';
+        };
+        serviceTier?: {
+            type?: 'default' | 'throughput';
+        };
+    };
+};
+
+export type BedrockConverseWithDefaultAgentResponse = BedrockConverseWithDefaultAgentResponses[keyof BedrockConverseWithDefaultAgentResponses];
+
+export type BedrockConverseWithAgentData = {
+    body: {
+        modelId: string;
+        messages?: Array<{
+            role: 'user' | 'assistant';
+            content: Array<{
+                text: string;
+            } | {
+                image: {
+                    format: 'png' | 'jpeg' | 'gif' | 'webp';
+                    source: {
+                        bytes: string;
+                    } | {
+                        s3Location: {
+                            uri: string;
+                            bucketOwner?: string;
+                        };
+                    };
+                };
+            } | {
+                document: {
+                    format: 'pdf' | 'csv' | 'doc' | 'docx' | 'xls' | 'xlsx' | 'html' | 'txt' | 'md';
+                    name: string;
+                    source: {
+                        bytes: string;
+                    } | {
+                        s3Location: {
+                            uri: string;
+                            bucketOwner?: string;
+                        };
+                    };
+                };
+            } | {
+                guardContent: {
+                    text: {
+                        text: string;
+                        qualifiers?: Array<'grounding_source' | 'query' | 'guard_content'>;
+                    };
+                };
+            } | {
+                toolUse: {
+                    toolUseId: string;
+                    name: string;
+                    input: {
+                        [key: string]: unknown;
+                    };
+                };
+            } | {
+                toolResult: {
+                    toolUseId: string;
+                    content: Array<{
+                        text: string;
+                    } | {
+                        image: {
+                            format: 'png' | 'jpeg' | 'gif' | 'webp';
+                            source: {
+                                bytes: string;
+                            } | {
+                                s3Location: {
+                                    uri: string;
+                                    bucketOwner?: string;
+                                };
+                            };
+                        };
+                    } | {
+                        json: {
+                            [key: string]: unknown;
+                        };
+                    } | {
+                        document: {
+                            format: 'pdf' | 'csv' | 'doc' | 'docx' | 'xls' | 'xlsx' | 'html' | 'txt' | 'md';
+                            name: string;
+                            source: {
+                                bytes: string;
+                            } | {
+                                s3Location: {
+                                    uri: string;
+                                    bucketOwner?: string;
+                                };
+                            };
+                        };
+                    }>;
+                    status?: 'success' | 'error';
+                };
+            }>;
+        }>;
+        system?: Array<{
+            text: string;
+        } | {
+            guardContent: {
+                text: {
+                    text: string;
+                    qualifiers?: Array<'grounding_source' | 'query' | 'guard_content'>;
+                };
+            };
+        }>;
+        inferenceConfig?: {
+            maxTokens?: number;
+            temperature?: number;
+            topP?: number;
+            stopSequences?: Array<string>;
+        };
+        toolConfig?: {
+            tools: Array<{
+                toolSpec: {
+                    name: string;
+                    description?: string;
+                    inputSchema: {
+                        json: {
+                            [key: string]: unknown;
+                        };
+                    };
+                };
+            }>;
+            toolChoice?: {
+                auto?: {
+                    [key: string]: unknown;
+                };
+            } | {
+                any?: {
+                    [key: string]: unknown;
+                };
+            } | {
+                tool: {
+                    name: string;
+                };
+            };
+        };
+        guardrailConfig?: {
+            guardrailIdentifier: string;
+            guardrailVersion: string;
+            trace?: 'enabled' | 'disabled';
+        };
+        additionalModelRequestFields?: {
+            [key: string]: unknown;
+        };
+        additionalModelResponseFieldPaths?: Array<string>;
+        promptVariables?: {
+            [key: string]: {
+                text: string;
+            } | {
+                json: {
+                    [key: string]: unknown;
+                };
+            };
+        };
+        performanceConfig?: {
+            latency?: 'optimized';
+        };
+        serviceTier?: {
+            type?: 'default' | 'throughput';
+        };
+        requestMetadata?: {
+            [key: string]: string;
+        };
+        _isStreaming?: boolean;
+    };
+    headers?: {
+        /**
+         * The user agent of the client
+         */
+        'user-agent'?: string;
+        /**
+         * Authorization header with Bearer token
+         */
+        authorization?: string;
+    };
+    path: {
+        agentId: string;
+    };
+    query?: never;
+    url: '/v1/bedrock/{agentId}/converse';
+};
+
+export type BedrockConverseWithAgentErrors = {
+    /**
+     * Default Response
+     */
+    400: {
+        error: {
+            message: string;
+            type: 'api_validation_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    401: {
+        error: {
+            message: string;
+            type: 'api_authentication_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    403: {
+        error: {
+            message: string;
+            type: 'api_authorization_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    404: {
+        error: {
+            message: string;
+            type: 'api_not_found_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    409: {
+        error: {
+            message: string;
+            type: 'api_conflict_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    500: {
+        error: {
+            message: string;
+            type: 'api_internal_server_error';
+        };
+    };
+};
+
+export type BedrockConverseWithAgentError = BedrockConverseWithAgentErrors[keyof BedrockConverseWithAgentErrors];
+
+export type BedrockConverseWithAgentResponses = {
+    /**
+     * Default Response
+     */
+    200: {
+        $metadata?: {
+            httpStatusCode?: number;
+            requestId?: string;
+            attempts?: number;
+            totalRetryDelay?: number;
+        };
+        output: {
+            message?: {
+                role: 'assistant';
+                content: Array<{
+                    text: string;
+                } | {
+                    toolUse: {
+                        toolUseId: string;
+                        name: string;
+                        input: {
+                            [key: string]: unknown;
+                        };
+                    };
+                }>;
+            };
+        };
+        stopReason: 'end_turn' | 'tool_use' | 'max_tokens' | 'stop_sequence' | 'guardrail_intervened' | 'content_filtered' | 'model_context_window_exceeded';
+        usage: {
+            inputTokens: number;
+            outputTokens: number;
+            totalTokens?: number;
+            cacheReadInputTokens?: number;
+            cacheWriteInputTokens?: number;
+        };
+        metrics?: {
+            latencyMs?: number;
+        };
+        additionalModelResponseFields?: {
+            [key: string]: unknown;
+        };
+        trace?: {
+            guardrail?: {
+                inputAssessment?: {
+                    [key: string]: unknown;
+                };
+                outputAssessments?: {
+                    [key: string]: unknown;
+                };
+                modelOutput?: Array<string>;
+                actionReason?: string;
+            };
+            promptRouter?: {
+                invokedModelId?: string;
+            };
+        };
+        performanceConfig?: {
+            latency?: 'optimized';
+        };
+        serviceTier?: {
+            type?: 'default' | 'throughput';
+        };
+    };
+};
+
+export type BedrockConverseWithAgentResponse = BedrockConverseWithAgentResponses[keyof BedrockConverseWithAgentResponses];
+
+export type BedrockConverseStreamWithDefaultAgentData = {
+    body: {
+        modelId: string;
+        messages?: Array<{
+            role: 'user' | 'assistant';
+            content: Array<{
+                text: string;
+            } | {
+                image: {
+                    format: 'png' | 'jpeg' | 'gif' | 'webp';
+                    source: {
+                        bytes: string;
+                    } | {
+                        s3Location: {
+                            uri: string;
+                            bucketOwner?: string;
+                        };
+                    };
+                };
+            } | {
+                document: {
+                    format: 'pdf' | 'csv' | 'doc' | 'docx' | 'xls' | 'xlsx' | 'html' | 'txt' | 'md';
+                    name: string;
+                    source: {
+                        bytes: string;
+                    } | {
+                        s3Location: {
+                            uri: string;
+                            bucketOwner?: string;
+                        };
+                    };
+                };
+            } | {
+                guardContent: {
+                    text: {
+                        text: string;
+                        qualifiers?: Array<'grounding_source' | 'query' | 'guard_content'>;
+                    };
+                };
+            } | {
+                toolUse: {
+                    toolUseId: string;
+                    name: string;
+                    input: {
+                        [key: string]: unknown;
+                    };
+                };
+            } | {
+                toolResult: {
+                    toolUseId: string;
+                    content: Array<{
+                        text: string;
+                    } | {
+                        image: {
+                            format: 'png' | 'jpeg' | 'gif' | 'webp';
+                            source: {
+                                bytes: string;
+                            } | {
+                                s3Location: {
+                                    uri: string;
+                                    bucketOwner?: string;
+                                };
+                            };
+                        };
+                    } | {
+                        json: {
+                            [key: string]: unknown;
+                        };
+                    } | {
+                        document: {
+                            format: 'pdf' | 'csv' | 'doc' | 'docx' | 'xls' | 'xlsx' | 'html' | 'txt' | 'md';
+                            name: string;
+                            source: {
+                                bytes: string;
+                            } | {
+                                s3Location: {
+                                    uri: string;
+                                    bucketOwner?: string;
+                                };
+                            };
+                        };
+                    }>;
+                    status?: 'success' | 'error';
+                };
+            }>;
+        }>;
+        system?: Array<{
+            text: string;
+        } | {
+            guardContent: {
+                text: {
+                    text: string;
+                    qualifiers?: Array<'grounding_source' | 'query' | 'guard_content'>;
+                };
+            };
+        }>;
+        inferenceConfig?: {
+            maxTokens?: number;
+            temperature?: number;
+            topP?: number;
+            stopSequences?: Array<string>;
+        };
+        toolConfig?: {
+            tools: Array<{
+                toolSpec: {
+                    name: string;
+                    description?: string;
+                    inputSchema: {
+                        json: {
+                            [key: string]: unknown;
+                        };
+                    };
+                };
+            }>;
+            toolChoice?: {
+                auto?: {
+                    [key: string]: unknown;
+                };
+            } | {
+                any?: {
+                    [key: string]: unknown;
+                };
+            } | {
+                tool: {
+                    name: string;
+                };
+            };
+        };
+        guardrailConfig?: {
+            guardrailIdentifier: string;
+            guardrailVersion: string;
+            trace?: 'enabled' | 'disabled';
+        };
+        additionalModelRequestFields?: {
+            [key: string]: unknown;
+        };
+        additionalModelResponseFieldPaths?: Array<string>;
+        promptVariables?: {
+            [key: string]: {
+                text: string;
+            } | {
+                json: {
+                    [key: string]: unknown;
+                };
+            };
+        };
+        performanceConfig?: {
+            latency?: 'optimized';
+        };
+        serviceTier?: {
+            type?: 'default' | 'throughput';
+        };
+        requestMetadata?: {
+            [key: string]: string;
+        };
+        _isStreaming?: boolean;
+    };
+    headers?: {
+        /**
+         * The user agent of the client
+         */
+        'user-agent'?: string;
+        /**
+         * Authorization header with Bearer token
+         */
+        authorization?: string;
+    };
+    path?: never;
+    query?: never;
+    url: '/v1/bedrock/converse-stream';
+};
+
+export type BedrockConverseStreamWithDefaultAgentResponses = {
+    /**
+     * Default Response
+     */
+    200: unknown;
+};
+
+export type BedrockConverseStreamWithAgentData = {
+    body: {
+        modelId: string;
+        messages?: Array<{
+            role: 'user' | 'assistant';
+            content: Array<{
+                text: string;
+            } | {
+                image: {
+                    format: 'png' | 'jpeg' | 'gif' | 'webp';
+                    source: {
+                        bytes: string;
+                    } | {
+                        s3Location: {
+                            uri: string;
+                            bucketOwner?: string;
+                        };
+                    };
+                };
+            } | {
+                document: {
+                    format: 'pdf' | 'csv' | 'doc' | 'docx' | 'xls' | 'xlsx' | 'html' | 'txt' | 'md';
+                    name: string;
+                    source: {
+                        bytes: string;
+                    } | {
+                        s3Location: {
+                            uri: string;
+                            bucketOwner?: string;
+                        };
+                    };
+                };
+            } | {
+                guardContent: {
+                    text: {
+                        text: string;
+                        qualifiers?: Array<'grounding_source' | 'query' | 'guard_content'>;
+                    };
+                };
+            } | {
+                toolUse: {
+                    toolUseId: string;
+                    name: string;
+                    input: {
+                        [key: string]: unknown;
+                    };
+                };
+            } | {
+                toolResult: {
+                    toolUseId: string;
+                    content: Array<{
+                        text: string;
+                    } | {
+                        image: {
+                            format: 'png' | 'jpeg' | 'gif' | 'webp';
+                            source: {
+                                bytes: string;
+                            } | {
+                                s3Location: {
+                                    uri: string;
+                                    bucketOwner?: string;
+                                };
+                            };
+                        };
+                    } | {
+                        json: {
+                            [key: string]: unknown;
+                        };
+                    } | {
+                        document: {
+                            format: 'pdf' | 'csv' | 'doc' | 'docx' | 'xls' | 'xlsx' | 'html' | 'txt' | 'md';
+                            name: string;
+                            source: {
+                                bytes: string;
+                            } | {
+                                s3Location: {
+                                    uri: string;
+                                    bucketOwner?: string;
+                                };
+                            };
+                        };
+                    }>;
+                    status?: 'success' | 'error';
+                };
+            }>;
+        }>;
+        system?: Array<{
+            text: string;
+        } | {
+            guardContent: {
+                text: {
+                    text: string;
+                    qualifiers?: Array<'grounding_source' | 'query' | 'guard_content'>;
+                };
+            };
+        }>;
+        inferenceConfig?: {
+            maxTokens?: number;
+            temperature?: number;
+            topP?: number;
+            stopSequences?: Array<string>;
+        };
+        toolConfig?: {
+            tools: Array<{
+                toolSpec: {
+                    name: string;
+                    description?: string;
+                    inputSchema: {
+                        json: {
+                            [key: string]: unknown;
+                        };
+                    };
+                };
+            }>;
+            toolChoice?: {
+                auto?: {
+                    [key: string]: unknown;
+                };
+            } | {
+                any?: {
+                    [key: string]: unknown;
+                };
+            } | {
+                tool: {
+                    name: string;
+                };
+            };
+        };
+        guardrailConfig?: {
+            guardrailIdentifier: string;
+            guardrailVersion: string;
+            trace?: 'enabled' | 'disabled';
+        };
+        additionalModelRequestFields?: {
+            [key: string]: unknown;
+        };
+        additionalModelResponseFieldPaths?: Array<string>;
+        promptVariables?: {
+            [key: string]: {
+                text: string;
+            } | {
+                json: {
+                    [key: string]: unknown;
+                };
+            };
+        };
+        performanceConfig?: {
+            latency?: 'optimized';
+        };
+        serviceTier?: {
+            type?: 'default' | 'throughput';
+        };
+        requestMetadata?: {
+            [key: string]: string;
+        };
+        _isStreaming?: boolean;
+    };
+    headers?: {
+        /**
+         * The user agent of the client
+         */
+        'user-agent'?: string;
+        /**
+         * Authorization header with Bearer token
+         */
+        authorization?: string;
+    };
+    path: {
+        agentId: string;
+    };
+    query?: never;
+    url: '/v1/bedrock/{agentId}/converse-stream';
+};
+
+export type BedrockConverseStreamWithAgentResponses = {
+    /**
+     * Default Response
+     */
+    200: unknown;
+};
+
+export type BedrockConverseWithAgentAndModelData = {
+    body?: {
+        modelId?: string;
+        messages?: Array<{
+            role: 'user' | 'assistant';
+            content: Array<{
+                text: string;
+            } | {
+                image: {
+                    format: 'png' | 'jpeg' | 'gif' | 'webp';
+                    source: {
+                        bytes: string;
+                    } | {
+                        s3Location: {
+                            uri: string;
+                            bucketOwner?: string;
+                        };
+                    };
+                };
+            } | {
+                document: {
+                    format: 'pdf' | 'csv' | 'doc' | 'docx' | 'xls' | 'xlsx' | 'html' | 'txt' | 'md';
+                    name: string;
+                    source: {
+                        bytes: string;
+                    } | {
+                        s3Location: {
+                            uri: string;
+                            bucketOwner?: string;
+                        };
+                    };
+                };
+            } | {
+                guardContent: {
+                    text: {
+                        text: string;
+                        qualifiers?: Array<'grounding_source' | 'query' | 'guard_content'>;
+                    };
+                };
+            } | {
+                toolUse: {
+                    toolUseId: string;
+                    name: string;
+                    input: {
+                        [key: string]: unknown;
+                    };
+                };
+            } | {
+                toolResult: {
+                    toolUseId: string;
+                    content: Array<{
+                        text: string;
+                    } | {
+                        image: {
+                            format: 'png' | 'jpeg' | 'gif' | 'webp';
+                            source: {
+                                bytes: string;
+                            } | {
+                                s3Location: {
+                                    uri: string;
+                                    bucketOwner?: string;
+                                };
+                            };
+                        };
+                    } | {
+                        json: {
+                            [key: string]: unknown;
+                        };
+                    } | {
+                        document: {
+                            format: 'pdf' | 'csv' | 'doc' | 'docx' | 'xls' | 'xlsx' | 'html' | 'txt' | 'md';
+                            name: string;
+                            source: {
+                                bytes: string;
+                            } | {
+                                s3Location: {
+                                    uri: string;
+                                    bucketOwner?: string;
+                                };
+                            };
+                        };
+                    }>;
+                    status?: 'success' | 'error';
+                };
+            }>;
+        }>;
+        system?: Array<{
+            text: string;
+        } | {
+            guardContent: {
+                text: {
+                    text: string;
+                    qualifiers?: Array<'grounding_source' | 'query' | 'guard_content'>;
+                };
+            };
+        }>;
+        inferenceConfig?: {
+            maxTokens?: number;
+            temperature?: number;
+            topP?: number;
+            stopSequences?: Array<string>;
+        };
+        toolConfig?: {
+            tools: Array<{
+                toolSpec: {
+                    name: string;
+                    description?: string;
+                    inputSchema: {
+                        json: {
+                            [key: string]: unknown;
+                        };
+                    };
+                };
+            }>;
+            toolChoice?: {
+                auto?: {
+                    [key: string]: unknown;
+                };
+            } | {
+                any?: {
+                    [key: string]: unknown;
+                };
+            } | {
+                tool: {
+                    name: string;
+                };
+            };
+        };
+        guardrailConfig?: {
+            guardrailIdentifier: string;
+            guardrailVersion: string;
+            trace?: 'enabled' | 'disabled';
+        };
+        additionalModelRequestFields?: {
+            [key: string]: unknown;
+        };
+        additionalModelResponseFieldPaths?: Array<string>;
+        promptVariables?: {
+            [key: string]: {
+                text: string;
+            } | {
+                json: {
+                    [key: string]: unknown;
+                };
+            };
+        };
+        performanceConfig?: {
+            latency?: 'optimized';
+        };
+        serviceTier?: {
+            type?: 'default' | 'throughput';
+        };
+        requestMetadata?: {
+            [key: string]: string;
+        };
+        _isStreaming?: boolean;
+    };
+    headers?: {
+        /**
+         * The user agent of the client
+         */
+        'user-agent'?: string;
+        /**
+         * Authorization header with Bearer token
+         */
+        authorization?: string;
+    };
+    path: {
+        agentId: string;
+        modelId: string;
+    };
+    query?: never;
+    url: '/v1/bedrock/{agentId}/model/{modelId}/converse';
+};
+
+export type BedrockConverseWithAgentAndModelErrors = {
+    /**
+     * Default Response
+     */
+    400: {
+        error: {
+            message: string;
+            type: 'api_validation_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    401: {
+        error: {
+            message: string;
+            type: 'api_authentication_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    403: {
+        error: {
+            message: string;
+            type: 'api_authorization_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    404: {
+        error: {
+            message: string;
+            type: 'api_not_found_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    409: {
+        error: {
+            message: string;
+            type: 'api_conflict_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    500: {
+        error: {
+            message: string;
+            type: 'api_internal_server_error';
+        };
+    };
+};
+
+export type BedrockConverseWithAgentAndModelError = BedrockConverseWithAgentAndModelErrors[keyof BedrockConverseWithAgentAndModelErrors];
+
+export type BedrockConverseWithAgentAndModelResponses = {
+    /**
+     * Default Response
+     */
+    200: {
+        $metadata?: {
+            httpStatusCode?: number;
+            requestId?: string;
+            attempts?: number;
+            totalRetryDelay?: number;
+        };
+        output: {
+            message?: {
+                role: 'assistant';
+                content: Array<{
+                    text: string;
+                } | {
+                    toolUse: {
+                        toolUseId: string;
+                        name: string;
+                        input: {
+                            [key: string]: unknown;
+                        };
+                    };
+                }>;
+            };
+        };
+        stopReason: 'end_turn' | 'tool_use' | 'max_tokens' | 'stop_sequence' | 'guardrail_intervened' | 'content_filtered' | 'model_context_window_exceeded';
+        usage: {
+            inputTokens: number;
+            outputTokens: number;
+            totalTokens?: number;
+            cacheReadInputTokens?: number;
+            cacheWriteInputTokens?: number;
+        };
+        metrics?: {
+            latencyMs?: number;
+        };
+        additionalModelResponseFields?: {
+            [key: string]: unknown;
+        };
+        trace?: {
+            guardrail?: {
+                inputAssessment?: {
+                    [key: string]: unknown;
+                };
+                outputAssessments?: {
+                    [key: string]: unknown;
+                };
+                modelOutput?: Array<string>;
+                actionReason?: string;
+            };
+            promptRouter?: {
+                invokedModelId?: string;
+            };
+        };
+        performanceConfig?: {
+            latency?: 'optimized';
+        };
+        serviceTier?: {
+            type?: 'default' | 'throughput';
+        };
+    };
+};
+
+export type BedrockConverseWithAgentAndModelResponse = BedrockConverseWithAgentAndModelResponses[keyof BedrockConverseWithAgentAndModelResponses];
+
+export type BedrockConverseStreamWithAgentAndModelData = {
+    body?: {
+        modelId?: string;
+        messages?: Array<{
+            role: 'user' | 'assistant';
+            content: Array<{
+                text: string;
+            } | {
+                image: {
+                    format: 'png' | 'jpeg' | 'gif' | 'webp';
+                    source: {
+                        bytes: string;
+                    } | {
+                        s3Location: {
+                            uri: string;
+                            bucketOwner?: string;
+                        };
+                    };
+                };
+            } | {
+                document: {
+                    format: 'pdf' | 'csv' | 'doc' | 'docx' | 'xls' | 'xlsx' | 'html' | 'txt' | 'md';
+                    name: string;
+                    source: {
+                        bytes: string;
+                    } | {
+                        s3Location: {
+                            uri: string;
+                            bucketOwner?: string;
+                        };
+                    };
+                };
+            } | {
+                guardContent: {
+                    text: {
+                        text: string;
+                        qualifiers?: Array<'grounding_source' | 'query' | 'guard_content'>;
+                    };
+                };
+            } | {
+                toolUse: {
+                    toolUseId: string;
+                    name: string;
+                    input: {
+                        [key: string]: unknown;
+                    };
+                };
+            } | {
+                toolResult: {
+                    toolUseId: string;
+                    content: Array<{
+                        text: string;
+                    } | {
+                        image: {
+                            format: 'png' | 'jpeg' | 'gif' | 'webp';
+                            source: {
+                                bytes: string;
+                            } | {
+                                s3Location: {
+                                    uri: string;
+                                    bucketOwner?: string;
+                                };
+                            };
+                        };
+                    } | {
+                        json: {
+                            [key: string]: unknown;
+                        };
+                    } | {
+                        document: {
+                            format: 'pdf' | 'csv' | 'doc' | 'docx' | 'xls' | 'xlsx' | 'html' | 'txt' | 'md';
+                            name: string;
+                            source: {
+                                bytes: string;
+                            } | {
+                                s3Location: {
+                                    uri: string;
+                                    bucketOwner?: string;
+                                };
+                            };
+                        };
+                    }>;
+                    status?: 'success' | 'error';
+                };
+            }>;
+        }>;
+        system?: Array<{
+            text: string;
+        } | {
+            guardContent: {
+                text: {
+                    text: string;
+                    qualifiers?: Array<'grounding_source' | 'query' | 'guard_content'>;
+                };
+            };
+        }>;
+        inferenceConfig?: {
+            maxTokens?: number;
+            temperature?: number;
+            topP?: number;
+            stopSequences?: Array<string>;
+        };
+        toolConfig?: {
+            tools: Array<{
+                toolSpec: {
+                    name: string;
+                    description?: string;
+                    inputSchema: {
+                        json: {
+                            [key: string]: unknown;
+                        };
+                    };
+                };
+            }>;
+            toolChoice?: {
+                auto?: {
+                    [key: string]: unknown;
+                };
+            } | {
+                any?: {
+                    [key: string]: unknown;
+                };
+            } | {
+                tool: {
+                    name: string;
+                };
+            };
+        };
+        guardrailConfig?: {
+            guardrailIdentifier: string;
+            guardrailVersion: string;
+            trace?: 'enabled' | 'disabled';
+        };
+        additionalModelRequestFields?: {
+            [key: string]: unknown;
+        };
+        additionalModelResponseFieldPaths?: Array<string>;
+        promptVariables?: {
+            [key: string]: {
+                text: string;
+            } | {
+                json: {
+                    [key: string]: unknown;
+                };
+            };
+        };
+        performanceConfig?: {
+            latency?: 'optimized';
+        };
+        serviceTier?: {
+            type?: 'default' | 'throughput';
+        };
+        requestMetadata?: {
+            [key: string]: string;
+        };
+        _isStreaming?: boolean;
+    };
+    headers?: {
+        /**
+         * The user agent of the client
+         */
+        'user-agent'?: string;
+        /**
+         * Authorization header with Bearer token
+         */
+        authorization?: string;
+    };
+    path: {
+        agentId: string;
+        modelId: string;
+    };
+    query?: never;
+    url: '/v1/bedrock/{agentId}/model/{modelId}/converse-stream';
+};
+
+export type BedrockConverseStreamWithAgentAndModelResponses = {
+    /**
+     * Default Response
+     */
+    200: unknown;
+};
+
 export type CerebrasChatCompletionsWithDefaultAgentData = {
     body?: MistralChatCompletionRequestInput;
     headers: {
@@ -10632,11 +11945,12 @@ export type GetChatApiKeysResponses = {
         id: string;
         organizationId: string;
         name: string;
-        provider: 'anthropic' | 'cerebras' | 'cohere' | 'gemini' | 'mistral' | 'openai' | 'vllm' | 'ollama' | 'zhipuai';
+        provider: 'anthropic' | 'bedrock' | 'cerebras' | 'cohere' | 'gemini' | 'mistral' | 'openai' | 'vllm' | 'ollama' | 'zhipuai';
         secretId: string | null;
         scope: 'personal' | 'team' | 'org_wide';
         userId: string | null;
         teamId: string | null;
+        isSystem: boolean;
         createdAt: string;
         updatedAt: string;
         teamName?: string | null;
@@ -10652,7 +11966,7 @@ export type GetChatApiKeysResponse = GetChatApiKeysResponses[keyof GetChatApiKey
 export type CreateChatApiKeyData = {
     body: {
         name: string;
-        provider: 'anthropic' | 'cerebras' | 'cohere' | 'gemini' | 'mistral' | 'openai' | 'vllm' | 'ollama' | 'zhipuai';
+        provider: 'anthropic' | 'bedrock' | 'cerebras' | 'cohere' | 'gemini' | 'mistral' | 'openai' | 'vllm' | 'ollama' | 'zhipuai';
         apiKey?: string;
         scope?: 'personal' | 'team' | 'org_wide';
         teamId?: string;
@@ -10731,11 +12045,12 @@ export type CreateChatApiKeyResponses = {
         id: string;
         organizationId: string;
         name: string;
-        provider: 'anthropic' | 'cerebras' | 'cohere' | 'gemini' | 'mistral' | 'openai' | 'vllm' | 'ollama' | 'zhipuai';
+        provider: 'anthropic' | 'bedrock' | 'cerebras' | 'cohere' | 'gemini' | 'mistral' | 'openai' | 'vllm' | 'ollama' | 'zhipuai';
         secretId: string | null;
         scope: 'personal' | 'team' | 'org_wide';
         userId: string | null;
         teamId: string | null;
+        isSystem: boolean;
         createdAt: string;
         updatedAt: string;
     };
@@ -10747,7 +12062,7 @@ export type GetAvailableChatApiKeysData = {
     body?: never;
     path?: never;
     query?: {
-        provider?: 'anthropic' | 'cerebras' | 'cohere' | 'gemini' | 'mistral' | 'openai' | 'vllm' | 'ollama' | 'zhipuai';
+        provider?: 'anthropic' | 'bedrock' | 'cerebras' | 'cohere' | 'gemini' | 'mistral' | 'openai' | 'vllm' | 'ollama' | 'zhipuai';
     };
     url: '/api/chat-api-keys/available';
 };
@@ -10819,11 +12134,12 @@ export type GetAvailableChatApiKeysResponses = {
         id: string;
         organizationId: string;
         name: string;
-        provider: 'anthropic' | 'cerebras' | 'cohere' | 'gemini' | 'mistral' | 'openai' | 'vllm' | 'ollama' | 'zhipuai';
+        provider: 'anthropic' | 'bedrock' | 'cerebras' | 'cohere' | 'gemini' | 'mistral' | 'openai' | 'vllm' | 'ollama' | 'zhipuai';
         secretId: string | null;
         scope: 'personal' | 'team' | 'org_wide';
         userId: string | null;
         teamId: string | null;
+        isSystem: boolean;
         createdAt: string;
         updatedAt: string;
         teamName?: string | null;
@@ -10991,11 +12307,12 @@ export type GetChatApiKeyResponses = {
         id: string;
         organizationId: string;
         name: string;
-        provider: 'anthropic' | 'cerebras' | 'cohere' | 'gemini' | 'mistral' | 'openai' | 'vllm' | 'ollama' | 'zhipuai';
+        provider: 'anthropic' | 'bedrock' | 'cerebras' | 'cohere' | 'gemini' | 'mistral' | 'openai' | 'vllm' | 'ollama' | 'zhipuai';
         secretId: string | null;
         scope: 'personal' | 'team' | 'org_wide';
         userId: string | null;
         teamId: string | null;
+        isSystem: boolean;
         createdAt: string;
         updatedAt: string;
         teamName?: string | null;
@@ -11091,11 +12408,12 @@ export type UpdateChatApiKeyResponses = {
         id: string;
         organizationId: string;
         name: string;
-        provider: 'anthropic' | 'cerebras' | 'cohere' | 'gemini' | 'mistral' | 'openai' | 'vllm' | 'ollama' | 'zhipuai';
+        provider: 'anthropic' | 'bedrock' | 'cerebras' | 'cohere' | 'gemini' | 'mistral' | 'openai' | 'vllm' | 'ollama' | 'zhipuai';
         secretId: string | null;
         scope: 'personal' | 'team' | 'org_wide';
         userId: string | null;
         teamId: string | null;
+        isSystem: boolean;
         createdAt: string;
         updatedAt: string;
     };
@@ -11107,7 +12425,7 @@ export type GetChatModelsData = {
     body?: never;
     path?: never;
     query?: {
-        provider?: 'anthropic' | 'cerebras' | 'cohere' | 'gemini' | 'mistral' | 'openai' | 'vllm' | 'ollama' | 'zhipuai';
+        provider?: 'anthropic' | 'bedrock' | 'cerebras' | 'cohere' | 'gemini' | 'mistral' | 'openai' | 'vllm' | 'ollama' | 'zhipuai';
     };
     url: '/api/chat/models';
 };
@@ -11178,21 +12496,29 @@ export type GetChatModelsResponses = {
     200: Array<{
         id: string;
         displayName: string;
-        provider: 'anthropic' | 'cerebras' | 'cohere' | 'gemini' | 'mistral' | 'openai' | 'vllm' | 'ollama' | 'zhipuai';
+        provider: 'anthropic' | 'bedrock' | 'cerebras' | 'cohere' | 'gemini' | 'mistral' | 'openai' | 'vllm' | 'ollama' | 'zhipuai';
         createdAt?: string;
+        capabilities?: {
+            contextLength: number | null;
+            inputModalities: Array<'text' | 'image' | 'audio' | 'video' | 'pdf'> | null;
+            outputModalities: Array<'text' | 'image' | 'audio'> | null;
+            supportsToolCalling: boolean | null;
+            pricePerMillionInput: string | null;
+            pricePerMillionOutput: string | null;
+        };
     }>;
 };
 
 export type GetChatModelsResponse = GetChatModelsResponses[keyof GetChatModelsResponses];
 
-export type InvalidateChatModelsCacheData = {
+export type SyncChatModelsData = {
     body?: never;
     path?: never;
     query?: never;
-    url: '/api/chat/models/invalidate-cache';
+    url: '/api/chat/models/sync';
 };
 
-export type InvalidateChatModelsCacheErrors = {
+export type SyncChatModelsErrors = {
     /**
      * Default Response
      */
@@ -11249,9 +12575,9 @@ export type InvalidateChatModelsCacheErrors = {
     };
 };
 
-export type InvalidateChatModelsCacheError = InvalidateChatModelsCacheErrors[keyof InvalidateChatModelsCacheErrors];
+export type SyncChatModelsError = SyncChatModelsErrors[keyof SyncChatModelsErrors];
 
-export type InvalidateChatModelsCacheResponses = {
+export type SyncChatModelsResponses = {
     /**
      * Default Response
      */
@@ -11260,7 +12586,114 @@ export type InvalidateChatModelsCacheResponses = {
     };
 };
 
-export type InvalidateChatModelsCacheResponse = InvalidateChatModelsCacheResponses[keyof InvalidateChatModelsCacheResponses];
+export type SyncChatModelsResponse = SyncChatModelsResponses[keyof SyncChatModelsResponses];
+
+export type GetModelsWithApiKeysData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/models';
+};
+
+export type GetModelsWithApiKeysErrors = {
+    /**
+     * Default Response
+     */
+    400: {
+        error: {
+            message: string;
+            type: 'api_validation_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    401: {
+        error: {
+            message: string;
+            type: 'api_authentication_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    403: {
+        error: {
+            message: string;
+            type: 'api_authorization_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    404: {
+        error: {
+            message: string;
+            type: 'api_not_found_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    409: {
+        error: {
+            message: string;
+            type: 'api_conflict_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    500: {
+        error: {
+            message: string;
+            type: 'api_internal_server_error';
+        };
+    };
+};
+
+export type GetModelsWithApiKeysError = GetModelsWithApiKeysErrors[keyof GetModelsWithApiKeysErrors];
+
+export type GetModelsWithApiKeysResponses = {
+    /**
+     * Default Response
+     */
+    200: Array<{
+        id: string;
+        externalId: string;
+        provider: 'openai' | 'gemini' | 'anthropic' | 'bedrock' | 'cohere' | 'cerebras' | 'mistral' | 'vllm' | 'ollama' | 'zhipuai';
+        modelId: string;
+        description: string | null;
+        contextLength: number | null;
+        inputModalities: Array<'text' | 'image' | 'audio' | 'video' | 'pdf'> | null;
+        outputModalities: Array<'text' | 'image' | 'audio'> | null;
+        supportsToolCalling: boolean | null;
+        promptPricePerToken: string | null;
+        completionPricePerToken: string | null;
+        lastSyncedAt: string;
+        createdAt: string;
+        updatedAt: string;
+        isFastest: boolean;
+        isBest: boolean;
+        apiKeys: Array<{
+            id: string;
+            name: string;
+            provider: string;
+            scope: string;
+            isSystem: boolean;
+        }>;
+        capabilities: {
+            contextLength: number | null;
+            inputModalities: Array<'text' | 'image' | 'audio' | 'video' | 'pdf'> | null;
+            outputModalities: Array<'text' | 'image' | 'audio'> | null;
+            supportsToolCalling: boolean | null;
+            pricePerMillionInput: string | null;
+            pricePerMillionOutput: string | null;
+        };
+    }>;
+};
+
+export type GetModelsWithApiKeysResponse = GetModelsWithApiKeysResponses[keyof GetModelsWithApiKeysResponses];
 
 export type StreamChatData = {
     body: {
@@ -11412,7 +12845,7 @@ export type GetChatConversationsResponses = {
         chatApiKeyId: string | null;
         title: string | null;
         selectedModel: string;
-        selectedProvider: 'anthropic' | 'cerebras' | 'cohere' | 'gemini' | 'mistral' | 'openai' | 'vllm' | 'ollama' | 'zhipuai';
+        selectedProvider: 'anthropic' | 'bedrock' | 'cerebras' | 'cohere' | 'gemini' | 'mistral' | 'openai' | 'vllm' | 'ollama' | 'zhipuai';
         hasCustomToolSelection: boolean;
         todoList: string | number | boolean | null | {
             [key: string]: unknown;
@@ -11438,7 +12871,7 @@ export type CreateChatConversationData = {
         agentId: string;
         title?: string | null;
         selectedModel?: string;
-        selectedProvider?: 'anthropic' | 'cerebras' | 'cohere' | 'gemini' | 'mistral' | 'openai' | 'vllm' | 'ollama' | 'zhipuai';
+        selectedProvider?: 'anthropic' | 'bedrock' | 'cerebras' | 'cohere' | 'gemini' | 'mistral' | 'openai' | 'vllm' | 'ollama' | 'zhipuai';
         chatApiKeyId?: string | null;
     };
     path?: never;
@@ -11517,7 +12950,7 @@ export type CreateChatConversationResponses = {
         chatApiKeyId: string | null;
         title: string | null;
         selectedModel: string;
-        selectedProvider: 'anthropic' | 'cerebras' | 'cohere' | 'gemini' | 'mistral' | 'openai' | 'vllm' | 'ollama' | 'zhipuai';
+        selectedProvider: 'anthropic' | 'bedrock' | 'cerebras' | 'cohere' | 'gemini' | 'mistral' | 'openai' | 'vllm' | 'ollama' | 'zhipuai';
         hasCustomToolSelection: boolean;
         todoList: string | number | boolean | null | {
             [key: string]: unknown;
@@ -11697,7 +13130,7 @@ export type GetChatConversationResponses = {
         chatApiKeyId: string | null;
         title: string | null;
         selectedModel: string;
-        selectedProvider: 'anthropic' | 'cerebras' | 'cohere' | 'gemini' | 'mistral' | 'openai' | 'vllm' | 'ollama' | 'zhipuai';
+        selectedProvider: 'anthropic' | 'bedrock' | 'cerebras' | 'cohere' | 'gemini' | 'mistral' | 'openai' | 'vllm' | 'ollama' | 'zhipuai';
         hasCustomToolSelection: boolean;
         todoList: string | number | boolean | null | {
             [key: string]: unknown;
@@ -11722,7 +13155,7 @@ export type UpdateChatConversationData = {
     body?: {
         title?: string | null;
         selectedModel?: string;
-        selectedProvider?: 'anthropic' | 'cerebras' | 'cohere' | 'gemini' | 'mistral' | 'openai' | 'vllm' | 'ollama' | 'zhipuai';
+        selectedProvider?: 'anthropic' | 'bedrock' | 'cerebras' | 'cohere' | 'gemini' | 'mistral' | 'openai' | 'vllm' | 'ollama' | 'zhipuai';
         chatApiKeyId?: string | null;
         agentId?: string;
         artifact?: string | null;
@@ -11805,7 +13238,7 @@ export type UpdateChatConversationResponses = {
         chatApiKeyId: string | null;
         title: string | null;
         selectedModel: string;
-        selectedProvider: 'anthropic' | 'cerebras' | 'cohere' | 'gemini' | 'mistral' | 'openai' | 'vllm' | 'ollama' | 'zhipuai';
+        selectedProvider: 'anthropic' | 'bedrock' | 'cerebras' | 'cohere' | 'gemini' | 'mistral' | 'openai' | 'vllm' | 'ollama' | 'zhipuai';
         hasCustomToolSelection: boolean;
         todoList: string | number | boolean | null | {
             [key: string]: unknown;
@@ -11994,7 +13427,7 @@ export type GenerateChatConversationTitleResponses = {
         chatApiKeyId: string | null;
         title: string | null;
         selectedModel: string;
-        selectedProvider: 'anthropic' | 'cerebras' | 'cohere' | 'gemini' | 'mistral' | 'openai' | 'vllm' | 'ollama' | 'zhipuai';
+        selectedProvider: 'anthropic' | 'bedrock' | 'cerebras' | 'cohere' | 'gemini' | 'mistral' | 'openai' | 'vllm' | 'ollama' | 'zhipuai';
         hasCustomToolSelection: boolean;
         todoList: string | number | boolean | null | {
             [key: string]: unknown;
@@ -12099,7 +13532,7 @@ export type UpdateChatMessageResponses = {
         chatApiKeyId: string | null;
         title: string | null;
         selectedModel: string;
-        selectedProvider: 'anthropic' | 'cerebras' | 'cohere' | 'gemini' | 'mistral' | 'openai' | 'vllm' | 'ollama' | 'zhipuai';
+        selectedProvider: 'anthropic' | 'bedrock' | 'cerebras' | 'cohere' | 'gemini' | 'mistral' | 'openai' | 'vllm' | 'ollama' | 'zhipuai';
         hasCustomToolSelection: boolean;
         todoList: string | number | boolean | null | {
             [key: string]: unknown;
@@ -13540,6 +14973,7 @@ export type GetFeaturesResponses = {
             displayName?: string;
         };
         mcpServerBaseImage: string;
+        orchestratorK8sNamespace: string;
     };
 };
 
@@ -14517,6 +15951,398 @@ export type GetInteractionsResponses = {
             userId: string | null;
             sessionId: string | null;
             sessionSource: string | null;
+            request: {
+                modelId: string;
+                messages?: Array<{
+                    role: 'user' | 'assistant';
+                    content: Array<{
+                        text: string;
+                    } | {
+                        image: {
+                            format: 'png' | 'jpeg' | 'gif' | 'webp';
+                            source: {
+                                bytes: string;
+                            } | {
+                                s3Location: {
+                                    uri: string;
+                                    bucketOwner?: string;
+                                };
+                            };
+                        };
+                    } | {
+                        document: {
+                            format: 'pdf' | 'csv' | 'doc' | 'docx' | 'xls' | 'xlsx' | 'html' | 'txt' | 'md';
+                            name: string;
+                            source: {
+                                bytes: string;
+                            } | {
+                                s3Location: {
+                                    uri: string;
+                                    bucketOwner?: string;
+                                };
+                            };
+                        };
+                    } | {
+                        guardContent: {
+                            text: {
+                                text: string;
+                                qualifiers?: Array<'grounding_source' | 'query' | 'guard_content'>;
+                            };
+                        };
+                    } | {
+                        toolUse: {
+                            toolUseId: string;
+                            name: string;
+                            input: {
+                                [key: string]: unknown;
+                            };
+                        };
+                    } | {
+                        toolResult: {
+                            toolUseId: string;
+                            content: Array<{
+                                text: string;
+                            } | {
+                                image: {
+                                    format: 'png' | 'jpeg' | 'gif' | 'webp';
+                                    source: {
+                                        bytes: string;
+                                    } | {
+                                        s3Location: {
+                                            uri: string;
+                                            bucketOwner?: string;
+                                        };
+                                    };
+                                };
+                            } | {
+                                json: {
+                                    [key: string]: unknown;
+                                };
+                            } | {
+                                document: {
+                                    format: 'pdf' | 'csv' | 'doc' | 'docx' | 'xls' | 'xlsx' | 'html' | 'txt' | 'md';
+                                    name: string;
+                                    source: {
+                                        bytes: string;
+                                    } | {
+                                        s3Location: {
+                                            uri: string;
+                                            bucketOwner?: string;
+                                        };
+                                    };
+                                };
+                            }>;
+                            status?: 'success' | 'error';
+                        };
+                    }>;
+                }>;
+                system?: Array<{
+                    text: string;
+                } | {
+                    guardContent: {
+                        text: {
+                            text: string;
+                            qualifiers?: Array<'grounding_source' | 'query' | 'guard_content'>;
+                        };
+                    };
+                }>;
+                inferenceConfig?: {
+                    maxTokens?: number;
+                    temperature?: number;
+                    topP?: number;
+                    stopSequences?: Array<string>;
+                };
+                toolConfig?: {
+                    tools: Array<{
+                        toolSpec: {
+                            name: string;
+                            description?: string;
+                            inputSchema: {
+                                json: {
+                                    [key: string]: unknown;
+                                };
+                            };
+                        };
+                    }>;
+                    toolChoice?: {
+                        auto?: {
+                            [key: string]: never;
+                        };
+                    } | {
+                        any?: {
+                            [key: string]: never;
+                        };
+                    } | {
+                        tool: {
+                            name: string;
+                        };
+                    };
+                };
+                guardrailConfig?: {
+                    guardrailIdentifier: string;
+                    guardrailVersion: string;
+                    trace?: 'enabled' | 'disabled';
+                };
+                additionalModelRequestFields?: {
+                    [key: string]: unknown;
+                };
+                additionalModelResponseFieldPaths?: Array<string>;
+                promptVariables?: {
+                    [key: string]: {
+                        text: string;
+                    } | {
+                        json: {
+                            [key: string]: unknown;
+                        };
+                    };
+                };
+                performanceConfig?: {
+                    latency?: 'optimized';
+                };
+                serviceTier?: {
+                    type?: 'default' | 'throughput';
+                };
+                requestMetadata?: {
+                    [key: string]: string;
+                };
+                _isStreaming?: boolean;
+            };
+            processedRequest?: {
+                modelId: string;
+                messages?: Array<{
+                    role: 'user' | 'assistant';
+                    content: Array<{
+                        text: string;
+                    } | {
+                        image: {
+                            format: 'png' | 'jpeg' | 'gif' | 'webp';
+                            source: {
+                                bytes: string;
+                            } | {
+                                s3Location: {
+                                    uri: string;
+                                    bucketOwner?: string;
+                                };
+                            };
+                        };
+                    } | {
+                        document: {
+                            format: 'pdf' | 'csv' | 'doc' | 'docx' | 'xls' | 'xlsx' | 'html' | 'txt' | 'md';
+                            name: string;
+                            source: {
+                                bytes: string;
+                            } | {
+                                s3Location: {
+                                    uri: string;
+                                    bucketOwner?: string;
+                                };
+                            };
+                        };
+                    } | {
+                        guardContent: {
+                            text: {
+                                text: string;
+                                qualifiers?: Array<'grounding_source' | 'query' | 'guard_content'>;
+                            };
+                        };
+                    } | {
+                        toolUse: {
+                            toolUseId: string;
+                            name: string;
+                            input: {
+                                [key: string]: unknown;
+                            };
+                        };
+                    } | {
+                        toolResult: {
+                            toolUseId: string;
+                            content: Array<{
+                                text: string;
+                            } | {
+                                image: {
+                                    format: 'png' | 'jpeg' | 'gif' | 'webp';
+                                    source: {
+                                        bytes: string;
+                                    } | {
+                                        s3Location: {
+                                            uri: string;
+                                            bucketOwner?: string;
+                                        };
+                                    };
+                                };
+                            } | {
+                                json: {
+                                    [key: string]: unknown;
+                                };
+                            } | {
+                                document: {
+                                    format: 'pdf' | 'csv' | 'doc' | 'docx' | 'xls' | 'xlsx' | 'html' | 'txt' | 'md';
+                                    name: string;
+                                    source: {
+                                        bytes: string;
+                                    } | {
+                                        s3Location: {
+                                            uri: string;
+                                            bucketOwner?: string;
+                                        };
+                                    };
+                                };
+                            }>;
+                            status?: 'success' | 'error';
+                        };
+                    }>;
+                }>;
+                system?: Array<{
+                    text: string;
+                } | {
+                    guardContent: {
+                        text: {
+                            text: string;
+                            qualifiers?: Array<'grounding_source' | 'query' | 'guard_content'>;
+                        };
+                    };
+                }>;
+                inferenceConfig?: {
+                    maxTokens?: number;
+                    temperature?: number;
+                    topP?: number;
+                    stopSequences?: Array<string>;
+                };
+                toolConfig?: {
+                    tools: Array<{
+                        toolSpec: {
+                            name: string;
+                            description?: string;
+                            inputSchema: {
+                                json: {
+                                    [key: string]: unknown;
+                                };
+                            };
+                        };
+                    }>;
+                    toolChoice?: {
+                        auto?: {
+                            [key: string]: never;
+                        };
+                    } | {
+                        any?: {
+                            [key: string]: never;
+                        };
+                    } | {
+                        tool: {
+                            name: string;
+                        };
+                    };
+                };
+                guardrailConfig?: {
+                    guardrailIdentifier: string;
+                    guardrailVersion: string;
+                    trace?: 'enabled' | 'disabled';
+                };
+                additionalModelRequestFields?: {
+                    [key: string]: unknown;
+                };
+                additionalModelResponseFieldPaths?: Array<string>;
+                promptVariables?: {
+                    [key: string]: {
+                        text: string;
+                    } | {
+                        json: {
+                            [key: string]: unknown;
+                        };
+                    };
+                };
+                performanceConfig?: {
+                    latency?: 'optimized';
+                };
+                serviceTier?: {
+                    type?: 'default' | 'throughput';
+                };
+                requestMetadata?: {
+                    [key: string]: string;
+                };
+                _isStreaming?: boolean;
+            } | null;
+            response: {
+                $metadata?: {
+                    httpStatusCode?: number;
+                    requestId?: string;
+                    attempts?: number;
+                    totalRetryDelay?: number;
+                };
+                output: {
+                    message?: {
+                        role: 'assistant';
+                        content: Array<{
+                            text: string;
+                        } | {
+                            toolUse: {
+                                toolUseId: string;
+                                name: string;
+                                input: {
+                                    [key: string]: unknown;
+                                };
+                            };
+                        }>;
+                    };
+                };
+                stopReason: 'end_turn' | 'tool_use' | 'max_tokens' | 'stop_sequence' | 'guardrail_intervened' | 'content_filtered' | 'model_context_window_exceeded';
+                usage: {
+                    inputTokens: number;
+                    outputTokens: number;
+                    totalTokens?: number;
+                    cacheReadInputTokens?: number;
+                    cacheWriteInputTokens?: number;
+                };
+                metrics?: {
+                    latencyMs?: number;
+                };
+                additionalModelResponseFields?: {
+                    [key: string]: unknown;
+                };
+                trace?: {
+                    guardrail?: {
+                        inputAssessment?: {
+                            [key: string]: unknown;
+                        };
+                        outputAssessments?: {
+                            [key: string]: unknown;
+                        };
+                        modelOutput?: Array<string>;
+                        actionReason?: string;
+                    };
+                    promptRouter?: {
+                        invokedModelId?: string;
+                    };
+                };
+                performanceConfig?: {
+                    latency?: 'optimized';
+                };
+                serviceTier?: {
+                    type?: 'default' | 'throughput';
+                };
+            };
+            type: 'bedrock:converse';
+            model: string | null;
+            baselineModel: string | null;
+            inputTokens: number | null;
+            outputTokens: number | null;
+            baselineCost: string | null;
+            cost: string | null;
+            toonTokensBefore: number | null;
+            toonTokensAfter: number | null;
+            toonCostSavings: string | null;
+            toonSkipReason: string | null;
+            createdAt: string;
+            requestType?: 'main' | 'subagent';
+            externalAgentIdLabel?: string | null;
+        } | {
+            id: string;
+            profileId: string;
+            externalAgentId: string | null;
+            userId: string | null;
+            sessionId: string | null;
+            sessionSource: string | null;
             request: MistralChatCompletionRequest;
             processedRequest?: MistralChatCompletionRequest | null;
             response: CerebrasChatCompletionResponse;
@@ -15111,6 +16937,398 @@ export type GetInteractionResponses = {
         userId: string | null;
         sessionId: string | null;
         sessionSource: string | null;
+        request: {
+            modelId: string;
+            messages?: Array<{
+                role: 'user' | 'assistant';
+                content: Array<{
+                    text: string;
+                } | {
+                    image: {
+                        format: 'png' | 'jpeg' | 'gif' | 'webp';
+                        source: {
+                            bytes: string;
+                        } | {
+                            s3Location: {
+                                uri: string;
+                                bucketOwner?: string;
+                            };
+                        };
+                    };
+                } | {
+                    document: {
+                        format: 'pdf' | 'csv' | 'doc' | 'docx' | 'xls' | 'xlsx' | 'html' | 'txt' | 'md';
+                        name: string;
+                        source: {
+                            bytes: string;
+                        } | {
+                            s3Location: {
+                                uri: string;
+                                bucketOwner?: string;
+                            };
+                        };
+                    };
+                } | {
+                    guardContent: {
+                        text: {
+                            text: string;
+                            qualifiers?: Array<'grounding_source' | 'query' | 'guard_content'>;
+                        };
+                    };
+                } | {
+                    toolUse: {
+                        toolUseId: string;
+                        name: string;
+                        input: {
+                            [key: string]: unknown;
+                        };
+                    };
+                } | {
+                    toolResult: {
+                        toolUseId: string;
+                        content: Array<{
+                            text: string;
+                        } | {
+                            image: {
+                                format: 'png' | 'jpeg' | 'gif' | 'webp';
+                                source: {
+                                    bytes: string;
+                                } | {
+                                    s3Location: {
+                                        uri: string;
+                                        bucketOwner?: string;
+                                    };
+                                };
+                            };
+                        } | {
+                            json: {
+                                [key: string]: unknown;
+                            };
+                        } | {
+                            document: {
+                                format: 'pdf' | 'csv' | 'doc' | 'docx' | 'xls' | 'xlsx' | 'html' | 'txt' | 'md';
+                                name: string;
+                                source: {
+                                    bytes: string;
+                                } | {
+                                    s3Location: {
+                                        uri: string;
+                                        bucketOwner?: string;
+                                    };
+                                };
+                            };
+                        }>;
+                        status?: 'success' | 'error';
+                    };
+                }>;
+            }>;
+            system?: Array<{
+                text: string;
+            } | {
+                guardContent: {
+                    text: {
+                        text: string;
+                        qualifiers?: Array<'grounding_source' | 'query' | 'guard_content'>;
+                    };
+                };
+            }>;
+            inferenceConfig?: {
+                maxTokens?: number;
+                temperature?: number;
+                topP?: number;
+                stopSequences?: Array<string>;
+            };
+            toolConfig?: {
+                tools: Array<{
+                    toolSpec: {
+                        name: string;
+                        description?: string;
+                        inputSchema: {
+                            json: {
+                                [key: string]: unknown;
+                            };
+                        };
+                    };
+                }>;
+                toolChoice?: {
+                    auto?: {
+                        [key: string]: never;
+                    };
+                } | {
+                    any?: {
+                        [key: string]: never;
+                    };
+                } | {
+                    tool: {
+                        name: string;
+                    };
+                };
+            };
+            guardrailConfig?: {
+                guardrailIdentifier: string;
+                guardrailVersion: string;
+                trace?: 'enabled' | 'disabled';
+            };
+            additionalModelRequestFields?: {
+                [key: string]: unknown;
+            };
+            additionalModelResponseFieldPaths?: Array<string>;
+            promptVariables?: {
+                [key: string]: {
+                    text: string;
+                } | {
+                    json: {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            performanceConfig?: {
+                latency?: 'optimized';
+            };
+            serviceTier?: {
+                type?: 'default' | 'throughput';
+            };
+            requestMetadata?: {
+                [key: string]: string;
+            };
+            _isStreaming?: boolean;
+        };
+        processedRequest?: {
+            modelId: string;
+            messages?: Array<{
+                role: 'user' | 'assistant';
+                content: Array<{
+                    text: string;
+                } | {
+                    image: {
+                        format: 'png' | 'jpeg' | 'gif' | 'webp';
+                        source: {
+                            bytes: string;
+                        } | {
+                            s3Location: {
+                                uri: string;
+                                bucketOwner?: string;
+                            };
+                        };
+                    };
+                } | {
+                    document: {
+                        format: 'pdf' | 'csv' | 'doc' | 'docx' | 'xls' | 'xlsx' | 'html' | 'txt' | 'md';
+                        name: string;
+                        source: {
+                            bytes: string;
+                        } | {
+                            s3Location: {
+                                uri: string;
+                                bucketOwner?: string;
+                            };
+                        };
+                    };
+                } | {
+                    guardContent: {
+                        text: {
+                            text: string;
+                            qualifiers?: Array<'grounding_source' | 'query' | 'guard_content'>;
+                        };
+                    };
+                } | {
+                    toolUse: {
+                        toolUseId: string;
+                        name: string;
+                        input: {
+                            [key: string]: unknown;
+                        };
+                    };
+                } | {
+                    toolResult: {
+                        toolUseId: string;
+                        content: Array<{
+                            text: string;
+                        } | {
+                            image: {
+                                format: 'png' | 'jpeg' | 'gif' | 'webp';
+                                source: {
+                                    bytes: string;
+                                } | {
+                                    s3Location: {
+                                        uri: string;
+                                        bucketOwner?: string;
+                                    };
+                                };
+                            };
+                        } | {
+                            json: {
+                                [key: string]: unknown;
+                            };
+                        } | {
+                            document: {
+                                format: 'pdf' | 'csv' | 'doc' | 'docx' | 'xls' | 'xlsx' | 'html' | 'txt' | 'md';
+                                name: string;
+                                source: {
+                                    bytes: string;
+                                } | {
+                                    s3Location: {
+                                        uri: string;
+                                        bucketOwner?: string;
+                                    };
+                                };
+                            };
+                        }>;
+                        status?: 'success' | 'error';
+                    };
+                }>;
+            }>;
+            system?: Array<{
+                text: string;
+            } | {
+                guardContent: {
+                    text: {
+                        text: string;
+                        qualifiers?: Array<'grounding_source' | 'query' | 'guard_content'>;
+                    };
+                };
+            }>;
+            inferenceConfig?: {
+                maxTokens?: number;
+                temperature?: number;
+                topP?: number;
+                stopSequences?: Array<string>;
+            };
+            toolConfig?: {
+                tools: Array<{
+                    toolSpec: {
+                        name: string;
+                        description?: string;
+                        inputSchema: {
+                            json: {
+                                [key: string]: unknown;
+                            };
+                        };
+                    };
+                }>;
+                toolChoice?: {
+                    auto?: {
+                        [key: string]: never;
+                    };
+                } | {
+                    any?: {
+                        [key: string]: never;
+                    };
+                } | {
+                    tool: {
+                        name: string;
+                    };
+                };
+            };
+            guardrailConfig?: {
+                guardrailIdentifier: string;
+                guardrailVersion: string;
+                trace?: 'enabled' | 'disabled';
+            };
+            additionalModelRequestFields?: {
+                [key: string]: unknown;
+            };
+            additionalModelResponseFieldPaths?: Array<string>;
+            promptVariables?: {
+                [key: string]: {
+                    text: string;
+                } | {
+                    json: {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            performanceConfig?: {
+                latency?: 'optimized';
+            };
+            serviceTier?: {
+                type?: 'default' | 'throughput';
+            };
+            requestMetadata?: {
+                [key: string]: string;
+            };
+            _isStreaming?: boolean;
+        } | null;
+        response: {
+            $metadata?: {
+                httpStatusCode?: number;
+                requestId?: string;
+                attempts?: number;
+                totalRetryDelay?: number;
+            };
+            output: {
+                message?: {
+                    role: 'assistant';
+                    content: Array<{
+                        text: string;
+                    } | {
+                        toolUse: {
+                            toolUseId: string;
+                            name: string;
+                            input: {
+                                [key: string]: unknown;
+                            };
+                        };
+                    }>;
+                };
+            };
+            stopReason: 'end_turn' | 'tool_use' | 'max_tokens' | 'stop_sequence' | 'guardrail_intervened' | 'content_filtered' | 'model_context_window_exceeded';
+            usage: {
+                inputTokens: number;
+                outputTokens: number;
+                totalTokens?: number;
+                cacheReadInputTokens?: number;
+                cacheWriteInputTokens?: number;
+            };
+            metrics?: {
+                latencyMs?: number;
+            };
+            additionalModelResponseFields?: {
+                [key: string]: unknown;
+            };
+            trace?: {
+                guardrail?: {
+                    inputAssessment?: {
+                        [key: string]: unknown;
+                    };
+                    outputAssessments?: {
+                        [key: string]: unknown;
+                    };
+                    modelOutput?: Array<string>;
+                    actionReason?: string;
+                };
+                promptRouter?: {
+                    invokedModelId?: string;
+                };
+            };
+            performanceConfig?: {
+                latency?: 'optimized';
+            };
+            serviceTier?: {
+                type?: 'default' | 'throughput';
+            };
+        };
+        type: 'bedrock:converse';
+        model: string | null;
+        baselineModel: string | null;
+        inputTokens: number | null;
+        outputTokens: number | null;
+        baselineCost: string | null;
+        cost: string | null;
+        toonTokensBefore: number | null;
+        toonTokensAfter: number | null;
+        toonCostSavings: string | null;
+        toonSkipReason: string | null;
+        createdAt: string;
+        requestType?: 'main' | 'subagent';
+        externalAgentIdLabel?: string | null;
+    } | {
+        id: string;
+        profileId: string;
+        externalAgentId: string | null;
+        userId: string | null;
+        sessionId: string | null;
+        sessionSource: string | null;
         request: MistralChatCompletionRequest;
         processedRequest?: MistralChatCompletionRequest | null;
         response: CerebrasChatCompletionResponse;
@@ -15359,6 +17577,26 @@ export type GetInternalMcpCatalogResponses = {
             transportType?: 'stdio' | 'streamable-http';
             httpPort?: number;
             httpPath?: string;
+            advancedK8sConfig?: {
+                replicas?: number;
+                namespace?: string;
+                annotations?: {
+                    [key: string]: string;
+                };
+                labels?: {
+                    [key: string]: string;
+                };
+                resources?: {
+                    requests?: {
+                        memory?: string;
+                        cpu?: string;
+                    };
+                    limits?: {
+                        memory?: string;
+                        cpu?: string;
+                    };
+                };
+            };
         } | null;
         userConfig: {
             [key: string]: {
@@ -15443,6 +17681,26 @@ export type CreateInternalMcpCatalogItemData = {
             httpPort?: number;
             httpPath?: string;
             serviceAccount?: string;
+            advancedK8sConfig?: {
+                replicas?: number;
+                namespace?: string;
+                annotations?: {
+                    [key: string]: string;
+                };
+                labels?: {
+                    [key: string]: string;
+                };
+                resources?: {
+                    requests?: {
+                        memory?: string;
+                        cpu?: string;
+                    };
+                    limits?: {
+                        memory?: string;
+                        cpu?: string;
+                    };
+                };
+            };
         } | null;
         userConfig?: {
             [key: string]: {
@@ -15592,6 +17850,26 @@ export type CreateInternalMcpCatalogItemResponses = {
             transportType?: 'stdio' | 'streamable-http';
             httpPort?: number;
             httpPath?: string;
+            advancedK8sConfig?: {
+                replicas?: number;
+                namespace?: string;
+                annotations?: {
+                    [key: string]: string;
+                };
+                labels?: {
+                    [key: string]: string;
+                };
+                resources?: {
+                    requests?: {
+                        memory?: string;
+                        cpu?: string;
+                    };
+                    limits?: {
+                        memory?: string;
+                        cpu?: string;
+                    };
+                };
+            };
         } | null;
         userConfig: {
             [key: string]: {
@@ -15826,6 +18104,26 @@ export type GetInternalMcpCatalogItemResponses = {
             transportType?: 'stdio' | 'streamable-http';
             httpPort?: number;
             httpPath?: string;
+            advancedK8sConfig?: {
+                replicas?: number;
+                namespace?: string;
+                annotations?: {
+                    [key: string]: string;
+                };
+                labels?: {
+                    [key: string]: string;
+                };
+                resources?: {
+                    requests?: {
+                        memory?: string;
+                        cpu?: string;
+                    };
+                    limits?: {
+                        memory?: string;
+                        cpu?: string;
+                    };
+                };
+            };
         } | null;
         userConfig: {
             [key: string]: {
@@ -15909,6 +18207,26 @@ export type UpdateInternalMcpCatalogItemData = {
             httpPort?: number;
             httpPath?: string;
             serviceAccount?: string;
+            advancedK8sConfig?: {
+                replicas?: number;
+                namespace?: string;
+                annotations?: {
+                    [key: string]: string;
+                };
+                labels?: {
+                    [key: string]: string;
+                };
+                resources?: {
+                    requests?: {
+                        memory?: string;
+                        cpu?: string;
+                    };
+                    limits?: {
+                        memory?: string;
+                        cpu?: string;
+                    };
+                };
+            };
         } | null;
         userConfig?: {
             [key: string]: {
@@ -16060,6 +18378,26 @@ export type UpdateInternalMcpCatalogItemResponses = {
             transportType?: 'stdio' | 'streamable-http';
             httpPort?: number;
             httpPath?: string;
+            advancedK8sConfig?: {
+                replicas?: number;
+                namespace?: string;
+                annotations?: {
+                    [key: string]: string;
+                };
+                labels?: {
+                    [key: string]: string;
+                };
+                resources?: {
+                    requests?: {
+                        memory?: string;
+                        cpu?: string;
+                    };
+                    limits?: {
+                        memory?: string;
+                        cpu?: string;
+                    };
+                };
+            };
         } | null;
         userConfig: {
             [key: string]: {
@@ -16271,6 +18609,92 @@ export type DeleteInternalMcpCatalogItemByNameResponses = {
 };
 
 export type DeleteInternalMcpCatalogItemByNameResponse = DeleteInternalMcpCatalogItemByNameResponses[keyof DeleteInternalMcpCatalogItemByNameResponses];
+
+export type CheckInvitationData = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/invitation/{id}/check';
+};
+
+export type CheckInvitationErrors = {
+    /**
+     * Default Response
+     */
+    400: {
+        error: {
+            message: string;
+            type: 'api_validation_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    401: {
+        error: {
+            message: string;
+            type: 'api_authentication_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    403: {
+        error: {
+            message: string;
+            type: 'api_authorization_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    404: {
+        error: {
+            message: string;
+            type: 'api_not_found_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    409: {
+        error: {
+            message: string;
+            type: 'api_conflict_error';
+        };
+    };
+    /**
+     * Default Response
+     */
+    500: {
+        error: {
+            message: string;
+            type: 'api_internal_server_error';
+        };
+    };
+};
+
+export type CheckInvitationError = CheckInvitationErrors[keyof CheckInvitationErrors];
+
+export type CheckInvitationResponses = {
+    /**
+     * Default Response
+     */
+    200: {
+        invitation: {
+            id: string;
+            email: string;
+            organizationId: string;
+            status: 'pending' | 'accepted' | 'canceled';
+            expiresAt: string | null;
+        };
+        userExists: boolean;
+    };
+};
+
+export type CheckInvitationResponse = CheckInvitationResponses[keyof CheckInvitationResponses];
 
 export type GetLimitsData = {
     body?: never;
@@ -16964,6 +19388,26 @@ export type GetMcpServerInstallationRequestsResponses = {
                 httpPort?: number;
                 httpPath?: string;
                 serviceAccount?: string;
+                advancedK8sConfig?: {
+                    replicas?: number;
+                    namespace?: string;
+                    annotations?: {
+                        [key: string]: string;
+                    };
+                    labels?: {
+                        [key: string]: string;
+                    };
+                    resources?: {
+                        requests?: {
+                            memory?: string;
+                            cpu?: string;
+                        };
+                        limits?: {
+                            memory?: string;
+                            cpu?: string;
+                        };
+                    };
+                };
             };
         } | null;
         adminResponse: string | null;
@@ -17044,6 +19488,26 @@ export type CreateMcpServerInstallationRequestData = {
                 httpPort?: number;
                 httpPath?: string;
                 serviceAccount?: string;
+                advancedK8sConfig?: {
+                    replicas?: number;
+                    namespace?: string;
+                    annotations?: {
+                        [key: string]: string;
+                    };
+                    labels?: {
+                        [key: string]: string;
+                    };
+                    resources?: {
+                        requests?: {
+                            memory?: string;
+                            cpu?: string;
+                        };
+                        limits?: {
+                            memory?: string;
+                            cpu?: string;
+                        };
+                    };
+                };
             };
         } | null;
     };
@@ -17178,6 +19642,26 @@ export type CreateMcpServerInstallationRequestResponses = {
                 httpPort?: number;
                 httpPath?: string;
                 serviceAccount?: string;
+                advancedK8sConfig?: {
+                    replicas?: number;
+                    namespace?: string;
+                    annotations?: {
+                        [key: string]: string;
+                    };
+                    labels?: {
+                        [key: string]: string;
+                    };
+                    resources?: {
+                        requests?: {
+                            memory?: string;
+                            cpu?: string;
+                        };
+                        limits?: {
+                            memory?: string;
+                            cpu?: string;
+                        };
+                    };
+                };
             };
         } | null;
         adminResponse: string | null;
@@ -17411,6 +19895,26 @@ export type GetMcpServerInstallationRequestResponses = {
                 httpPort?: number;
                 httpPath?: string;
                 serviceAccount?: string;
+                advancedK8sConfig?: {
+                    replicas?: number;
+                    namespace?: string;
+                    annotations?: {
+                        [key: string]: string;
+                    };
+                    labels?: {
+                        [key: string]: string;
+                    };
+                    resources?: {
+                        requests?: {
+                            memory?: string;
+                            cpu?: string;
+                        };
+                        limits?: {
+                            memory?: string;
+                            cpu?: string;
+                        };
+                    };
+                };
             };
         } | null;
         adminResponse: string | null;
@@ -17491,6 +19995,26 @@ export type UpdateMcpServerInstallationRequestData = {
                 httpPort?: number;
                 httpPath?: string;
                 serviceAccount?: string;
+                advancedK8sConfig?: {
+                    replicas?: number;
+                    namespace?: string;
+                    annotations?: {
+                        [key: string]: string;
+                    };
+                    labels?: {
+                        [key: string]: string;
+                    };
+                    resources?: {
+                        requests?: {
+                            memory?: string;
+                            cpu?: string;
+                        };
+                        limits?: {
+                            memory?: string;
+                            cpu?: string;
+                        };
+                    };
+                };
             };
         } | null;
         adminResponse?: string | null;
@@ -17637,6 +20161,26 @@ export type UpdateMcpServerInstallationRequestResponses = {
                 httpPort?: number;
                 httpPath?: string;
                 serviceAccount?: string;
+                advancedK8sConfig?: {
+                    replicas?: number;
+                    namespace?: string;
+                    annotations?: {
+                        [key: string]: string;
+                    };
+                    labels?: {
+                        [key: string]: string;
+                    };
+                    resources?: {
+                        requests?: {
+                            memory?: string;
+                            cpu?: string;
+                        };
+                        limits?: {
+                            memory?: string;
+                            cpu?: string;
+                        };
+                    };
+                };
             };
         } | null;
         adminResponse: string | null;
@@ -17793,6 +20337,26 @@ export type ApproveMcpServerInstallationRequestResponses = {
                 httpPort?: number;
                 httpPath?: string;
                 serviceAccount?: string;
+                advancedK8sConfig?: {
+                    replicas?: number;
+                    namespace?: string;
+                    annotations?: {
+                        [key: string]: string;
+                    };
+                    labels?: {
+                        [key: string]: string;
+                    };
+                    resources?: {
+                        requests?: {
+                            memory?: string;
+                            cpu?: string;
+                        };
+                        limits?: {
+                            memory?: string;
+                            cpu?: string;
+                        };
+                    };
+                };
             };
         } | null;
         adminResponse: string | null;
@@ -17949,6 +20513,26 @@ export type DeclineMcpServerInstallationRequestResponses = {
                 httpPort?: number;
                 httpPath?: string;
                 serviceAccount?: string;
+                advancedK8sConfig?: {
+                    replicas?: number;
+                    namespace?: string;
+                    annotations?: {
+                        [key: string]: string;
+                    };
+                    labels?: {
+                        [key: string]: string;
+                    };
+                    resources?: {
+                        requests?: {
+                            memory?: string;
+                            cpu?: string;
+                        };
+                        limits?: {
+                            memory?: string;
+                            cpu?: string;
+                        };
+                    };
+                };
             };
         } | null;
         adminResponse: string | null;
@@ -18105,6 +20689,26 @@ export type AddMcpServerInstallationRequestNoteResponses = {
                 httpPort?: number;
                 httpPath?: string;
                 serviceAccount?: string;
+                advancedK8sConfig?: {
+                    replicas?: number;
+                    namespace?: string;
+                    annotations?: {
+                        [key: string]: string;
+                    };
+                    labels?: {
+                        [key: string]: string;
+                    };
+                    resources?: {
+                        requests?: {
+                            memory?: string;
+                            cpu?: string;
+                        };
+                        limits?: {
+                            memory?: string;
+                            cpu?: string;
+                        };
+                    };
+                };
             };
         } | null;
         adminResponse: string | null;
@@ -18819,101 +21423,22 @@ export type GetMcpServerToolsResponses = {
 
 export type GetMcpServerToolsResponse = GetMcpServerToolsResponses[keyof GetMcpServerToolsResponses];
 
-export type GetMcpServerLogsData = {
-    body?: never;
-    path: {
-        id: string;
-    };
-    query?: {
-        lines?: number;
-        follow?: boolean;
-    };
-    url: '/api/mcp_server/{id}/logs';
-};
-
-export type GetMcpServerLogsErrors = {
-    /**
-     * Default Response
-     */
-    400: {
-        error: {
-            message: string;
-            type: 'api_validation_error';
+export type ReinstallMcpServerData = {
+    body?: {
+        environmentValues?: {
+            [key: string]: string;
         };
+        isByosVault?: boolean;
+        serviceAccount?: string;
     };
-    /**
-     * Default Response
-     */
-    401: {
-        error: {
-            message: string;
-            type: 'api_authentication_error';
-        };
-    };
-    /**
-     * Default Response
-     */
-    403: {
-        error: {
-            message: string;
-            type: 'api_authorization_error';
-        };
-    };
-    /**
-     * Default Response
-     */
-    404: {
-        error: {
-            message: string;
-            type: 'api_not_found_error';
-        };
-    };
-    /**
-     * Default Response
-     */
-    409: {
-        error: {
-            message: string;
-            type: 'api_conflict_error';
-        };
-    };
-    /**
-     * Default Response
-     */
-    500: {
-        error: {
-            message: string;
-            type: 'api_internal_server_error';
-        };
-    };
-};
-
-export type GetMcpServerLogsError = GetMcpServerLogsErrors[keyof GetMcpServerLogsErrors];
-
-export type GetMcpServerLogsResponses = {
-    /**
-     * Default Response
-     */
-    200: {
-        logs: string;
-        containerName: string;
-        command: string;
-        namespace: string;
-    };
-};
-
-export type GetMcpServerLogsResponse = GetMcpServerLogsResponses[keyof GetMcpServerLogsResponses];
-
-export type RestartMcpServerData = {
-    body?: never;
     path: {
         id: string;
     };
     query?: never;
-    url: '/api/mcp_server/{id}/restart';
+    url: '/api/mcp_server/{id}/reinstall';
 };
 
-export type RestartMcpServerErrors = {
+export type ReinstallMcpServerErrors = {
     /**
      * Default Response
      */
@@ -18970,110 +21495,45 @@ export type RestartMcpServerErrors = {
     };
 };
 
-export type RestartMcpServerError = RestartMcpServerErrors[keyof RestartMcpServerErrors];
+export type ReinstallMcpServerError = ReinstallMcpServerErrors[keyof ReinstallMcpServerErrors];
 
-export type RestartMcpServerResponses = {
+export type ReinstallMcpServerResponses = {
     /**
      * Default Response
      */
     200: {
-        success: boolean;
-        message: string;
-    };
-};
-
-export type RestartMcpServerResponse = RestartMcpServerResponses[keyof RestartMcpServerResponses];
-
-export type RestartAllMcpServerInstallationsData = {
-    body?: never;
-    path: {
+        id: string;
+        name: string;
         catalogId: string;
-    };
-    query?: never;
-    url: '/api/mcp_catalog/{catalogId}/restart-all-installations';
-};
-
-export type RestartAllMcpServerInstallationsErrors = {
-    /**
-     * Default Response
-     */
-    400: {
-        error: {
-            message: string;
-            type: 'api_validation_error';
-        };
-    };
-    /**
-     * Default Response
-     */
-    401: {
-        error: {
-            message: string;
-            type: 'api_authentication_error';
-        };
-    };
-    /**
-     * Default Response
-     */
-    403: {
-        error: {
-            message: string;
-            type: 'api_authorization_error';
-        };
-    };
-    /**
-     * Default Response
-     */
-    404: {
-        error: {
-            message: string;
-            type: 'api_not_found_error';
-        };
-    };
-    /**
-     * Default Response
-     */
-    409: {
-        error: {
-            message: string;
-            type: 'api_conflict_error';
-        };
-    };
-    /**
-     * Default Response
-     */
-    500: {
-        error: {
-            message: string;
-            type: 'api_internal_server_error';
-        };
-    };
-};
-
-export type RestartAllMcpServerInstallationsError = RestartAllMcpServerInstallationsErrors[keyof RestartAllMcpServerInstallationsErrors];
-
-export type RestartAllMcpServerInstallationsResponses = {
-    /**
-     * Default Response
-     */
-    200: {
-        success: boolean;
-        message: string;
-        results: Array<{
-            serverId: string;
-            serverName: string;
-            success: boolean;
-            error?: string;
+        serverType: 'local' | 'remote' | 'builtin';
+        secretId: string | null;
+        ownerId: string | null;
+        teamId: string | null;
+        reinstallRequired: boolean;
+        localInstallationStatus: 'idle' | 'pending' | 'discovering-tools' | 'success' | 'error';
+        localInstallationError: string | null;
+        oauthRefreshError: 'refresh_failed' | 'no_refresh_token';
+        oauthRefreshFailedAt: string | null;
+        createdAt: string;
+        updatedAt: string;
+        ownerEmail?: string | null;
+        catalogName?: string | null;
+        users?: Array<string>;
+        userDetails?: Array<{
+            userId: string;
+            email: string;
+            createdAt: string;
         }>;
-        summary: {
-            total: number;
-            succeeded: number;
-            failed: number;
-        };
+        teamDetails?: {
+            teamId: string;
+            name: string;
+            createdAt: string;
+        } | null;
+        secretStorageType?: 'vault' | 'external_vault' | 'database' | 'none';
     };
 };
 
-export type RestartAllMcpServerInstallationsResponse = RestartAllMcpServerInstallationsResponses[keyof RestartAllMcpServerInstallationsResponses];
+export type ReinstallMcpServerResponse = ReinstallMcpServerResponses[keyof ReinstallMcpServerResponses];
 
 export type GetMcpToolCallsData = {
     body?: never;
@@ -20054,7 +22514,7 @@ export type GetOptimizationRulesResponses = {
         } | {
             hasTools: boolean;
         }>;
-        provider: 'openai' | 'gemini' | 'anthropic' | 'cohere' | 'cerebras' | 'mistral' | 'vllm' | 'ollama' | 'zhipuai';
+        provider: 'openai' | 'gemini' | 'anthropic' | 'bedrock' | 'cohere' | 'cerebras' | 'mistral' | 'vllm' | 'ollama' | 'zhipuai';
         targetModel: string;
         enabled: boolean;
         createdAt: string;
@@ -20074,7 +22534,7 @@ export type CreateOptimizationRuleData = {
         } | {
             hasTools: boolean;
         }>;
-        provider: 'openai' | 'gemini' | 'anthropic' | 'cohere' | 'cerebras' | 'mistral' | 'vllm' | 'ollama' | 'zhipuai';
+        provider: 'openai' | 'gemini' | 'anthropic' | 'bedrock' | 'cohere' | 'cerebras' | 'mistral' | 'vllm' | 'ollama' | 'zhipuai';
         targetModel: string;
         enabled?: boolean;
         createdAt?: unknown;
@@ -20157,7 +22617,7 @@ export type CreateOptimizationRuleResponses = {
         } | {
             hasTools: boolean;
         }>;
-        provider: 'openai' | 'gemini' | 'anthropic' | 'cohere' | 'cerebras' | 'mistral' | 'vllm' | 'ollama' | 'zhipuai';
+        provider: 'openai' | 'gemini' | 'anthropic' | 'bedrock' | 'cohere' | 'cerebras' | 'mistral' | 'vllm' | 'ollama' | 'zhipuai';
         targetModel: string;
         enabled: boolean;
         createdAt: string;
@@ -20256,7 +22716,7 @@ export type UpdateOptimizationRuleData = {
         } | {
             hasTools: boolean;
         }>;
-        provider?: 'openai' | 'gemini' | 'anthropic' | 'cohere' | 'cerebras' | 'mistral' | 'vllm' | 'ollama' | 'zhipuai';
+        provider?: 'openai' | 'gemini' | 'anthropic' | 'bedrock' | 'cohere' | 'cerebras' | 'mistral' | 'vllm' | 'ollama' | 'zhipuai';
         targetModel?: string;
         enabled?: boolean;
         createdAt?: unknown;
@@ -20341,7 +22801,7 @@ export type UpdateOptimizationRuleResponses = {
         } | {
             hasTools: boolean;
         }>;
-        provider: 'openai' | 'gemini' | 'anthropic' | 'cohere' | 'cerebras' | 'mistral' | 'vllm' | 'ollama' | 'zhipuai';
+        provider: 'openai' | 'gemini' | 'anthropic' | 'bedrock' | 'cohere' | 'cerebras' | 'mistral' | 'vllm' | 'ollama' | 'zhipuai';
         targetModel: string;
         enabled: boolean;
         createdAt: string;
@@ -21715,6 +24175,7 @@ export type GetAgentStatisticsResponses = {
     200: Array<{
         agentId: string;
         agentName: string;
+        agentType: string;
         teamName: string;
         requests: number;
         inputTokens: number;
@@ -23018,7 +25479,7 @@ export type GetTokenPricesResponses = {
      */
     200: Array<{
         id: string;
-        provider: 'openai' | 'gemini' | 'anthropic' | 'cohere' | 'cerebras' | 'mistral' | 'vllm' | 'ollama' | 'zhipuai';
+        provider: 'openai' | 'gemini' | 'anthropic' | 'bedrock' | 'cohere' | 'cerebras' | 'mistral' | 'vllm' | 'ollama' | 'zhipuai';
         model: string;
         pricePerMillionInput: string;
         pricePerMillionOutput: string;
@@ -23031,7 +25492,7 @@ export type GetTokenPricesResponse = GetTokenPricesResponses[keyof GetTokenPrice
 
 export type CreateTokenPriceData = {
     body: {
-        provider: 'openai' | 'gemini' | 'anthropic' | 'cohere' | 'cerebras' | 'mistral' | 'vllm' | 'ollama' | 'zhipuai';
+        provider: 'openai' | 'gemini' | 'anthropic' | 'bedrock' | 'cohere' | 'cerebras' | 'mistral' | 'vllm' | 'ollama' | 'zhipuai';
         model: string;
         pricePerMillionInput: string;
         pricePerMillionOutput: string;
@@ -23106,7 +25567,7 @@ export type CreateTokenPriceResponses = {
      */
     200: {
         id: string;
-        provider: 'openai' | 'gemini' | 'anthropic' | 'cohere' | 'cerebras' | 'mistral' | 'vllm' | 'ollama' | 'zhipuai';
+        provider: 'openai' | 'gemini' | 'anthropic' | 'bedrock' | 'cohere' | 'cerebras' | 'mistral' | 'vllm' | 'ollama' | 'zhipuai';
         model: string;
         pricePerMillionInput: string;
         pricePerMillionOutput: string;
@@ -23270,7 +25731,7 @@ export type GetTokenPriceResponses = {
      */
     200: {
         id: string;
-        provider: 'openai' | 'gemini' | 'anthropic' | 'cohere' | 'cerebras' | 'mistral' | 'vllm' | 'ollama' | 'zhipuai';
+        provider: 'openai' | 'gemini' | 'anthropic' | 'bedrock' | 'cohere' | 'cerebras' | 'mistral' | 'vllm' | 'ollama' | 'zhipuai';
         model: string;
         pricePerMillionInput: string;
         pricePerMillionOutput: string;
@@ -23283,7 +25744,7 @@ export type GetTokenPriceResponse = GetTokenPriceResponses[keyof GetTokenPriceRe
 
 export type UpdateTokenPriceData = {
     body?: {
-        provider?: 'openai' | 'gemini' | 'anthropic' | 'cohere' | 'cerebras' | 'mistral' | 'vllm' | 'ollama' | 'zhipuai';
+        provider?: 'openai' | 'gemini' | 'anthropic' | 'bedrock' | 'cohere' | 'cerebras' | 'mistral' | 'vllm' | 'ollama' | 'zhipuai';
         model?: string;
         pricePerMillionInput?: string;
         pricePerMillionOutput?: string;
@@ -23360,7 +25821,7 @@ export type UpdateTokenPriceResponses = {
      */
     200: {
         id: string;
-        provider: 'openai' | 'gemini' | 'anthropic' | 'cohere' | 'cerebras' | 'mistral' | 'vllm' | 'ollama' | 'zhipuai';
+        provider: 'openai' | 'gemini' | 'anthropic' | 'bedrock' | 'cohere' | 'cerebras' | 'mistral' | 'vllm' | 'ollama' | 'zhipuai';
         model: string;
         pricePerMillionInput: string;
         pricePerMillionOutput: string;

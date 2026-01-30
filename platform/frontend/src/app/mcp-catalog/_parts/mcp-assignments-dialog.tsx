@@ -27,7 +27,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { useProfilesQuery } from "@/lib/agent.query";
+import { useProfiles } from "@/lib/agent.query";
 import {
   useAllProfileTools,
   useBulkAssignTools,
@@ -86,8 +86,8 @@ export function McpAssignmentsDialog({
   }, [assignedToolsData, catalogId]);
 
   // Fetch all profiles
-  const { data: allProfiles = [], isLoading: isLoadingProfiles } =
-    useProfilesQuery();
+  const { data: allProfiles = [], isPending: isLoadingProfiles } =
+    useProfiles();
 
   // Fetch available credentials for this catalog
   const credentials = useMcpServersGroupedByCatalog({ catalogId });
@@ -566,7 +566,7 @@ function ProfileAssignmentPill({
           size="sm"
           className={cn(
             "h-8 px-3 gap-1.5 text-xs max-w-[250px]",
-            hasNoAssignments && "border-dashed",
+            hasNoAssignments && "border-dashed opacity-50",
             hasChanges && "border-primary",
           )}
         >

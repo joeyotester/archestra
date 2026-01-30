@@ -36,6 +36,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { ExpandableText } from "@/components/ui/expandable-text";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { MultiSelectCombobox } from "@/components/ui/multi-select-combobox";
@@ -137,10 +138,12 @@ function SubagentPill({ agent, isSelected, onToggle }: SubagentPillProps) {
         <div className="p-4 border-b flex items-start justify-between gap-2">
           <div className="flex-1 min-w-0">
             <h4 className="font-semibold truncate">{agent.name}</h4>
-            {agent.systemPrompt && (
-              <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
-                {agent.systemPrompt}
-              </p>
+            {agent.description && (
+              <ExpandableText
+                text={agent.description}
+                maxLines={2}
+                className="text-sm text-muted-foreground mt-1"
+              />
             )}
           </div>
           <Button
@@ -382,6 +385,7 @@ export function AgentDialog({
 
   // Form state
   const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
   const [userPrompt, setUserPrompt] = useState("");
   const [systemPrompt, setSystemPrompt] = useState("");
   const [selectedDelegationTargetIds, setSelectedDelegationTargetIds] =
@@ -427,6 +431,7 @@ export function AgentDialog({
       if (agentData) {
         // Edit mode
         setName(agentData.name);
+        setDescription(agentData.description || "");
         setUserPrompt(agentData.userPrompt || "");
         setSystemPrompt(agentData.systemPrompt || "");
         // Reset delegation targets - will be populated by the next useEffect when data loads
@@ -458,6 +463,7 @@ export function AgentDialog({
       } else {
         // Create mode - reset all fields
         setName("");
+        setDescription("");
         setUserPrompt("");
         setSystemPrompt("");
         setSelectedDelegationTargetIds([]);
@@ -563,6 +569,7 @@ export function AgentDialog({
             name: trimmedName,
             agentType: agentType,
             ...(isInternalAgent && {
+              description: description.trim() || null,
               userPrompt: trimmedUserPrompt || undefined,
               systemPrompt: trimmedSystemPrompt || undefined,
               allowedChatops,
@@ -581,6 +588,7 @@ export function AgentDialog({
           name: trimmedName,
           agentType: agentType,
           ...(isInternalAgent && {
+            description: description.trim() || null,
             userPrompt: trimmedUserPrompt || undefined,
             systemPrompt: trimmedSystemPrompt || undefined,
             allowedChatops,
@@ -627,6 +635,7 @@ export function AgentDialog({
     }
   }, [
     name,
+    description,
     userPrompt,
     systemPrompt,
     allowedChatops,
@@ -707,6 +716,24 @@ export function AgentDialog({
                 autoFocus
               />
             </div>
+
+            {/* Description (Agent only) */}
+            {isInternalAgent && (
+              <div className="space-y-2">
+                <Label htmlFor="agentDescription">Description</Label>
+                <p className="text-sm text-muted-foreground">
+                  A brief summary of what this agent does. Helps other agents
+                  quickly understand if this agent is relevant for their task.
+                </p>
+                <Textarea
+                  id="agentDescription"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="Describe what this agent does"
+                  className="min-h-[60px]"
+                />
+              </div>
+            )}
 
             {/* Tools (MCP Gateway and Agent only) */}
             {showToolsAndSubagents && (

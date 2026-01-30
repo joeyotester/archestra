@@ -1,10 +1,5 @@
 import { archestraApiSdk, type archestraApiTypes } from "@shared";
-import {
-  useMutation,
-  useQuery,
-  useQueryClient,
-  useSuspenseQuery,
-} from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
 export type SupportedChatProvider =
@@ -22,11 +17,11 @@ const {
   createChatApiKey,
   updateChatApiKey,
   deleteChatApiKey,
-  invalidateChatModelsCache,
+  syncChatModels,
 } = archestraApiSdk;
 
 export function useChatApiKeys() {
-  return useSuspenseQuery({
+  return useQuery({
     queryKey: ["chat-api-keys"],
     queryFn: async () => {
       const { data, error } = await getChatApiKeys();
@@ -87,6 +82,7 @@ export function useCreateChatApiKey() {
       queryClient.invalidateQueries({ queryKey: ["chat-api-keys"] });
       queryClient.invalidateQueries({ queryKey: ["available-chat-api-keys"] });
       queryClient.invalidateQueries({ queryKey: ["chat-models"] });
+      queryClient.invalidateQueries({ queryKey: ["models-with-api-keys"] });
     },
   });
 }
@@ -148,25 +144,29 @@ export function useDeleteChatApiKey() {
       queryClient.invalidateQueries({ queryKey: ["chat-api-keys"] });
       queryClient.invalidateQueries({ queryKey: ["available-chat-api-keys"] });
       queryClient.invalidateQueries({ queryKey: ["chat-models"] });
+      queryClient.invalidateQueries({ queryKey: ["models-with-api-keys"] });
     },
   });
 }
 
-export function useInvalidateChatModelsCache() {
+export function useSyncChatModels() {
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async () => {
-      const { data: responseData, error } = await invalidateChatModelsCache();
+      const { data: responseData, error } = await syncChatModels();
       if (error) {
         const msg =
           typeof error.error === "string"
             ? error.error
-            : error.error?.message || "Failed to invalidate models cache";
+            : error.error?.message || "Failed to sync models";
         toast.error(msg);
       }
       return responseData;
     },
     onSuccess: () => {
-      toast.success("Models cache refreshed");
+      toast.success("Models synced");
+      queryClient.invalidateQueries({ queryKey: ["chat-models"] });
+      queryClient.invalidateQueries({ queryKey: ["models-with-api-keys"] });
     },
   });
 }

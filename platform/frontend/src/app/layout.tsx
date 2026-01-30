@@ -18,8 +18,8 @@ import {
   Source_Sans_3,
 } from "next/font/google";
 import { PublicEnvScript } from "next-runtime-env";
-import { Suspense } from "react";
 import { AppShell } from "./_parts/app-shell";
+
 import { PostHogProviderWrapper } from "./_parts/posthog-provider";
 import { ArchestraQueryClientProvider } from "./_parts/query-client-provider";
 import { ThemeProvider } from "./_parts/theme-provider";
@@ -147,14 +147,12 @@ export default function RootLayout({
               >
                 <PostHogProviderWrapper>
                   <OrgThemeLoader />
-                  <Suspense>
-                    <WithAuthCheck>
-                      <WebsocketInitializer />
-                      <AppShell>
-                        <WithPagePermissions>{children}</WithPagePermissions>
-                      </AppShell>
-                    </WithAuthCheck>
-                  </Suspense>
+                  <WithAuthCheck>
+                    <WebsocketInitializer />
+                    <AppShell>
+                      <WithPagePermissions>{children}</WithPagePermissions>
+                    </AppShell>
+                  </WithAuthCheck>
                 </PostHogProviderWrapper>
               </ThemeProvider>
             </ChatProvider>

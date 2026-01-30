@@ -55,35 +55,12 @@ import {
   useGenerateConversationTitle,
   useUpdateConversation,
 } from "@/lib/chat.query";
+import { getConversationDisplayTitle } from "@/lib/chat-utils";
 import { cn } from "@/lib/utils";
 
 const CONVERSATION_QUERY_PARAM = "conversation";
 const VISIBLE_CHAT_COUNT = 10;
 const MAX_TITLE_LENGTH = 30;
-
-// Helper to extract display title from conversation
-export function getConversationDisplayTitle(
-  title: string | null,
-  // biome-ignore lint/suspicious/noExplicitAny: UIMessage structure from AI SDK is dynamic
-  messages?: any[],
-): string {
-  if (title) return title;
-
-  // Try to extract from first user message
-  if (messages && messages.length > 0) {
-    for (const msg of messages) {
-      if (msg.role === "user" && msg.parts) {
-        for (const part of msg.parts) {
-          if (part.type === "text" && part.text) {
-            return part.text;
-          }
-        }
-      }
-    }
-  }
-
-  return "New chat";
-}
 
 function AISparkleIcon({ isAnimating = false }: { isAnimating?: boolean }) {
   return (
@@ -353,20 +330,14 @@ export function ChatSidebarSection() {
                               }
                             >
                               <DropdownMenuTrigger asChild>
-                                <Button
-                                  type="button"
-                                  size="icon-sm"
-                                  variant="ghost"
-                                  onClick={(e) => e.stopPropagation()}
+                                <MoreHorizontal
                                   className={cn(
-                                    "h-6 w-6 p-0 shrink-0 transition-opacity",
+                                    "h-4 w-4 p-0 shrink-0 transition-opacity",
                                     isMenuOpen
                                       ? "opacity-100"
                                       : "opacity-0 group-hover/menu-item:opacity-100",
                                   )}
-                                >
-                                  <MoreHorizontal className="h-4 w-4" />
-                                </Button>
+                                />
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="start" side="right">
                                 {canUpdateConversation && (

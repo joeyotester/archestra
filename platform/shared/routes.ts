@@ -49,12 +49,10 @@ export const RouteId = {
   GetMcpServers: "getMcpServers",
   GetMcpServer: "getMcpServer",
   GetMcpServerTools: "getMcpServerTools",
-  GetMcpServerLogs: "getMcpServerLogs",
   InstallMcpServer: "installMcpServer",
   DeleteMcpServer: "deleteMcpServer",
   ReauthenticateMcpServer: "reauthenticateMcpServer",
-  RestartMcpServer: "restartMcpServer",
-  RestartAllMcpServerInstallations: "restartAllMcpServerInstallations",
+  ReinstallMcpServer: "reinstallMcpServer",
   GetMcpServerInstallationStatus: "getMcpServerInstallationStatus",
   McpProxy: "mcpProxy",
 
@@ -182,6 +180,17 @@ export const RouteId = {
     "zhipuaiChatCompletionsWithDefaultAgent",
   ZhipuaiChatCompletionsWithAgent: "zhipuaiChatCompletionsWithAgent",
 
+  // Proxy Routes - AWS Bedrock
+  BedrockConverseWithDefaultAgent: "bedrockConverseWithDefaultAgent",
+  BedrockConverseWithAgent: "bedrockConverseWithAgent",
+  BedrockConverseStreamWithDefaultAgent:
+    "bedrockConverseStreamWithDefaultAgent",
+  BedrockConverseStreamWithAgent: "bedrockConverseStreamWithAgent",
+  // AI SDK compatible routes (model ID in URL)
+  BedrockConverseWithAgentAndModel: "bedrockConverseWithAgentAndModel",
+  BedrockConverseStreamWithAgentAndModel:
+    "bedrockConverseStreamWithAgentAndModel",
+
   // Chat Routes
   StreamChat: "streamChat",
   GetChatConversations: "getChatConversations",
@@ -197,7 +206,7 @@ export const RouteId = {
   UpdateConversationEnabledTools: "updateConversationEnabledTools",
   DeleteConversationEnabledTools: "deleteConversationEnabledTools",
   GetChatModels: "getChatModels",
-  InvalidateChatModelsCache: "invalidateChatModelsCache",
+  SyncChatModels: "syncChatModels",
 
   // Chat API Key Routes
   GetChatApiKeys: "getChatApiKeys",
@@ -206,6 +215,9 @@ export const RouteId = {
   GetChatApiKey: "getChatApiKey",
   UpdateChatApiKey: "updateChatApiKey",
   DeleteChatApiKey: "deleteChatApiKey",
+
+  // Models with API Keys Routes
+  GetModelsWithApiKeys: "getModelsWithApiKeys",
 
   // Prompt Routes
   GetPrompts: "getPrompts",
@@ -301,6 +313,9 @@ export const RouteId = {
   GetChatOpsStatus: "getChatOpsStatus",
   ListChatOpsBindings: "listChatOpsBindings",
   DeleteChatOpsBinding: "deleteChatOpsBinding",
+
+  // Invitation Routes
+  CheckInvitation: "checkInvitation",
 } as const;
 
 export type RouteId = (typeof RouteId)[keyof typeof RouteId];

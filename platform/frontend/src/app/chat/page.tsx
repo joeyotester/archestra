@@ -47,16 +47,14 @@ import { useChatSession } from "@/contexts/global-chat-context";
 import { useInternalAgents } from "@/lib/agent.query";
 import { useHasPermissions } from "@/lib/auth.query";
 import {
+  fetchConversationEnabledTools,
   useConversation,
   useCreateConversation,
   useHasPlaywrightMcpTools,
   useUpdateConversation,
   useUpdateConversationEnabledTools,
 } from "@/lib/chat.query";
-import {
-  useChatModelsQuery,
-  useModelsByProviderQuery,
-} from "@/lib/chat-models.query";
+import { useChatModels, useModelsByProvider } from "@/lib/chat-models.query";
 import {
   type SupportedChatProvider,
   useChatApiKeys,
@@ -102,13 +100,7 @@ export default function ChatPage() {
     }
     return false;
   });
-  const [isArtifactOpen, setIsArtifactOpen] = useState(() => {
-    // Initialize artifact panel state from localStorage
-    if (typeof window !== "undefined") {
-      return localStorage.getItem(LocalStorageKeys.artifactOpen) === "true";
-    }
-    return false;
-  });
+  const [isArtifactOpen, setIsArtifactOpen] = useState(false);
   const loadedConversationRef = useRef<string | undefined>(undefined);
   const pendingPromptRef = useRef<string | undefined>(undefined);
   const pendingFilesRef = useRef<
@@ -142,9 +134,8 @@ export default function ChatPage() {
     useInternalAgents();
 
   // Fetch profiles and models for initial chat (no conversation)
-  // Using non-suspense queries to avoid blocking page render
-  const { modelsByProvider, isLoading: isModelsLoading } =
-    useModelsByProviderQuery();
+  const { modelsByProvider, isPending: isModelsLoading } =
+    useModelsByProvider();
 
   // State for initial chat (when no conversation exists yet)
   const [initialAgentId, setInitialAgentId] = useState<string | null>(null);
@@ -222,6 +213,28 @@ export default function ChatPage() {
     localStorage.setItem(LocalStorageKeys.selectedChatModel, modelId);
   }, []);
 
+  // Handle provider change from API key selector - auto-select a model from new provider
+  const handleInitialProviderChange = useCallback(
+    (newProvider: SupportedChatProvider) => {
+      const providerModels = modelsByProvider[newProvider];
+      if (providerModels && providerModels.length > 0) {
+        // Try to restore from localStorage for this provider
+        const savedModelKey = `selected-chat-model-${newProvider}`;
+        const savedModelId = localStorage.getItem(savedModelKey);
+        if (savedModelId && providerModels.some((m) => m.id === savedModelId)) {
+          setInitialModel(savedModelId);
+          localStorage.setItem("selected-chat-model", savedModelId);
+          return;
+        }
+        // Fall back to first model for this provider
+        const firstModel = providerModels[0];
+        setInitialModel(firstModel.id);
+        localStorage.setItem("selected-chat-model", firstModel.id);
+      }
+    },
+    [modelsByProvider],
+  );
+
   // Derive provider from initial model for API key filtering
   const initialProvider = useMemo((): SupportedChatProvider | undefined => {
     if (!initialModel) return undefined;
@@ -240,7 +253,7 @@ export default function ChatPage() {
     useChatApiKeys();
   const { data: features, isLoading: isLoadingFeatures } = useFeatures();
   const { data: organization } = useOrganization();
-  const { data: chatModels = [] } = useChatModelsQuery();
+  const { data: chatModels = [] } = useChatModels();
   // Vertex AI Gemini mode doesn't require an API key (uses ADC)
   // vLLM/Ollama may not require an API key either
   const hasAnyApiKey =
@@ -294,12 +307,54 @@ export default function ChatPage() {
   const { data: conversation, isLoading: isLoadingConversation } =
     useConversation(conversationId);
 
+  // Initialize artifact panel state when conversation loads or changes
+  useEffect(() => {
+    // If no conversation (new chat), close the artifact panel
+    if (!conversationId) {
+      setIsArtifactOpen(false);
+      return;
+    }
+
+    if (isLoadingConversation) return;
+
+    // Check for conversation-specific preference
+    const storageKey = `archestra-chat-artifact-open-${conversationId}`;
+    const storedState = localStorage.getItem(storageKey);
+    if (storedState !== null) {
+      // User has explicitly set a preference for this conversation
+      setIsArtifactOpen(storedState === "true");
+    } else if (conversation?.artifact) {
+      // First time viewing this conversation with an artifact - auto-open
+      setIsArtifactOpen(true);
+      localStorage.setItem(storageKey, "true");
+    } else {
+      // No artifact or no stored preference - keep closed
+      setIsArtifactOpen(false);
+    }
+  }, [conversationId, conversation?.artifact, isLoadingConversation]);
+
   // Derive current provider from selected model
   const currentProvider = useMemo((): SupportedChatProvider | undefined => {
     if (!conversation?.selectedModel) return undefined;
     const model = chatModels.find((m) => m.id === conversation.selectedModel);
     return model?.provider as SupportedChatProvider | undefined;
   }, [conversation?.selectedModel, chatModels]);
+
+  // Get selected model's context length for the context indicator
+  const selectedModelContextLength = useMemo((): number | null => {
+    const modelId = conversation?.selectedModel ?? initialModel;
+    if (!modelId) return null;
+    const model = chatModels.find((m) => m.id === modelId);
+    return model?.capabilities?.contextLength ?? null;
+  }, [conversation?.selectedModel, initialModel, chatModels]);
+
+  // Get selected model's input modalities for file upload filtering
+  const selectedModelInputModalities = useMemo(() => {
+    const modelId = conversation?.selectedModel ?? initialModel;
+    if (!modelId) return null;
+    const model = chatModels.find((m) => m.id === modelId);
+    return model?.capabilities?.inputModalities ?? null;
+  }, [conversation?.selectedModel, initialModel, chatModels]);
 
   // Mutation for updating conversation model
   const updateConversationMutation = useUpdateConversation();
@@ -329,6 +384,34 @@ export default function ChatPage() {
       );
     },
     [conversation, chatModels, updateConversationMutation],
+  );
+
+  // Handle provider change from API key selector - auto-select a model from new provider
+  const handleProviderChange = useCallback(
+    (newProvider: SupportedChatProvider) => {
+      if (!conversation) return;
+
+      const providerModels = modelsByProvider[newProvider];
+      if (providerModels && providerModels.length > 0) {
+        // Select first model from the new provider
+        const firstModel = providerModels[0];
+        updateConversationMutation.mutate(
+          {
+            id: conversation.id,
+            selectedModel: firstModel.id,
+            selectedProvider: newProvider,
+          },
+          {
+            onError: (error) => {
+              toast.error(
+                `Failed to change model: ${error instanceof Error ? error.message : "Unknown error"}`,
+              );
+            },
+          },
+        );
+      }
+    },
+    [conversation, modelsByProvider, updateConversationMutation],
   );
 
   // Find the specific internal agent for this conversation (if any)
@@ -418,42 +501,38 @@ export default function ChatPage() {
   const toggleArtifactPanel = useCallback(() => {
     const newValue = !isArtifactOpen;
     setIsArtifactOpen(newValue);
-    localStorage.setItem(LocalStorageKeys.artifactOpen, String(newValue));
-  }, [isArtifactOpen]);
+    // Only persist state for active conversations
+    if (conversationId) {
+      const storageKey = `archestra-chat-artifact-open-${conversationId}`;
+      localStorage.setItem(storageKey, String(newValue));
+    }
+  }, [isArtifactOpen, conversationId]);
 
-  // Persist browser panel state
-  const toggleBrowserPanel = useCallback(() => {
-    const newValue = !isBrowserPanelOpen;
-    setIsBrowserPanelOpen(newValue);
-    localStorage.setItem(LocalStorageKeys.browserOpen, String(newValue));
-  }, [isBrowserPanelOpen]);
-
-  // Close browser panel handler (also persists to localStorage)
-  const closeBrowserPanel = useCallback(() => {
-    setIsBrowserPanelOpen(false);
-    localStorage.setItem(LocalStorageKeys.browserOpen, "false");
-  }, []);
-
-  // Auto-open artifact panel when artifact is updated
+  // Auto-open artifact panel when artifact is updated during conversation
   const previousArtifactRef = useRef<string | null | undefined>(undefined);
   useEffect(() => {
     // Only auto-open if:
     // 1. We have a conversation with an artifact
     // 2. The artifact has changed (not just initial load)
     // 3. The panel is currently closed
+    // 4. This is an update to an existing conversation (not initial load)
     if (
+      conversationId &&
       conversation?.artifact &&
       previousArtifactRef.current !== undefined && // Not the initial render
       previousArtifactRef.current !== conversation.artifact &&
+      conversation.artifact !== previousArtifactRef.current && // Artifact actually changed
       !isArtifactOpen
     ) {
       setIsArtifactOpen(true);
-      localStorage.setItem(LocalStorageKeys.artifactOpen, "true");
+      // Save the preference for this conversation
+      const storageKey = `archestra-chat-artifact-open-${conversationId}`;
+      localStorage.setItem(storageKey, "true");
     }
 
     // Update the ref for next comparison
     previousArtifactRef.current = conversation?.artifact;
-  }, [conversation?.artifact, isArtifactOpen]);
+  }, [conversation?.artifact, isArtifactOpen, conversationId]);
 
   // Extract chat session properties (or use defaults if session not ready)
   const messages = chatSession?.messages ?? [];
@@ -466,6 +545,10 @@ export default function ChatPage() {
   const pendingCustomServerToolCall = chatSession?.pendingCustomServerToolCall;
   const setPendingCustomServerToolCall =
     chatSession?.setPendingCustomServerToolCall;
+  const tokenUsage = chatSession?.tokenUsage;
+
+  // Use actual token usage when available from the stream (no fallback to estimation)
+  const tokensUsed = tokenUsage?.totalTokens;
 
   useEffect(() => {
     if (
@@ -706,6 +789,19 @@ export default function ChatPage() {
     });
   };
 
+  // Persist browser panel state
+  const toggleBrowserPanel = useCallback(() => {
+    const newValue = !isBrowserPanelOpen;
+    setIsBrowserPanelOpen(newValue);
+    localStorage.setItem(LocalStorageKeys.browserOpen, String(newValue));
+  }, [isBrowserPanelOpen]);
+
+  // Close browser panel handler (also persists to localStorage)
+  const closeBrowserPanel = useCallback(() => {
+    setIsBrowserPanelOpen(false);
+    localStorage.setItem(LocalStorageKeys.browserOpen, "false");
+  }, []);
+
   // Handle initial agent change (when no conversation exists)
   const handleInitialAgentChange = useCallback((agentId: string) => {
     setInitialAgentId(agentId);
@@ -759,11 +855,10 @@ export default function ChatPage() {
                 try {
                   // The backend creates conversation with default enabled tools
                   // We need to apply pending actions to modify that default
-                  const response = await fetch(
-                    `/api/chat/conversations/${newConversation.id}/enabled-tools`,
+                  const data = await fetchConversationEnabledTools(
+                    newConversation.id,
                   );
-                  if (response.ok) {
-                    const data = await response.json();
+                  if (data) {
                     const baseEnabledToolIds = data.enabledToolIds || [];
                     const newEnabledToolIds = applyPendingActions(
                       baseEnabledToolIds,
@@ -1155,9 +1250,17 @@ export default function ChatPage() {
                       ? undefined
                       : setInitialApiKeyId
                   }
+                  onProviderChange={
+                    conversationId && conversation?.agent.id
+                      ? handleProviderChange
+                      : handleInitialProviderChange
+                  }
                   allowFileUploads={organization?.allowChatFileUploads ?? false}
                   isModelsLoading={isModelsLoading}
                   onEditAgent={() => openDialog("edit-agent")}
+                  tokensUsed={tokensUsed}
+                  maxContextLength={selectedModelContextLength}
+                  inputModalities={selectedModelInputModalities}
                 />
                 <div className="text-center">
                   <Version inline />
