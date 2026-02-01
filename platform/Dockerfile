@@ -138,9 +138,13 @@ RUN apk --no-cache upgrade && \
     # Clean up
     rm -rf /tmp/*
 
-# Install KinD (Kubernetes in Docker) and docker-cli for embedded K8s cluster support
+# Install KinD (Kubernetes in Docker), kubectl, and docker-cli for embedded K8s cluster support
 # KinD binary is built from source in kind-builder stage with Go 1.25.6 (CVE-2025-61726 fix)
-RUN apk add --no-cache docker-cli
+ARG TARGETARCH
+RUN apk add --no-cache docker-cli && \
+    KUBECTL_VERSION=$(wget -qO- https://dl.k8s.io/release/stable.txt) && \
+    wget -qO /usr/local/bin/kubectl "https://dl.k8s.io/release/${KUBECTL_VERSION}/bin/linux/${TARGETARCH}/kubectl" && \
+    chmod +x /usr/local/bin/kubectl
 COPY --from=kind-builder /kind-binary /usr/local/bin/kind
 RUN chmod +x /usr/local/bin/kind
 # TODO: Once KinD releases a version compiled with Go >= 1.25.6, remove the kind-builder stage
@@ -441,6 +445,38 @@ if [ "$ARCHESTRA_QUICKSTART" = "true" ]; then
         export ARCHESTRA_ORCHESTRATOR_KUBECONFIG="${KUBECONFIG_PATH}"
         export ARCHESTRA_ORCHESTRATOR_K8S_NAMESPACE="${ARCHESTRA_ORCHESTRATOR_K8S_NAMESPACE:-default}"
         echo "Kubernetes orchestrator configured with embedded KinD cluster"
+
+        # Create imagePullSecret for private registry if credentials are provided
+        if [ -n "$ARCHESTRA_QUICKSTART_REGISTRY_SERVER" ] && [ -n "$ARCHESTRA_QUICKSTART_REGISTRY_USERNAME" ] && [ -n "$ARCHESTRA_QUICKSTART_REGISTRY_PASSWORD" ]; then
+            echo "Creating imagePullSecret for private registry: ${ARCHESTRA_QUICKSTART_REGISTRY_SERVER}"
+
+            # Create the namespace if it doesn't exist
+            kubectl --kubeconfig="${KUBECONFIG_PATH}" create namespace "${ARCHESTRA_ORCHESTRATOR_K8S_NAMESPACE}" 2>/dev/null || true
+
+            # Delete existing secret if it exists (to allow updating credentials)
+            kubectl --kubeconfig="${KUBECONFIG_PATH}" delete secret regcred \
+                -n "${ARCHESTRA_ORCHESTRATOR_K8S_NAMESPACE}" 2>/dev/null || true
+
+            # Create imagePullSecret
+            if kubectl --kubeconfig="${KUBECONFIG_PATH}" create secret docker-registry regcred \
+                --docker-server="$ARCHESTRA_QUICKSTART_REGISTRY_SERVER" \
+                --docker-username="$ARCHESTRA_QUICKSTART_REGISTRY_USERNAME" \
+                --docker-password="$ARCHESTRA_QUICKSTART_REGISTRY_PASSWORD" \
+                -n "${ARCHESTRA_ORCHESTRATOR_K8S_NAMESPACE}"; then
+                echo "imagePullSecret 'regcred' created successfully"
+
+                # Patch default service account to use the secret
+                if kubectl --kubeconfig="${KUBECONFIG_PATH}" patch serviceaccount default \
+                    -n "${ARCHESTRA_ORCHESTRATOR_K8S_NAMESPACE}" \
+                    -p '{"imagePullSecrets": [{"name": "regcred"}]}'; then
+                    echo "Default service account patched with imagePullSecrets"
+                else
+                    echo "Warning: Failed to patch default service account"
+                fi
+            else
+                echo "Warning: Failed to create imagePullSecret"
+            fi
+        fi
     fi
 fi
 

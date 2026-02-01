@@ -43,6 +43,8 @@ docker run -p 9000:9000 -p 3000:3000 \
    archestra/platform;
 ```
 
+To customize settings (e.g., private registry auth), look for env vars starting with `ARCHESTRA_QUICKSTART_` in the [Deployment docs](/docs/platform-deployment#mcp-server-orchestrator).
+
 ## Build Your First Agent
 
 1. Go to **MCP Registry**, add new and search for `microsoft__playwright-mcp`, install it.

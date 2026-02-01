@@ -678,6 +678,25 @@ The following environment variables can be used to configure Archestra Platform.
   - Optional: Uses default locations if not specified
   - Example: `/path/to/kubeconfig`
 
+- **`ARCHESTRA_QUICKSTART_REGISTRY_SERVER`** - Private Docker registry server URL for quickstart mode.
+
+  - Optional: Only used when `ARCHESTRA_QUICKSTART=true`
+  - Example: `ghcr.io`, `europe-west1-docker.pkg.dev`, `123456789.dkr.ecr.us-east-1.amazonaws.com`
+
+- **`ARCHESTRA_QUICKSTART_REGISTRY_USERNAME`** - Username for private registry authentication in quickstart mode.
+
+  - Optional: Required when `ARCHESTRA_QUICKSTART_REGISTRY_SERVER` is set
+  - For GitHub Container Registry: your GitHub username
+  - For Google Artifact Registry: `_json_key`
+  - For AWS ECR: `AWS`
+
+- **`ARCHESTRA_QUICKSTART_REGISTRY_PASSWORD`** - Password or token for private registry authentication in quickstart mode.
+
+  - Optional: Required when `ARCHESTRA_QUICKSTART_REGISTRY_SERVER` is set
+  - For GitHub Container Registry: a GitHub Personal Access Token (PAT) with `read:packages` scope
+  - For Google Artifact Registry: contents of service account JSON key file
+  - For AWS ECR: output of `aws ecr get-login-password`
+
 ### Observability & Metrics
 
 - **`ARCHESTRA_OTEL_EXPORTER_OTLP_ENDPOINT`** - OTEL Exporter endpoint for sending traces.
