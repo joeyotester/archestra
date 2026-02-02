@@ -23,7 +23,8 @@ import {
 import type { BrowserUserContext } from "@/services/browser-stream";
 import { browserStreamFeature } from "@/services/browser-stream-feature";
 
-const SCREENSHOT_INTERVAL_MS = 3000; // Stream at ~0.33 FPS (every 3 seconds)
+const SCREENSHOT_INTERVAL_MS = 5000; // Stream at ~0.2 FPS (every 5 seconds) - immediate screenshots after actions handle responsiveness
+const MIN_SCREENSHOT_INTERVAL_MS = 200; // Minimum time between screenshots to prevent floods
 
 interface BrowserStreamSubscription {
   conversationId: string;
@@ -58,6 +59,7 @@ class WebSocketService {
     new Map();
   private mcpLogsSubscriptions: Map<WebSocket, McpLogsSubscription> = new Map();
   private clientContexts: Map<WebSocket, WebSocketClientContext> = new Map();
+  private lastScreenshotTime: Map<string, number> = new Map();
 
   private messageHandlers: Record<ClientWebSocketMessageType, MessageHandler> =
     {
@@ -420,6 +422,9 @@ class WebSocketService {
       // Refresh tabs list after navigation to update tab titles
       // Add delays to allow the page title to update (title often loads after initial render)
       if (result.success) {
+        // Immediate screenshot after navigation
+        await this.sendImmediateScreenshot(ws, subscription);
+
         setTimeout(() => {
           void this.handleBrowserListTabs(ws, conversationId);
         }, 1000);
@@ -483,6 +488,11 @@ class WebSocketService {
           error: result.error,
         },
       });
+
+      // Immediate screenshot after navigate back
+      if (result.success) {
+        await this.sendImmediateScreenshot(ws, subscription);
+      }
     } catch (error) {
       logger.error({ error, conversationId }, "Browser navigate back failed");
       this.sendToClient(ws, {
@@ -544,6 +554,11 @@ class WebSocketService {
           error: result.error,
         },
       });
+
+      // Immediate screenshot after click
+      if (result.success) {
+        await this.sendImmediateScreenshot(ws, subscription);
+      }
     } catch (error) {
       logger.error(
         { error, conversationId, element, x, y },
@@ -595,6 +610,11 @@ class WebSocketService {
           error: result.error,
         },
       });
+
+      // Immediate screenshot after typing
+      if (result.success) {
+        await this.sendImmediateScreenshot(ws, subscription);
+      }
     } catch (error) {
       logger.error({ error, conversationId }, "Browser type failed");
       this.sendToClient(ws, {
@@ -651,6 +671,11 @@ class WebSocketService {
           error: result.error,
         },
       });
+
+      // Immediate screenshot after key press
+      if (result.success) {
+        await this.sendImmediateScreenshot(ws, subscription);
+      }
     } catch (error) {
       logger.error({ error, conversationId, key }, "Browser press key failed");
       this.sendToClient(ws, {
@@ -780,6 +805,7 @@ class WebSocketService {
         subscription.agentId,
         tabIndex,
         subscription.userContext,
+        conversationId, // Update conversation-tab cache so subsequent actions use this tab
       );
 
       this.sendToClient(ws, {
@@ -792,9 +818,12 @@ class WebSocketService {
         },
       });
 
-      // Send updated tabs list after selection
+      // Send updated tabs list and immediate screenshot after selection
       if (result.success) {
         await this.handleBrowserListTabs(ws, conversationId);
+        // Small delay to allow tab content to render before screenshot
+        await new Promise((resolve) => setTimeout(resolve, 100));
+        await this.sendImmediateScreenshot(ws, subscription);
       }
     } catch (error) {
       logger.error(
@@ -834,6 +863,7 @@ class WebSocketService {
       const result = await browserStreamFeature.createTab(
         subscription.agentId,
         subscription.userContext,
+        conversationId, // Associate the new tab with this conversation
       );
 
       this.sendToClient(ws, {
@@ -846,9 +876,10 @@ class WebSocketService {
         },
       });
 
-      // Send updated tabs list after creation
+      // Send updated tabs list and immediate screenshot after creation
       if (result.success) {
         await this.handleBrowserListTabs(ws, conversationId);
+        await this.sendImmediateScreenshot(ws, subscription);
       }
     } catch (error) {
       logger.error({ error, conversationId }, "Browser create tab failed");
@@ -898,9 +929,10 @@ class WebSocketService {
         },
       });
 
-      // Send updated tabs list after close
+      // Send updated tabs list and immediate screenshot after close
       if (result.success) {
         await this.handleBrowserListTabs(ws, conversationId);
+        await this.sendImmediateScreenshot(ws, subscription);
       }
     } catch (error) {
       logger.error(
@@ -1095,6 +1127,28 @@ class WebSocketService {
         },
       });
     }
+  }
+
+  private async sendImmediateScreenshot(
+    ws: WebSocket,
+    subscription: BrowserStreamSubscription,
+  ): Promise<void> {
+    const now = Date.now();
+    const lastTime =
+      this.lastScreenshotTime.get(subscription.conversationId) ?? 0;
+
+    if (now - lastTime < MIN_SCREENSHOT_INTERVAL_MS) {
+      return; // Prevent duplicate screenshots
+    }
+
+    this.lastScreenshotTime.set(subscription.conversationId, now);
+
+    await this.sendScreenshot(
+      ws,
+      subscription.agentId,
+      subscription.conversationId,
+      subscription.userContext,
+    );
   }
 
   private sendToClient(ws: WebSocket, message: ServerWebSocketMessage): void {

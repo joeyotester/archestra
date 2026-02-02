@@ -122,20 +122,34 @@ class BrowserStreamFeature {
     );
   }
 
-  getCurrentUrl(agentId: string, userContext: BrowserUserContext) {
-    return this.getService().getCurrentUrl(agentId, userContext);
+  getCurrentUrl(
+    agentId: string,
+    userContext: BrowserUserContext,
+    tabIndex?: number,
+  ) {
+    return this.getService().getCurrentUrl(agentId, userContext, tabIndex);
   }
 
   selectTab(
     agentId: string,
     tabIndex: number,
     userContext: BrowserUserContext,
+    conversationId?: string,
   ) {
-    return this.getService().selectTab(agentId, tabIndex, userContext);
+    return this.getService().selectTab(
+      agentId,
+      tabIndex,
+      userContext,
+      conversationId,
+    );
   }
 
-  createTab(agentId: string, userContext: BrowserUserContext) {
-    return this.getService().createTab(agentId, userContext);
+  createTab(
+    agentId: string,
+    userContext: BrowserUserContext,
+    conversationId?: string,
+  ) {
+    return this.getService().createTab(agentId, userContext, conversationId);
   }
 
   closeTabByIndex(

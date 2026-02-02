@@ -70,21 +70,19 @@ export function BrowserTabsBar({
               <span className="truncate flex-1 text-muted-foreground group-hover:text-foreground">
                 {getTabLabel(tab)}
               </span>
-              {tab.index !== 0 && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-4 w-4 p-0 opacity-0 group-hover:opacity-100 hover:bg-destructive/20 transition-opacity flex-shrink-0"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onCloseTab(tab.index);
-                  }}
-                  disabled={disabled}
-                  title="Close tab"
-                >
-                  <X className="h-3 w-3" />
-                </Button>
-              )}
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-4 w-4 p-0 opacity-0 group-hover:opacity-100 hover:bg-destructive/20 transition-opacity flex-shrink-0"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onCloseTab(tab.index);
+                }}
+                disabled={disabled}
+                title="Close tab"
+              >
+                <X className="h-3 w-3" />
+              </Button>
             </div>
           );
         })}

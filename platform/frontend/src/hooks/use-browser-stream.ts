@@ -103,7 +103,7 @@ export function useBrowserStream({
         subscribedConversationIdRef.current = null;
       }
       setIsConnected(false);
-      setScreenshot(null);
+      // Don't clear screenshot - let new screenshot replace it to avoid blank screen
       prevConversationIdRef.current = conversationId;
       return;
     }
@@ -121,7 +121,7 @@ export function useBrowserStream({
         });
         subscribedConversationIdRef.current = null;
       }
-      setScreenshot(null);
+      // Don't clear screenshot - let new screenshot replace it to avoid blank screen
       setUrlInput("");
       setIsConnected(false);
       setIsEditingUrl(false);
@@ -472,7 +472,6 @@ export function useBrowserStream({
   const closeTab = useCallback(
     (tabIndex: number) => {
       if (!websocketService.isConnected() || !conversationId) return;
-      if (tabIndex === 0) return; // Cannot close tab 0
 
       setIsLoadingTabs(true);
       setError(null);

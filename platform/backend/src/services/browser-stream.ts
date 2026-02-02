@@ -530,72 +530,10 @@ export class BrowserStreamService {
     // Clean up orphaned tabs on first access after server restart
     await this.cleanupOrphanedTabs(agentId, userContext, tabsTool, client);
 
-    logger.info(
-      {
-        tabKey,
-        agentId,
-        userId: userContext.userId,
-        conversationId,
-        existingTabIndex: conversationTabCache.get(tabKey),
-        allTabKeys: Array.from(conversationTabCache.keys()),
-      },
-      "selectOrCreateTab called",
-    );
+    const agentUserKey = toAgentUserKey(agentId, userContext.userId);
 
     try {
-      const existingTabIndex = conversationTabCache.get(tabKey);
-
-      const agentUserKey = toAgentUserKey(agentId, userContext.userId);
-
-      if (existingTabIndex !== undefined) {
-        try {
-          const selectExistingResult = await client.callTool({
-            name: tabsTool,
-            arguments: { action: "select", index: existingTabIndex },
-          });
-
-          if (!selectExistingResult.isError) {
-            // Touch tab to update LRU timestamp
-            this.touchTab(
-              tabKey,
-              agentUserKey,
-              existingTabIndex,
-              conversationId,
-            );
-            return { success: true, tabIndex: existingTabIndex };
-          }
-
-          const errorText = this.extractTextContent(
-            selectExistingResult.content,
-          );
-          logger.warn(
-            {
-              agentId,
-              conversationId,
-              tabIndex: existingTabIndex,
-              error: errorText,
-            },
-            "Failed to select existing conversation tab, creating a new one",
-          );
-        } catch (selectError) {
-          // MCP tool call threw exception (e.g., tab no longer exists)
-          logger.warn(
-            {
-              agentId,
-              conversationId,
-              tabIndex: existingTabIndex,
-              error:
-                selectError instanceof Error
-                  ? selectError.message
-                  : String(selectError),
-            },
-            "Exception selecting existing tab, clearing stale entry and creating new one",
-          );
-        }
-        // Clear stale entry and fall through to create new tab
-        conversationTabCache.delete(tabKey);
-      }
-
+      // Always list tabs first to validate cache and get current state
       const listResult = await client.callTool({
         name: tabsTool,
         arguments: { action: "list" },
@@ -607,6 +545,89 @@ export class BrowserStreamService {
       }
 
       const existingTabs = this.parseTabsList(listResult.content);
+      const validTabIndices = new Set(existingTabs.map((t) => t.index));
+
+      const existingTabIndex = conversationTabCache.get(tabKey);
+
+      logger.info(
+        {
+          tabKey,
+          agentId,
+          userId: userContext.userId,
+          conversationId,
+          existingTabIndex,
+          validTabIndices: Array.from(validTabIndices),
+          tabCount: existingTabs.length,
+        },
+        "selectOrCreateTab called",
+      );
+
+      // Validate cached tab index against actual Playwright tabs
+      if (existingTabIndex !== undefined) {
+        if (!validTabIndices.has(existingTabIndex)) {
+          // Cached index is stale - tab no longer exists
+          logger.warn(
+            {
+              agentId,
+              conversationId,
+              staleTabIndex: existingTabIndex,
+              validTabIndices: Array.from(validTabIndices),
+            },
+            "Cached tab index is stale (tab no longer exists), clearing entry",
+          );
+          conversationTabCache.delete(tabKey);
+          tabLRUCache.delete(tabKey);
+        } else {
+          // Tab exists, try to select it
+          try {
+            const selectExistingResult = await client.callTool({
+              name: tabsTool,
+              arguments: { action: "select", index: existingTabIndex },
+            });
+
+            if (!selectExistingResult.isError) {
+              // Touch tab to update LRU timestamp
+              this.touchTab(
+                tabKey,
+                agentUserKey,
+                existingTabIndex,
+                conversationId,
+              );
+              return { success: true, tabIndex: existingTabIndex };
+            }
+
+            const errorText = this.extractTextContent(
+              selectExistingResult.content,
+            );
+            logger.warn(
+              {
+                agentId,
+                conversationId,
+                tabIndex: existingTabIndex,
+                error: errorText,
+              },
+              "Failed to select existing conversation tab, creating a new one",
+            );
+          } catch (selectError) {
+            // MCP tool call threw exception (e.g., tab no longer exists)
+            logger.warn(
+              {
+                agentId,
+                conversationId,
+                tabIndex: existingTabIndex,
+                error:
+                  selectError instanceof Error
+                    ? selectError.message
+                    : String(selectError),
+              },
+              "Exception selecting existing tab, clearing stale entry and creating new one",
+            );
+          }
+          // Clear stale entry and fall through to create new tab
+          conversationTabCache.delete(tabKey);
+          tabLRUCache.delete(tabKey);
+        }
+      }
 
       // Check if we can reuse an existing empty tab instead of creating a new one
       // Look for a tab that:
@@ -1047,11 +1068,13 @@ export class BrowserStreamService {
   /**
    * Select a specific browser tab by index.
    * Does NOT create a new tab if the index doesn't exist.
+   * Optionally updates the conversation-tab cache if conversationId is provided.
    */
   async selectTab(
     agentId: string,
     tabIndex: number,
     userContext: BrowserUserContext,
+    conversationId?: string,
   ): Promise<TabResult> {
     const tabsTool = await this.findTabsTool(agentId);
     if (!tabsTool) {
@@ -1078,6 +1101,25 @@ export class BrowserStreamService {
         return { success: false, error: errorText || "Failed to select tab" };
       }
 
+      // Update the conversation-tab cache if conversationId is provided
+      // This ensures subsequent actions use this tab
+      if (conversationId) {
+        const tabKey = toConversationTabKey(
+          agentId,
+          userContext.userId,
+          conversationId,
+        );
+        const agentUserKey = toAgentUserKey(agentId, userContext.userId);
+
+        conversationTabCache.set(tabKey, tabIndex);
+        this.touchTab(tabKey, agentUserKey, tabIndex, conversationId);
+
+        logger.info(
+          { tabKey, tabIndex, conversationId },
+          "Updated conversation-tab association after manual tab selection",
+        );
+      }
+
       return { success: true, tabIndex };
     } catch (error) {
       return {
@@ -1088,12 +1130,14 @@ export class BrowserStreamService {
   }
 
   /**
-   * Create a new browser tab (without conversation association).
+   * Create a new browser tab.
    * Returns the index of the newly created tab.
+   * Optionally associates the new tab with a conversation if conversationId is provided.
    */
   async createTab(
     agentId: string,
     userContext: BrowserUserContext,
+    conversationId?: string,
   ): Promise<TabResult> {
     const tabsTool = await this.findTabsTool(agentId);
     if (!tabsTool) {
@@ -1152,6 +1196,24 @@ export class BrowserStreamService {
           ? Math.max(...newIndices)
           : this.getMaxTabIndex(afterTabs);
 
+      // Update the conversation-tab cache if conversationId is provided
+      if (conversationId) {
+        const tabKey = toConversationTabKey(
+          agentId,
+          userContext.userId,
+          conversationId,
+        );
+        const agentUserKey = toAgentUserKey(agentId, userContext.userId);
+
+        conversationTabCache.set(tabKey, newTabIndex);
+        this.touchTab(tabKey, agentUserKey, newTabIndex, conversationId);
+
+        logger.info(
+          { tabKey, newTabIndex, conversationId },
+          "Associated new tab with conversation",
+        );
+      }
+
       return { success: true, tabIndex: newTabIndex };
     } catch (error) {
       return {
@@ -1163,17 +1225,12 @@ export class BrowserStreamService {
 
   /**
    * Close a specific browser tab by index.
-   * Cannot close tab 0 (the default tab).
    */
   async closeTabByIndex(
     agentId: string,
     tabIndex: number,
     userContext: BrowserUserContext,
   ): Promise<TabResult> {
-    if (tabIndex === 0) {
-      return { success: false, error: "Cannot close the default tab (tab 0)" };
-    }
-
     const tabsTool = await this.findTabsTool(agentId);
     if (!tabsTool) {
       return { success: false, error: "No browser_tabs tool available" };
@@ -1291,8 +1348,8 @@ export class BrowserStreamService {
       }
     }
 
-    if (tabIndex === undefined || tabIndex === 0) {
-      return { success: true }; // No tab to close or can't close tab 0
+    if (tabIndex === undefined) {
+      return { success: true }; // No tab to close
     }
 
     try {
@@ -1536,9 +1593,12 @@ export class BrowserStreamService {
       );
     }
 
-    // Get URL reliably using browser_evaluate instead of extracting from screenshot response
-    // This ensures the URL matches the page content shown in the screenshot
-    const url = await this.getCurrentUrl(agentId, userContext);
+    // Get URL for the specific tab we just selected
+    const url = await this.getCurrentUrl(
+      agentId,
+      userContext,
+      tabResult.tabIndex,
+    );
 
     return {
       screenshot,
@@ -1723,6 +1783,7 @@ export class BrowserStreamService {
   async getCurrentUrl(
     agentId: string,
     userContext: BrowserUserContext,
+    tabIndex?: number,
   ): Promise<string | undefined> {
     const tabsTool = await this.findTabsTool(agentId);
     if (!tabsTool) {
@@ -1749,17 +1810,40 @@ export class BrowserStreamService {
       }
 
       const textContent = this.extractTextContent(result.content);
+
+      // If tabIndex is provided, get URL for that specific tab
+      if (tabIndex !== undefined) {
+        const tabs = this.parseTabsList(result.content);
+        const targetTab = tabs.find((t) => t.index === tabIndex);
+        if (targetTab?.url) {
+          return targetTab.url;
+        }
+      }
+
+      // Try JSON parsing for current tab
       const currentUrlFromJson =
         this.extractCurrentUrlFromTabsJson(textContent);
       if (currentUrlFromJson) {
         return currentUrlFromJson;
       }
+
       // Parse the current tab's URL from format like:
       // "- 1: (current) [Title] (https://example.com)"
       const currentTabMatch = textContent.match(
         /\(current\)[^()]*\(((?:https?|about):\/\/[^)]+)\)/,
       );
-      return currentTabMatch?.[1];
+      if (currentTabMatch?.[1]) {
+        return currentTabMatch[1];
+      }
+
+      // Fallback: if we have a tabIndex, try parsing the tabs list
+      if (tabIndex !== undefined) {
+        const tabs = this.parseTabsList(result.content);
+        const targetTab = tabs.find((t) => t.index === tabIndex);
+        return targetTab?.url;
+      }
+
+      return undefined;
     } catch {
       return undefined;
     }

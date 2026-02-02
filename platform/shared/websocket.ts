@@ -73,7 +73,7 @@ const BrowserCreateTabPayloadSchema = z.object({
 
 const BrowserCloseTabPayloadSchema = z.object({
   conversationId: z.string().uuid(),
-  tabIndex: z.number().int().min(1), // Cannot close tab 0
+  tabIndex: z.number().int().min(0),
 });
 
 // MCP Server Logs payloads
