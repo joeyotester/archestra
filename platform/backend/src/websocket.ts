@@ -326,17 +326,9 @@ class WebSocketService {
       userIsProfileAdmin: clientContext.userIsProfileAdmin,
     };
 
-    const tabResult = await browserStreamFeature.selectOrCreateTab(
-      agentId,
-      conversationId,
-      userContext,
-    );
-    if (!tabResult.success) {
-      logger.warn(
-        { conversationId, agentId, error: tabResult.error },
-        "Failed to select/create browser tab",
-      );
-    }
+    // Note: We don't call selectOrCreateTab here anymore.
+    // Tabs are created lazily on first navigation/action to avoid
+    // creating unnecessary tabs when users just view the browser panel.
 
     const sendTick = async () => {
       const subscription = this.browserSubscriptions.get(ws);
@@ -424,6 +416,18 @@ class WebSocketService {
           error: result.error,
         },
       });
+
+      // Refresh tabs list after navigation to update tab titles
+      // Add delays to allow the page title to update (title often loads after initial render)
+      if (result.success) {
+        setTimeout(() => {
+          void this.handleBrowserListTabs(ws, conversationId);
+        }, 1000);
+        // Second refresh for slower pages
+        setTimeout(() => {
+          void this.handleBrowserListTabs(ws, conversationId);
+        }, 3000);
+      }
     } catch (error) {
       logger.error({ error, conversationId, url }, "Browser navigation failed");
       this.sendToClient(ws, {

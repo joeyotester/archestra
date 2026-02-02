@@ -75,6 +75,13 @@ type ConversationTabKey = `${string}:${string}:${string}`;
 const conversationTabMap = new Map<ConversationTabKey, number>();
 
 /**
+ * Tracks pending tab creation requests to prevent duplicate tabs.
+ * When a tab is being created for a conversation, other concurrent requests
+ * will wait for the pending creation to complete instead of creating duplicates.
+ */
+const pendingTabCreation = new Map<ConversationTabKey, Promise<TabResult>>();
+
+/**
  * Tracks which agent+user combos have been cleaned up after server restart.
  * On first browser panel open after restart, we close all orphaned tabs.
  */
@@ -250,11 +257,54 @@ export class BrowserStreamService {
   /**
    * Select or create a browser tab for a conversation
    * Uses Playwright MCP browser_tabs tool
+   * Includes deduplication to prevent concurrent calls from creating duplicate tabs
    */
   async selectOrCreateTab(
     agentId: string,
     conversationId: string,
     userContext: BrowserUserContext,
+  ): Promise<TabResult> {
+    const tabKey = toConversationTabKey(
+      agentId,
+      userContext.userId,
+      conversationId,
+    );
+
+    // Check if there's already a pending tab creation for this conversation
+    const pendingCreation = pendingTabCreation.get(tabKey);
+    if (pendingCreation) {
+      logger.debug(
+        { tabKey, conversationId },
+        "Waiting for pending tab creation to complete",
+      );
+      return pendingCreation;
+    }
+
+    // Start the tab creation and store the promise
+    const creationPromise = this.doSelectOrCreateTab(
+      agentId,
+      conversationId,
+      userContext,
+      tabKey,
+    );
+    pendingTabCreation.set(tabKey, creationPromise);
+
+    try {
+      return await creationPromise;
+    } finally {
+      // Clean up the pending promise
+      pendingTabCreation.delete(tabKey);
+    }
+  }
+
+  /**
+   * Internal implementation of selectOrCreateTab
+   */
+  private async doSelectOrCreateTab(
+    agentId: string,
+    conversationId: string,
+    userContext: BrowserUserContext,
+    tabKey: ConversationTabKey,
   ): Promise<TabResult> {
     const tabsTool = await this.findTabsTool(agentId);
     if (!tabsTool) {
@@ -276,12 +326,6 @@ export class BrowserStreamService {
 
     // Clean up orphaned tabs on first access after server restart
     await this.cleanupOrphanedTabs(agentId, userContext, tabsTool, client);
-
-    const tabKey = toConversationTabKey(
-      agentId,
-      userContext.userId,
-      conversationId,
-    );
 
     logger.info(
       {
@@ -351,6 +395,46 @@ export class BrowserStreamService {
       }
 
       const existingTabs = this.parseTabsList(listResult.content);
+
+      // Check if we can reuse an existing empty tab instead of creating a new one
+      // Look for a tab that:
+      // 1. Is at about:blank or has no URL
+      // 2. Is not already claimed by another conversation
+      const claimedTabIndices = new Set(conversationTabMap.values());
+      const reusableTab = existingTabs.find(
+        (tab) =>
+          !claimedTabIndices.has(tab.index) &&
+          (!tab.url || tab.url === "about:blank"),
+      );
+
+      if (reusableTab) {
+        // Reuse the existing empty tab
+        logger.info(
+          {
+            tabKey,
+            reusableTabIndex: reusableTab.index,
+            reusableTabUrl: reusableTab.url,
+          },
+          "Reusing existing empty tab instead of creating new one",
+        );
+
+        const selectResult = await client.callTool({
+          name: tabsTool,
+          arguments: { action: "select", index: reusableTab.index },
+        });
+
+        if (!selectResult.isError) {
+          conversationTabMap.set(tabKey, reusableTab.index);
+          return { success: true, tabIndex: reusableTab.index };
+        }
+        // Fall through to create new tab if selection failed
+        logger.warn(
+          { tabKey, reusableTabIndex: reusableTab.index },
+          "Failed to select reusable tab, creating new one instead",
+        );
+      }
+
+      // No reusable tab found, create a new one
       const expectedNewTabIndex = this.getMaxTabIndex(existingTabs) + 1;
 
       const createResult = await client.callTool({
