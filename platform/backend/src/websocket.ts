@@ -43,6 +43,7 @@ interface WebSocketClientContext {
   userId: string;
   organizationId: string;
   userIsProfileAdmin: boolean;
+  userIsMcpServerAdmin: boolean;
 }
 
 type MessageHandler = (
@@ -923,11 +924,11 @@ class WebSocketService {
     this.unsubscribeMcpLogs(ws);
 
     // Verify the user has access to this MCP server
-    // Note: findById checks access control based on userId
+    // Note: findById checks access control based on userId and admin status
     const mcpServer = await McpServerModel.findById(
       serverId,
       clientContext.userId,
-      false, // not admin - let the model check team/personal access
+      clientContext.userIsMcpServerAdmin,
     );
 
     if (!mcpServer) {
@@ -962,7 +963,15 @@ class WebSocketService {
       serverId,
       lines,
     );
-    let isFirstChunk = true;
+    // Send an initial message to confirm subscription and provide the command
+    this.sendToClient(ws, {
+      type: "mcp_logs",
+      payload: {
+        serverId,
+        logs: "",
+        command,
+      },
+    });
 
     // Set up stream data handler
     stream.on("data", (chunk: Buffer) => {
@@ -972,11 +981,8 @@ class WebSocketService {
           payload: {
             serverId,
             logs: chunk.toString(),
-            // Only send command with the first chunk
-            ...(isFirstChunk ? { command } : {}),
           },
         });
-        isFirstChunk = false;
       }
     });
 
@@ -1177,10 +1183,11 @@ class WebSocketService {
   private async authenticateConnection(
     request: IncomingMessage,
   ): Promise<WebSocketClientContext | null> {
-    const { success: userIsProfileAdmin } = await hasPermission(
-      { profile: ["admin"] },
-      request.headers,
-    );
+    const [{ success: userIsProfileAdmin }, { success: userIsMcpServerAdmin }] =
+      await Promise.all([
+        hasPermission({ profile: ["admin"] }, request.headers),
+        hasPermission({ mcpServer: ["admin"] }, request.headers),
+      ]);
     const headers = new Headers(request.headers as HeadersInit);
 
     try {
@@ -1193,7 +1200,12 @@ class WebSocketService {
         const { organizationId, ...user } = await UserModel.getById(
           session.user.id,
         );
-        return { userId: user.id, organizationId, userIsProfileAdmin };
+        return {
+          userId: user.id,
+          organizationId,
+          userIsProfileAdmin,
+          userIsMcpServerAdmin,
+        };
       }
     } catch (_sessionError) {
       // Fall through to API key verification
@@ -1210,7 +1222,12 @@ class WebSocketService {
           const { organizationId, ...user } = await UserModel.getById(
             apiKeyResult.key.userId,
           );
-          return { userId: user.id, organizationId, userIsProfileAdmin };
+          return {
+            userId: user.id,
+            organizationId,
+            userIsProfileAdmin,
+            userIsMcpServerAdmin,
+          };
         }
       } catch (_apiKeyError) {
         return null;
