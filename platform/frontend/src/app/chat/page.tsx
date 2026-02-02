@@ -1061,9 +1061,7 @@ export default function ChatPage() {
               </div>
               {/* Right side - show/hide controls */}
               <div className="flex items-center gap-2 flex-shrink-0">
-                <span className="text-xs text-muted-foreground">
-                  Show / hide:
-                </span>
+                <span className="text-xs text-muted-foreground">Show:</span>
                 <Button
                   variant={!hideToolCalls ? "secondary" : "ghost"}
                   size="sm"
