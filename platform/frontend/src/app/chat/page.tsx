@@ -21,7 +21,6 @@ import {
   useRef,
   useState,
 } from "react";
-import { toast } from "sonner";
 import { CreateCatalogDialog } from "@/app/mcp-catalog/_parts/create-catalog-dialog";
 import { CustomServerRequestDialog } from "@/app/mcp-catalog/_parts/custom-server-request-dialog";
 import { AgentDialog } from "@/components/agent-dialog";
@@ -55,6 +54,7 @@ import { useChatSession } from "@/contexts/global-chat-context";
 import { useInternalAgents } from "@/lib/agent.query";
 import { useHasPermissions } from "@/lib/auth.query";
 import {
+  fetchConversationEnabledTools,
   useConversation,
   useCreateConversation,
   useHasPlaywrightMcpTools,
@@ -206,6 +206,28 @@ export default function ChatPage() {
     localStorage.setItem("selected-chat-model", modelId);
   }, []);
 
+  // Handle provider change from API key selector - auto-select a model from new provider
+  const handleInitialProviderChange = useCallback(
+    (newProvider: SupportedChatProvider) => {
+      const providerModels = modelsByProvider[newProvider];
+      if (providerModels && providerModels.length > 0) {
+        // Try to restore from localStorage for this provider
+        const savedModelKey = `selected-chat-model-${newProvider}`;
+        const savedModelId = localStorage.getItem(savedModelKey);
+        if (savedModelId && providerModels.some((m) => m.id === savedModelId)) {
+          setInitialModel(savedModelId);
+          localStorage.setItem("selected-chat-model", savedModelId);
+          return;
+        }
+        // Fall back to first model for this provider
+        const firstModel = providerModels[0];
+        setInitialModel(firstModel.id);
+        localStorage.setItem("selected-chat-model", firstModel.id);
+      }
+    },
+    [modelsByProvider],
+  );
+
   // Derive provider from initial model for API key filtering
   const initialProvider = useMemo((): SupportedChatProvider | undefined => {
     if (!initialModel) return undefined;
@@ -330,7 +352,7 @@ export default function ChatPage() {
   // Mutation for updating conversation model
   const updateConversationMutation = useUpdateConversation();
 
-  // Handle model change with error handling
+  // Handle model change
   const handleModelChange = useCallback(
     (model: string) => {
       if (!conversation) return;
@@ -339,22 +361,32 @@ export default function ChatPage() {
       const modelInfo = chatModels.find((m) => m.id === model);
       const provider = modelInfo?.provider as SupportedChatProvider | undefined;
 
-      updateConversationMutation.mutate(
-        {
-          id: conversation.id,
-          selectedModel: model,
-          selectedProvider: provider,
-        },
-        {
-          onError: (error) => {
-            toast.error(
-              `Failed to change model: ${error instanceof Error ? error.message : "Unknown error"}`,
-            );
-          },
-        },
-      );
+      updateConversationMutation.mutate({
+        id: conversation.id,
+        selectedModel: model,
+        selectedProvider: provider,
+      });
     },
     [conversation, chatModels, updateConversationMutation],
+  );
+
+  // Handle provider change from API key selector - auto-select a model from new provider
+  const handleProviderChange = useCallback(
+    (newProvider: SupportedChatProvider) => {
+      if (!conversation) return;
+
+      const providerModels = modelsByProvider[newProvider];
+      if (providerModels && providerModels.length > 0) {
+        // Select first model from the new provider
+        const firstModel = providerModels[0];
+        updateConversationMutation.mutate({
+          id: conversation.id,
+          selectedModel: firstModel.id,
+          selectedProvider: newProvider,
+        });
+      }
+    },
+    [conversation, modelsByProvider, updateConversationMutation],
   );
 
   // Find the specific internal agent for this conversation (if any)
@@ -770,11 +802,10 @@ export default function ChatPage() {
                 try {
                   // The backend creates conversation with default enabled tools
                   // We need to apply pending actions to modify that default
-                  const response = await fetch(
-                    `/api/chat/conversations/${newConversation.id}/enabled-tools`,
+                  const data = await fetchConversationEnabledTools(
+                    newConversation.id,
                   );
-                  if (response.ok) {
-                    const data = await response.json();
+                  if (data) {
                     const baseEnabledToolIds = data.enabledToolIds || [];
                     const newEnabledToolIds = applyPendingActions(
                       baseEnabledToolIds,
@@ -1171,6 +1202,11 @@ export default function ChatPage() {
                     conversationId && conversation?.agent.id
                       ? undefined
                       : setInitialApiKeyId
+                  }
+                  onProviderChange={
+                    conversationId && conversation?.agent.id
+                      ? handleProviderChange
+                      : handleInitialProviderChange
                   }
                   allowFileUploads={organization?.allowChatFileUploads ?? false}
                   isModelsLoading={isModelsLoading}

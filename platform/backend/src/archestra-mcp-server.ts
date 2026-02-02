@@ -10,6 +10,7 @@ import {
 } from "@shared";
 import { executeA2AMessage } from "@/agents/a2a-executor";
 import { userHasPermission } from "@/auth/utils";
+import type { TokenAuthContext } from "@/clients/mcp-client";
 import { getKnowledgeGraphProvider } from "@/knowledge-graph";
 import logger from "@/logging";
 import {
@@ -24,7 +25,6 @@ import {
   TrustedDataPolicyModel,
 } from "@/models";
 import { assignToolToAgent } from "@/routes/agent-tool";
-import type { TokenAuthResult } from "@/routes/mcp-gateway.utils";
 import type { InternalMcpCatalog } from "@/types";
 import {
   AutonomyPolicyOperator,
@@ -125,8 +125,8 @@ export interface ArchestraContext {
   agentId?: string;
   /** The organization ID */
   organizationId?: string;
-  /** Token authentication result */
-  tokenAuth?: TokenAuthResult;
+  /** Token authentication context */
+  tokenAuth?: TokenAuthContext;
   /** Session ID for grouping related LLM requests in logs */
   sessionId?: string;
   /**
@@ -199,9 +199,16 @@ export async function executeArchestraTool(
 
     // Check user has access if user token is being used
     const userId = tokenAuth?.userId;
-    if (userId) {
+    if (userId && organizationId) {
+      const isProfileAdmin = await userHasPermission(
+        userId,
+        organizationId,
+        "profile",
+        "admin",
+      );
+
       const userAccessibleAgentIds =
-        await AgentTeamModel.getUserAccessibleAgentIds(userId, false);
+        await AgentTeamModel.getUserAccessibleAgentIds(userId, isProfileAdmin);
       if (!userAccessibleAgentIds.includes(delegation.targetAgent.id)) {
         return {
           content: [
@@ -2834,15 +2841,18 @@ export async function getAgentTools(context: {
   );
 
   // Convert DB tools to MCP Tool format
-  return accessibleTools.map((t) => ({
-    name: t.tool.name,
-    title: t.targetAgent.name,
-    description:
-      t.tool.description ||
-      t.targetAgent.systemPrompt?.substring(0, 500) ||
-      `Call the "${t.targetAgent.name}" agent to perform tasks.`,
-    inputSchema: t.tool.parameters as Tool["inputSchema"],
-    annotations: {},
-    _meta: { targetAgentId: t.targetAgent.id },
-  }));
+  return accessibleTools.map((t) => {
+    const description = t.targetAgent.description
+      ? `Delegate task to agent: ${t.targetAgent.name}. ${t.targetAgent.description.substring(0, 400)}`
+      : `Delegate task to agent: ${t.targetAgent.name}`;
+
+    return {
+      name: t.tool.name,
+      title: t.targetAgent.name,
+      description,
+      inputSchema: t.tool.parameters as Tool["inputSchema"],
+      annotations: {},
+      _meta: { targetAgentId: t.targetAgent.id },
+    };
+  });
 }

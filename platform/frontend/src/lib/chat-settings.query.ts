@@ -1,6 +1,7 @@
 import { archestraApiSdk, type archestraApiTypes } from "@shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { handleApiError } from "./utils";
 
 export type SupportedChatProvider =
   archestraApiTypes.GetChatApiKeysResponses["200"][number]["provider"];
@@ -17,7 +18,7 @@ const {
   createChatApiKey,
   updateChatApiKey,
   deleteChatApiKey,
-  invalidateChatModelsCache,
+  syncChatModels,
 } = archestraApiSdk;
 
 export function useChatApiKeys() {
@@ -26,11 +27,8 @@ export function useChatApiKeys() {
     queryFn: async () => {
       const { data, error } = await getChatApiKeys();
       if (error) {
-        throw new Error(
-          typeof error.error === "string"
-            ? error.error
-            : error.error?.message || "Failed to fetch chat API keys",
-        );
+        handleApiError(error);
+        return [];
       }
       return data ?? [];
     },
@@ -45,11 +43,8 @@ export function useAvailableChatApiKeys(provider?: SupportedChatProvider) {
         query: provider ? { provider } : undefined,
       });
       if (error) {
-        throw new Error(
-          typeof error.error === "string"
-            ? error.error
-            : error.error?.message || "Failed to fetch available chat API keys",
-        );
+        handleApiError(error);
+        return [];
       }
       return data ?? [];
     },
@@ -66,22 +61,17 @@ export function useCreateChatApiKey() {
         body: data,
       });
       if (error) {
-        const msg =
-          typeof error.error === "string"
-            ? error.error
-            : error.error?.message || "Failed to create API key";
-        throw new Error(msg);
+        handleApiError(error);
+        return null;
       }
       return responseData;
-    },
-    onError: (error) => {
-      toast.error(error.message);
     },
     onSuccess: () => {
       toast.success("API key created successfully");
       queryClient.invalidateQueries({ queryKey: ["chat-api-keys"] });
       queryClient.invalidateQueries({ queryKey: ["available-chat-api-keys"] });
       queryClient.invalidateQueries({ queryKey: ["chat-models"] });
+      queryClient.invalidateQueries({ queryKey: ["models-with-api-keys"] });
     },
   });
 }
@@ -101,16 +91,10 @@ export function useUpdateChatApiKey() {
         body: data,
       });
       if (error) {
-        const msg =
-          typeof error.error === "string"
-            ? error.error
-            : error.error?.message || "Failed to update API key";
-        throw new Error(msg);
+        handleApiError(error);
+        return null;
       }
       return responseData;
-    },
-    onError: (error) => {
-      toast.error(error.message);
     },
     onSuccess: () => {
       toast.success("API key updated successfully");
@@ -128,40 +112,36 @@ export function useDeleteChatApiKey() {
         path: { id },
       });
       if (error) {
-        const msg =
-          typeof error.error === "string"
-            ? error.error
-            : error.error?.message || "Failed to delete API key";
-        throw new Error(msg);
+        handleApiError(error);
+        return null;
       }
       return responseData;
     },
-    onError: (error) => {
-      toast.error(error.message);
-    },
     onSuccess: () => {
+      toast.success("API key deleted successfully");
       queryClient.invalidateQueries({ queryKey: ["chat-api-keys"] });
       queryClient.invalidateQueries({ queryKey: ["available-chat-api-keys"] });
       queryClient.invalidateQueries({ queryKey: ["chat-models"] });
+      queryClient.invalidateQueries({ queryKey: ["models-with-api-keys"] });
     },
   });
 }
 
-export function useInvalidateChatModelsCache() {
+export function useSyncChatModels() {
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async () => {
-      const { data: responseData, error } = await invalidateChatModelsCache();
+      const { data: responseData, error } = await syncChatModels();
       if (error) {
-        const msg =
-          typeof error.error === "string"
-            ? error.error
-            : error.error?.message || "Failed to invalidate models cache";
-        toast.error(msg);
+        handleApiError(error);
+        return null;
       }
       return responseData;
     },
     onSuccess: () => {
-      toast.success("Models cache refreshed");
+      toast.success("Models synced");
+      queryClient.invalidateQueries({ queryKey: ["chat-models"] });
+      queryClient.invalidateQueries({ queryKey: ["models-with-api-keys"] });
     },
   });
 }
