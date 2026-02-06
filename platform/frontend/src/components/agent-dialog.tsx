@@ -25,7 +25,6 @@ import {
   AgentToolsEditor,
   type AgentToolsEditorRef,
 } from "@/components/agent-tools-editor";
-import { EmailNotConfiguredMessage } from "@/components/email-not-configured-message";
 import { MsTeamsSetupDialog } from "@/components/ms-teams-setup-dialog";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -860,9 +859,11 @@ export function AgentDialog({
 
             {/* Agent Trigger Rules (Agent only) */}
             {isInternalAgent && (
-              <div className="space-y-2">
-                <Label>Agent Trigger Rules</Label>
-                <div className="space-y-3 pt-1">
+              <div className="space-y-4">
+                <h3 className="text-sm font-semibold">Agent Trigger Rules</h3>
+
+                {/* ChatOps */}
+                <div className="space-y-3">
                   {chatopsProviders.map((provider) => (
                     <div
                       key={provider.id}
@@ -915,22 +916,17 @@ export function AgentDialog({
                   open={msTeamsSetupOpen}
                   onOpenChange={setMsTeamsSetupOpen}
                 />
-              </div>
-            )}
 
-            {/* Email Invocation (Agent only) */}
-            {isInternalAgent && (
-              <div className="space-y-2">
-                <Label>Email Invocation</Label>
+                {/* Email */}
                 {features?.incomingEmail?.enabled ? (
-                  <div className="border rounded-lg bg-muted/30 p-4 space-y-4">
+                  <div className="space-y-3">
                     <div className="flex items-center justify-between">
                       <div className="space-y-0.5">
                         <label
                           htmlFor="incoming-email-enabled"
-                          className="text-sm font-medium cursor-pointer"
+                          className="text-sm cursor-pointer"
                         >
-                          Enable email invocation
+                          Email
                         </label>
                         <p className="text-xs text-muted-foreground">
                           Allow this agent to be triggered via email
@@ -1049,8 +1045,21 @@ export function AgentDialog({
                     )}
                   </div>
                 ) : (
-                  <div className="border rounded-lg bg-muted/30 p-4">
-                    <EmailNotConfiguredMessage />
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <span className="text-sm">Email</span>
+                      <p className="text-xs text-muted-foreground">
+                        Allow this agent to be triggered via email
+                      </p>
+                    </div>
+                    <a
+                      href="https://archestra.ai/docs/platform-agents#incoming-email"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs text-primary underline hover:no-underline"
+                    >
+                      Setup docs
+                    </a>
                   </div>
                 )}
               </div>

@@ -541,6 +541,45 @@ stderr_logfile=/dev/stderr
 stderr_logfile_maxbytes=0
 priority=25
 NGROK_CONF
+
+    # If no explicit domain, detect the dynamically assigned ngrok domain
+    # after ngrok starts. Write it to a file so the backend can read it.
+    if [ -z "$ARCHESTRA_NGROK_DOMAIN" ]; then
+        cat > /app/detect-ngrok-domain.sh <<'DETECT_SCRIPT'
+#!/bin/sh
+# Poll ngrok API to discover the dynamically assigned tunnel URL
+for i in $(seq 1 30); do
+    NGROK_RESPONSE=$(wget -qO- http://localhost:4040/api/tunnels 2>/dev/null || true)
+    if [ -n "$NGROK_RESPONSE" ]; then
+        TUNNEL_URL=$(echo "$NGROK_RESPONSE" | sed -n 's/.*"public_url":"\([^"]*\)".*/\1/p' | head -1)
+        if [ -n "$TUNNEL_URL" ]; then
+            # Extract domain from URL (remove https:// prefix)
+            NGROK_DOMAIN=$(echo "$TUNNEL_URL" | sed 's|https://||')
+            echo "Detected ngrok domain: ${NGROK_DOMAIN}"
+            echo "$NGROK_DOMAIN" > /app/data/.ngrok_domain
+            exit 0
+        fi
+    fi
+    sleep 1
+done
+echo "Warning: Could not detect ngrok domain after 30 seconds"
+DETECT_SCRIPT
+        chmod +x /app/detect-ngrok-domain.sh
+
+        cat >> /etc/supervisord.conf <<DETECT_CONF
+
+[program:detect-ngrok-domain]
+command=/bin/sh -c "sleep 15 && /app/detect-ngrok-domain.sh"
+autostart=true
+autorestart=false
+startsecs=0
+priority=26
+stdout_logfile=/dev/stdout
+stdout_logfile_maxbytes=0
+stderr_logfile=/dev/stderr
+stderr_logfile_maxbytes=0
+DETECT_CONF
+    fi
 fi
 
 # Add startup banner to supervisord (sleeps 12s to ensure it prints after Next.js logs)

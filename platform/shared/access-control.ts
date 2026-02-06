@@ -794,10 +794,7 @@ export const requiredPagePermissionsMap: Record<string, Permissions> = {
   "/settings/secrets": {
     organization: ["update"],
   },
-  "/settings/incoming-email": {
-    organization: ["update"],
-  },
-  "/settings/chatops": {
+  "/settings/agent-trigger-rules": {
     organization: ["update"],
   },
 

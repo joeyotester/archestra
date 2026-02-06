@@ -53416,6 +53416,9 @@
                     "isQuickstart": {
                       "type": "boolean"
                     },
+                    "ngrokDomain": {
+                      "type": "string"
+                    },
                     "chatops": {
                       "type": "object",
                       "properties": {
@@ -53456,6 +53459,7 @@
                     "mcpServerBaseImage",
                     "orchestratorK8sNamespace",
                     "isQuickstart",
+                    "ngrokDomain",
                     "chatops"
                   ],
                   "additionalProperties": false

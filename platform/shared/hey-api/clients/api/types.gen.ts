@@ -15155,6 +15155,7 @@ export type GetFeaturesResponses = {
         mcpServerBaseImage: string;
         orchestratorK8sNamespace: string;
         isQuickstart: boolean;
+        ngrokDomain: string;
         chatops: {
             msTeamsEnabled: boolean;
             msTeamsAppId: boolean;

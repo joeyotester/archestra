@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { RouteId } from "@shared";
 import type { FastifyPluginAsyncZod } from "fastify-type-provider-zod";
 import { z } from "zod";
@@ -61,6 +62,8 @@ const featuresRoutes: FastifyPluginAsyncZod = async (fastify) => {
             orchestratorK8sNamespace: z.string(),
             /** Whether the platform is running in quickstart mode */
             isQuickstart: z.boolean(),
+            /** ngrok tunnel domain (e.g. "abc123.ngrok-free.app") when ngrok is active */
+            ngrokDomain: z.string(),
             /** ChatOps configuration status (which fields are set) */
             chatops: z.object({
               msTeamsEnabled: z.boolean(),
@@ -93,6 +96,7 @@ const featuresRoutes: FastifyPluginAsyncZod = async (fastify) => {
         mcpServerBaseImage: config.orchestrator.mcpServerBaseImage,
         orchestratorK8sNamespace: config.orchestrator.kubernetes.namespace,
         isQuickstart: config.isQuickstart,
+        ngrokDomain: getNgrokDomain(),
         chatops: {
           msTeamsEnabled: config.chatops.msTeams.enabled,
           msTeamsAppId: Boolean(config.chatops.msTeams.appId),
@@ -105,3 +109,16 @@ const featuresRoutes: FastifyPluginAsyncZod = async (fastify) => {
 };
 
 export default featuresRoutes;
+
+/**
+ * Get the ngrok domain from env var or from the file written by the
+ * detect-ngrok-domain.sh script (for dynamically assigned domains).
+ */
+function getNgrokDomain(): string {
+  if (config.ngrokDomain) return config.ngrokDomain;
+  try {
+    return readFileSync("/app/data/.ngrok_domain", "utf-8").trim();
+  } catch {
+    return "";
+  }
+}

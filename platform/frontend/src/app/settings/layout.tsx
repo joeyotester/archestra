@@ -51,12 +51,13 @@ export default function SettingsLayout({
     ...(userCanUpdateOrganization && secretsType?.type === "Vault"
       ? [{ label: "Secrets", href: "/settings/secrets" }]
       : []),
-    /**
-     * Incoming Email tab is shown when the user has permission to update
-     * organization settings.
-     */
     ...(userCanUpdateOrganization
-      ? [{ label: "Incoming Email", href: "/settings/incoming-email" }]
+      ? [
+          {
+            label: "Agent Trigger Rules",
+            href: "/settings/agent-trigger-rules",
+          },
+        ]
       : []),
   ];
 
