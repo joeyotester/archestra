@@ -22,6 +22,7 @@ import {
   Wrench,
 } from "lucide-react";
 import Image from "next/image";
+import { OpenClawIcon } from "@/components/icons/openclaw-icon";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { ChatSidebarSection } from "@/app/_parts/chat-sidebar-section";
@@ -51,6 +52,7 @@ interface MenuItem {
   title: string;
   url: string;
   icon: LucideIcon;
+  iconClassName?: string;
   customIsActive?: (pathname: string, searchParams: URLSearchParams) => boolean;
 }
 
@@ -114,6 +116,11 @@ const getNavigationItems = (isAuthenticated: boolean): MenuItem[] => {
       url: "/settings",
       icon: Settings,
       customIsActive: (pathname: string) => pathname.startsWith("/settings"),
+    },
+    {
+      title: "OpenClaw",
+      url: "/openclaw",
+      icon: OpenClawIcon,
     },
   ];
 };
@@ -223,7 +230,7 @@ const MainSideBarSection = ({
                   }
                 >
                   <Link href={item.url}>
-                    <item.icon />
+                    <item.icon className={item.iconClassName} />
                     <span>{item.title}</span>
                   </Link>
                 </SidebarMenuButton>

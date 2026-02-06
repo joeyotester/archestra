@@ -32,7 +32,7 @@ export function PageLayout({
 }: {
   children: React.ReactNode;
   tabs?: { label: string; href: string }[];
-  title: string;
+  title: React.ReactNode;
   description: React.ReactNode;
   actionButton?: React.ReactNode;
 }) {
