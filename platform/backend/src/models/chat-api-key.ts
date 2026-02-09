@@ -1,4 +1,4 @@
-import { isVaultReference, parseVaultReference } from "@shared";
+import { isVaultReference, parseVaultReference, PROVIDERS_WITH_OPTIONAL_API_KEY } from "@shared";
 import { and, eq, inArray, or, sql } from "drizzle-orm";
 import db, { schema } from "@/database";
 import { computeSecretStorageType } from "@/secrets-manager/utils";
@@ -221,10 +221,11 @@ class ChatApiKeyModel {
       conditions.push(eq(schema.chatApiKeysTable.provider, provider));
     }
 
-    // Only return keys with configured secrets OR system keys (which don't need secrets)
+    // Only return keys with configured secrets, system keys, or providers with optional API keys
     const secretOrSystemCondition = or(
       sql`${schema.chatApiKeysTable.secretId} IS NOT NULL`,
       eq(schema.chatApiKeysTable.isSystem, true),
+      inArray(schema.chatApiKeysTable.provider, [...PROVIDERS_WITH_OPTIONAL_API_KEY]),
     );
     if (secretOrSystemCondition) {
       conditions.push(secretOrSystemCondition);
