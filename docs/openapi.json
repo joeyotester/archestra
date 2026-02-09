@@ -49837,6 +49837,16 @@
                         "type": "string",
                         "maxLength": 256
                       },
+                      "channelName": {
+                        "nullable": true,
+                        "type": "string",
+                        "maxLength": 256
+                      },
+                      "workspaceName": {
+                        "nullable": true,
+                        "type": "string",
+                        "maxLength": 256
+                      },
                       "agentId": {
                         "nullable": true,
                         "type": "string",
@@ -49860,6 +49870,8 @@
                       "provider",
                       "channelId",
                       "workspaceId",
+                      "channelName",
+                      "workspaceName",
                       "agentId",
                       "createdAt",
                       "updatedAt"
@@ -50400,6 +50412,16 @@
                       "type": "string",
                       "maxLength": 256
                     },
+                    "channelName": {
+                      "nullable": true,
+                      "type": "string",
+                      "maxLength": 256
+                    },
+                    "workspaceName": {
+                      "nullable": true,
+                      "type": "string",
+                      "maxLength": 256
+                    },
                     "agentId": {
                       "nullable": true,
                       "type": "string",
@@ -50423,6 +50445,8 @@
                     "provider",
                     "channelId",
                     "workspaceId",
+                    "channelName",
+                    "workspaceName",
                     "agentId",
                     "createdAt",
                     "updatedAt"

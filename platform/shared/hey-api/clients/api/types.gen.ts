@@ -14186,6 +14186,8 @@ export type ListChatOpsBindingsResponses = {
         provider: 'ms-teams';
         channelId: string;
         workspaceId: string | null;
+        channelName: string | null;
+        workspaceName: string | null;
         agentId: string | null;
         createdAt: string;
         updatedAt: string;
@@ -14353,6 +14355,8 @@ export type UpdateChatOpsBindingResponses = {
         provider: 'ms-teams';
         channelId: string;
         workspaceId: string | null;
+        channelName: string | null;
+        workspaceName: string | null;
         agentId: string | null;
         createdAt: string;
         updatedAt: string;

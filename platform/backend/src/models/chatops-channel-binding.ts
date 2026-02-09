@@ -25,6 +25,8 @@ class ChatOpsChannelBindingModel {
         provider: input.provider,
         channelId: input.channelId,
         workspaceId: input.workspaceId ?? null,
+        channelName: input.channelName ?? null,
+        workspaceName: input.workspaceName ?? null,
         agentId: input.agentId,
       })
       .returning();
@@ -165,6 +167,33 @@ class ChatOpsChannelBindingModel {
   }
 
   /**
+   * Update channel and workspace display names (internal use only).
+   * Used by the name refresh mechanism — not exposed via API.
+   */
+  static async updateNames(
+    id: string,
+    names: { channelName?: string; workspaceName?: string },
+  ): Promise<ChatOpsChannelBinding | null> {
+    const setFields: Record<string, string> = {};
+    if (names.channelName !== undefined) {
+      setFields.channelName = names.channelName;
+    }
+    if (names.workspaceName !== undefined) {
+      setFields.workspaceName = names.workspaceName;
+    }
+
+    if (Object.keys(setFields).length === 0) return null;
+
+    const [binding] = await db
+      .update(schema.chatopsChannelBindingsTable)
+      .set(setFields)
+      .where(eq(schema.chatopsChannelBindingsTable.id, id))
+      .returning();
+
+    return (binding as ChatOpsChannelBinding) || null;
+  }
+
+  /**
    * Update a binding by channel (upsert pattern)
    * Creates if not exists, updates if exists
    */
@@ -183,6 +212,20 @@ class ChatOpsChannelBindingModel {
       });
       if (!updated) {
         throw new Error("Failed to update binding");
+      }
+      // Also update names if provided
+      if (
+        input.channelName !== undefined ||
+        input.workspaceName !== undefined
+      ) {
+        const namesUpdated = await ChatOpsChannelBindingModel.updateNames(
+          existing.id,
+          {
+            channelName: input.channelName ?? undefined,
+            workspaceName: input.workspaceName ?? undefined,
+          },
+        );
+        return namesUpdated ?? updated;
       }
       return updated;
     }

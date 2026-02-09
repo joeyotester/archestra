@@ -265,8 +265,8 @@ function ChannelBindingsSection() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Channel ID</TableHead>
-                <TableHead>Workspace ID</TableHead>
+                <TableHead>Channel</TableHead>
+                <TableHead>Workspace</TableHead>
                 <TableHead>Agent</TableHead>
                 <TableHead className="w-24">Actions</TableHead>
               </TableRow>
@@ -274,11 +274,19 @@ function ChannelBindingsSection() {
             <TableBody>
               {bindings.map((binding) => (
                 <TableRow key={binding.id}>
-                  <TableCell className="font-mono text-xs">
-                    {binding.channelId}
+                  <TableCell className="text-sm">
+                    {binding.channelName ?? (
+                      <span className="font-mono text-xs">
+                        {binding.channelId}
+                      </span>
+                    )}
                   </TableCell>
-                  <TableCell className="font-mono text-xs">
-                    {binding.workspaceId ?? "—"}
+                  <TableCell className="text-sm">
+                    {binding.workspaceName ?? (
+                      <span className="font-mono text-xs">
+                        {binding.workspaceId ?? "—"}
+                      </span>
+                    )}
                   </TableCell>
                   <TableCell>
                     {binding.agentId

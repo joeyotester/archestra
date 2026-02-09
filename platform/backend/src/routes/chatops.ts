@@ -306,6 +306,9 @@ const chatopsRoutes: FastifyPluginAsyncZod = async (fastify) => {
               return;
             }
 
+            // Fire-and-forget: refresh channel/workspace names if changed
+            refreshBindingNames(context, binding, message).catch(() => {});
+
             // Process message through bound agent
             await chatOpsManager.processMessage({
               message,
@@ -776,12 +779,20 @@ async function handleAgentSelection(
     "[ChatOps] handleAgentSelection: about to upsert binding",
   );
 
+  // Resolve human-readable channel/workspace names (best-effort)
+  const resolvedNames = await resolveTeamsNames(
+    context,
+    channelId || message.channelId,
+  );
+
   // Create or update the binding
   await ChatOpsChannelBindingModel.upsertByChannel({
     organizationId,
     provider: "ms-teams",
     channelId: channelId || message.channelId,
     workspaceId: workspaceId || message.workspaceId,
+    channelName: resolvedNames.channelName,
+    workspaceName: resolvedNames.workspaceName,
     agentId,
   });
 
@@ -911,6 +922,72 @@ async function resolveAndVerifySender(
   }
 
   return true;
+}
+
+/**
+ * Resolve human-readable channel and workspace names via TeamsInfo.
+ * Returns undefined for names that cannot be resolved — callers treat these as best-effort.
+ */
+async function resolveTeamsNames(
+  context: TurnContext,
+  targetChannelId: string,
+): Promise<{ channelName?: string; workspaceName?: string }> {
+  let channelName: string | undefined;
+  let workspaceName: string | undefined;
+
+  try {
+    const teamDetails = await TeamsInfo.getTeamDetails(context);
+    workspaceName = teamDetails?.name ?? undefined;
+  } catch {
+    /* non-fatal */
+  }
+
+  try {
+    const channels = await TeamsInfo.getTeamChannels(context);
+    const matched = channels?.find((c) => c.id === targetChannelId);
+    channelName = matched?.name ?? undefined;
+  } catch {
+    /* non-fatal */
+  }
+
+  return { channelName, workspaceName };
+}
+
+/**
+ * Refresh channel/workspace display names on a binding if they have changed.
+ * Called fire-and-forget on every incoming message so names stay up-to-date.
+ */
+async function refreshBindingNames(
+  context: TurnContext,
+  binding: {
+    id: string;
+    channelId: string;
+    channelName: string | null;
+    workspaceName: string | null;
+  },
+  message: IncomingChatMessage,
+): Promise<void> {
+  try {
+    const resolved = await resolveTeamsNames(context, message.channelId);
+
+    const namesDiffer =
+      (resolved.channelName !== undefined &&
+        resolved.channelName !== binding.channelName) ||
+      (resolved.workspaceName !== undefined &&
+        resolved.workspaceName !== binding.workspaceName);
+
+    if (namesDiffer) {
+      await ChatOpsChannelBindingModel.updateNames(binding.id, {
+        channelName: resolved.channelName,
+        workspaceName: resolved.workspaceName,
+      });
+    }
+  } catch (error) {
+    logger.debug(
+      { error: error instanceof Error ? error.message : String(error) },
+      "[ChatOps] Failed to refresh binding names",
+    );
+  }
 }
 
 /**
