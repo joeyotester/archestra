@@ -67,7 +67,9 @@ export default function OpenClawPage() {
           title="Make Archestra Reachable from the Internet"
           description="The MS Teams bot needs to connect to an Archestra webhook — your instance must be publicly accessible"
           done={isReachable}
-          doneLabel={reachableUrl ? `Reachable at ${reachableUrl}` : "Reachable"}
+          doneLabel={
+            reachableUrl ? `Reachable at ${reachableUrl}` : "Reachable"
+          }
           ctaLabel="Configure ngrok"
         />
         <SetupStep

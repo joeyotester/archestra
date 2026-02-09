@@ -201,7 +201,10 @@ export function MsTeamsSetupDialog({
                         isActive={current === index}
                       />
                     ) : features?.isQuickstart ? (
-                      <StepConfigForm saveRef={saveRef} onCanSaveChange={setCanSave} />
+                      <StepConfigForm
+                        saveRef={saveRef}
+                        onCanSaveChange={setCanSave}
+                      />
                     ) : (
                       <StepEnvVarsInfo />
                     )}

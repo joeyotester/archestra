@@ -22,11 +22,11 @@ import {
   Wrench,
 } from "lucide-react";
 import Image from "next/image";
-import { OpenClawIcon } from "@/components/icons/openclaw-icon";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { ChatSidebarSection } from "@/app/_parts/chat-sidebar-section";
 import { DefaultCredentialsWarning } from "@/components/default-credentials-warning";
+import { OpenClawIcon } from "@/components/icons/openclaw-icon";
 import { WithPermissions } from "@/components/roles/with-permissions";
 import { SecurityEngineWarning } from "@/components/security-engine-warning";
 import { Badge } from "@/components/ui/badge";
@@ -172,7 +172,7 @@ const CommunitySideBarSection = ({ starCount }: { starCount: string }) => (
         <SidebarMenuItem>
           <SidebarMenuButton asChild>
             <a
-              href="https://join.slack.com/t/archestracommunity/shared_invite/zt-39yk4skox-zBF1NoJ9u4t59OU8XxQChg"
+              href="https://archestra.ai/join-slack"
               target="_blank"
               rel="noopener noreferrer"
             >

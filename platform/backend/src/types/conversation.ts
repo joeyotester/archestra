@@ -27,6 +27,7 @@ export const SelectConversationSchema = createSelectSchema(
     systemPrompt: z.string().nullable(),
     userPrompt: z.string().nullable(),
     agentType: z.enum(["profile", "mcp_gateway", "llm_proxy", "agent"]),
+    llmApiKeyId: z.string().nullable(),
   }),
   messages: z.array(z.any()), // UIMessage[] from AI SDK
   ...selectExtendedFields,
@@ -39,8 +40,6 @@ export const InsertConversationSchema = createInsertSchema(
   id: true,
   createdAt: true,
   updatedAt: true,
-  // browserState is managed internally, not exposed for creation via API
-  browserState: true,
 });
 
 export const UpdateConversationSchema = createUpdateSchema(
