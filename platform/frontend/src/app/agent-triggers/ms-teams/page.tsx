@@ -120,7 +120,7 @@ export default function MsTeamsPage() {
         </SetupStep>
         <SetupStep
           stepNumber={2}
-          title="Connect Microsoft Teams"
+          title="Connect MS Teams"
           description="Allow agents to be triggered via Teams"
           done={!!msTeams?.configured}
           ctaLabel="Setup MS Teams"
@@ -148,20 +148,20 @@ export default function MsTeamsPage() {
               <Button
                 variant="outline"
                 size="sm"
-                className="text-xs h-7"
+                className="text-xs h-7 text-foreground"
                 onClick={() => setMsTeamsSetupOpen(true)}
               >
-                Setup again
+                Reconfigure
               </Button>
             )}
           </div>
         </SetupStep>
         <SetupStep
           stepNumber={3}
-          title="Choose Default Agent for MS Teams"
-          description="Each MS Teams channel needs a default agent to handle incoming messages"
+          title="Setup Agent to work with MS Teams"
+          description="Enable MS Teams on your agent and bind it to a channel"
           done={hasBindings}
-          ctaLabel="Choose default agent"
+          ctaLabel="Setup agent"
           onAction={() => setDefaultAgentDialogOpen(true)}
         >
           {hasBindings ? (
@@ -171,12 +171,8 @@ export default function MsTeamsPage() {
             </p>
           ) : (
             <p>
-              Once the bot is installed in Teams, use the{" "}
-              <code className="bg-muted px-1 py-0.5 rounded text-xs">
-                /select-agent
-              </code>{" "}
-              command in any channel to select which agent handles messages
-              there.
+              Enable MS Teams in your agent&apos;s settings, bind it to Teams
+              channel and you are ready to go!
             </p>
           )}
         </SetupStep>
@@ -598,7 +594,9 @@ function SetupStep({
           </div>
         </div>
       </CardHeader>
-      <CardContent className="pt-2 text-sm">{children}</CardContent>
+      <CardContent className="pt-2 text-sm text-muted-foreground">
+        {children}
+      </CardContent>
     </Card>
   );
 }

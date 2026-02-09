@@ -605,7 +605,7 @@ function StepManifest({ stepNumber }: { stepNumber: number }) {
       className="grid flex-1 gap-6"
       style={{ gridTemplateColumns: "6fr 4fr" }}
     >
-      <div className="flex flex-col gap-3 rounded-lg border bg-muted/30 p-4 min-h-0">
+      <div className="flex flex-col gap-3 rounded-lg border bg-muted/30 p-4 min-h-0 overflow-x-auto">
         <div className="flex items-center justify-between">
           <span className="text-xs font-medium text-muted-foreground">
             manifest.json

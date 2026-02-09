@@ -31,6 +31,8 @@ interface SetupDialogProps {
   description?: React.ReactNode;
   steps: React.ReactNode[];
   lastStepAction?: LastStepAction;
+  /** Per-step gating: if provided, `canProceed(stepIndex)` must return true to enable the Next button */
+  canProceed?: (stepIndex: number) => boolean;
 }
 
 export function SetupDialog({
@@ -40,6 +42,7 @@ export function SetupDialog({
   description,
   steps,
   lastStepAction,
+  canProceed,
 }: SetupDialogProps) {
   const [api, setApi] = React.useState<CarouselApi>();
   const [current, setCurrent] = React.useState(0);
@@ -111,7 +114,11 @@ export function SetupDialog({
               </Button>
             )}
             {!isLast && (
-              <Button size="sm" onClick={() => api?.scrollNext()}>
+              <Button
+                size="sm"
+                onClick={() => api?.scrollNext()}
+                disabled={canProceed ? !canProceed(current) : false}
+              >
                 Next
                 <ChevronRight className="ml-1 h-4 w-4" />
               </Button>
