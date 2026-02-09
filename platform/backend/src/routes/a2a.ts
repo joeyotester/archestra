@@ -299,6 +299,12 @@ const a2aRoutes: FastifyPluginAsyncZod = async (fastify) => {
         const sessionId =
           headerSessionId || `a2a-${Date.now()}-${randomUUID()}`;
 
+        // Create an AbortController that fires when the client disconnects.
+        const abortController = new AbortController();
+        request.raw.on("close", () => {
+          abortController.abort();
+        });
+
         // Execute using shared A2A service
         // Pass agentId as the initial delegation chain (will be extended by any delegated calls)
         const result = await executeA2AMessage({
@@ -308,6 +314,7 @@ const a2aRoutes: FastifyPluginAsyncZod = async (fastify) => {
           userId,
           sessionId,
           parentDelegationChain: undefined, // This is the root call, chain starts with agentId
+          abortSignal: abortController.signal,
         });
 
         return reply.send({

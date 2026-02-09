@@ -154,10 +154,21 @@ const chatRoutes: FastifyPluginAsyncZod = async (fastify) => {
         response: ErrorResponsesSchema,
       },
     },
-    async (
-      { body: { id: conversationId, messages }, user, organizationId, headers },
-      reply,
-    ) => {
+    async (request, reply) => {
+      const {
+        body: { id: conversationId, messages },
+        user,
+        organizationId,
+        headers,
+      } = request;
+
+      // Create an AbortController that fires when the client disconnects.
+      // This ensures streamText (and its tool-call loop) stops when the user
+      // clicks the stop button in the chat UI.
+      const abortController = new AbortController();
+      request.raw.on("close", () => {
+        abortController.abort();
+      });
       // Extract and ingest documents to knowledge graph (fire and forget)
       // This runs asynchronously to avoid blocking the chat response
       extractAndIngestDocuments(messages).catch((error) => {
@@ -289,6 +300,7 @@ const chatRoutes: FastifyPluginAsyncZod = async (fastify) => {
         messages: modelMessages,
         tools: mcpTools,
         stopWhen: stepCountIs(500),
+        abortSignal: abortController.signal,
         onFinish: async ({ usage, finishReason }) => {
           logger.info(
             {

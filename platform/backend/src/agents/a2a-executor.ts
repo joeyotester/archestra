@@ -42,6 +42,8 @@ export interface A2AExecuteParams {
    * and cleaned up after execution.
    */
   conversationId?: string;
+  /** Optional abort signal to cancel the execution when the client disconnects. */
+  abortSignal?: AbortSignal;
 }
 
 export interface A2AExecuteResult {
@@ -177,6 +179,7 @@ export async function executeA2AMessage(
       prompt: message,
       tools: mcpTools,
       stopWhen: stepCountIs(500),
+      abortSignal: params.abortSignal,
     });
 
     // Wait for the stream to complete and get the final text
