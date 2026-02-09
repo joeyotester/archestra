@@ -10,7 +10,10 @@ import {
 import Link from "next/link";
 import { useState } from "react";
 import { CopyButton } from "@/components/copy-button";
-import { DefaultAgentSetupDialog } from "@/components/default-agent-setup-dialog";
+import {
+  DefaultAgentSetupDialog,
+  StepStartChatting,
+} from "@/components/default-agent-setup-dialog";
 import Divider from "@/components/divider";
 import { MsTeamsSetupDialog } from "@/components/ms-teams-setup-dialog";
 import { Button } from "@/components/ui/button";
@@ -54,6 +57,7 @@ export default function MsTeamsPage() {
   const [msTeamsSetupOpen, setMsTeamsSetupOpen] = useState(false);
   const [ngrokDialogOpen, setNgrokDialogOpen] = useState(false);
   const [defaultAgentDialogOpen, setDefaultAgentDialogOpen] = useState(false);
+  const [tryItOutDialogOpen, setTryItOutDialogOpen] = useState(false);
 
   const { data: features } = useFeatures();
   const { data: chatOpsProviders } = useChatOpsStatus();
@@ -176,6 +180,22 @@ export default function MsTeamsPage() {
             </p>
           )}
         </SetupStep>
+
+        {hasBindings && (
+          <div className="flex items-center justify-center gap-3">
+            <CheckCircle2 className="h-5 w-5 text-green-500 shrink-0" />
+            <span className="text-sm font-medium text-green-700 dark:text-green-400">
+              MS Teams is ready to use
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setTryItOutDialogOpen(true)}
+            >
+              Try it out
+            </Button>
+          </div>
+        )}
       </section>
 
       <Divider />
@@ -194,6 +214,10 @@ export default function MsTeamsPage() {
       <DefaultAgentSetupDialog
         open={defaultAgentDialogOpen}
         onOpenChange={setDefaultAgentDialogOpen}
+      />
+      <TryItOutDialog
+        open={tryItOutDialogOpen}
+        onOpenChange={setTryItOutDialogOpen}
       />
     </div>
   );
@@ -543,6 +567,28 @@ function NgrokSetupDialog({
             </Tabs>
           </>
         )}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function TryItOutDialog({
+  open,
+  onOpenChange,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-[900px]! w-[65vw]">
+        <DialogHeader>
+          <DialogTitle>Try it out</DialogTitle>
+          <DialogDescription>
+            Your agent is ready. Here are some ideas to get started.
+          </DialogDescription>
+        </DialogHeader>
+        <StepStartChatting showStepHeader={false} />
       </DialogContent>
     </Dialog>
   );

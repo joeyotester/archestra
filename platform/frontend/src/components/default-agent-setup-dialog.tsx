@@ -1,13 +1,15 @@
 "use client";
 
 import { useQueryClient } from "@tanstack/react-query";
-import { Loader2, RefreshCw } from "lucide-react";
+import { CheckCircle2, Globe, Loader2, RefreshCw } from "lucide-react";
 import { SetupDialog } from "@/components/setup-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { useProfiles, useUpdateProfile } from "@/lib/agent.query";
+import { useHasPlaywrightMcpTools } from "@/lib/chat.query";
 import { useChatOpsBindings } from "@/lib/chatops.query";
+import { useFeatureFlag } from "@/lib/features.hook";
 
 interface DefaultAgentSetupDialogProps {
   open: boolean;
@@ -41,6 +43,7 @@ export function DefaultAgentSetupDialog({
         <StepEnableMsTeams key="enable" />,
         <StepSelectAgentInTeams key="invite" />,
         <StepVerifyBindings key="verify" />,
+        <StepStartChatting key="start" />,
       ]}
     />
   );
@@ -174,7 +177,9 @@ function StepSelectAgentInTeams() {
           <Badge variant="outline" className="font-mono text-xs">
             Step 2
           </Badge>
-          <h3 className="text-lg font-semibold">Select an Agent in Teams</h3>
+          <h3 className="text-lg font-semibold">
+            Bind default Agent to Teams channel
+          </h3>
         </div>
         <ol className="space-y-3">
           <li className="flex gap-3 text-sm leading-relaxed">
@@ -316,10 +321,134 @@ function StepVerifyBindings() {
               3
             </span>
             <span className="pt-0.5">
-              You are ready to go! Start chatting with the agent in Teams
+              If you see the agent in the binding, you are ready to go!
             </span>
           </li>
         </ol>
+      </div>
+    </div>
+  );
+}
+
+export function StepStartChatting({
+  showStepHeader = true,
+}: {
+  showStepHeader?: boolean;
+} = {}) {
+  const isK8sEnabled = useFeatureFlag("orchestrator-k8s-runtime");
+  const {
+    hasPlaywrightMcp,
+    isInstalling,
+    installBrowser,
+    reinstallRequired,
+    installationFailed,
+    playwrightServerId,
+    reinstallBrowser,
+  } = useHasPlaywrightMcpTools(undefined);
+
+  const browserReady =
+    hasPlaywrightMcp && !reinstallRequired && !installationFailed;
+
+  return (
+    <div
+      className="grid flex-1 gap-6"
+      style={{ gridTemplateColumns: "6fr 4fr" }}
+    >
+      <div className="flex flex-col gap-5 rounded-lg border bg-muted/30 p-6">
+        <h4 className="text-sm font-medium">Example: Browse the web</h4>
+        <p className="text-sm text-muted-foreground leading-relaxed">
+          Your agent can browse the web on your behalf when the Browser tool is
+          installed. Try asking it something like:
+        </p>
+        <div className="rounded-md border bg-background px-4 py-3">
+          <p className="text-sm text-muted-foreground">
+            <strong>@Archestra</strong>{" "}
+            <span className="italic">
+              What are the latest headlines on bbc.com?
+            </span>
+          </p>
+        </div>
+        <div className="rounded-md border bg-background px-4 py-3">
+          <p className="text-sm text-muted-foreground">
+            <strong>@Archestra</strong>{" "}
+            <span className="italic">
+              Summarize the front page of techcrunch.com
+            </span>
+          </p>
+        </div>
+        <p className="text-xs text-muted-foreground mt-auto">
+          These are just examples — your agent can use any tools assigned to it
+          in the profile settings.
+        </p>
+      </div>
+
+      <div className="flex flex-col gap-4 py-2">
+        {showStepHeader && (
+          <div className="flex items-center gap-2">
+            <Badge variant="outline" className="font-mono text-xs">
+              Step 4
+            </Badge>
+            <h3 className="text-lg font-semibold">
+              Start chatting with your agent
+            </h3>
+          </div>
+        )}
+        <p className="text-sm text-muted-foreground leading-relaxed">
+          You&apos;re all set! Mention the bot in your Teams channel and start
+          chatting. Your agent will respond using its configured tools and
+          prompts.
+        </p>
+
+        {isK8sEnabled && (
+          <div className="flex flex-col gap-3 mt-2">
+            <h4 className="text-sm font-medium">Browser tool</h4>
+            {browserReady ? (
+              <div className="flex items-center gap-2 rounded-md border border-green-500/30 bg-green-500/5 px-3 py-2.5 text-sm">
+                <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0" />
+                <span>Browser is installed and ready to use.</span>
+              </div>
+            ) : (
+              <>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  Install the Browser tool so your agent can browse websites and
+                  retrieve live content when asked.
+                </p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={isInstalling}
+                  onClick={() => {
+                    if (
+                      (reinstallRequired || installationFailed) &&
+                      playwrightServerId
+                    ) {
+                      reinstallBrowser(playwrightServerId);
+                    } else {
+                      installBrowser();
+                    }
+                  }}
+                >
+                  {isInstalling ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Installing...
+                    </>
+                  ) : reinstallRequired || installationFailed ? (
+                    <>
+                      <Globe className="h-4 w-4 mr-2" />
+                      Reinstall Browser
+                    </>
+                  ) : (
+                    <>
+                      <Globe className="h-4 w-4 mr-2" />
+                      Install Browser
+                    </>
+                  )}
+                </Button>
+              </>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
