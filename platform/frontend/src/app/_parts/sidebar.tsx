@@ -20,13 +20,13 @@ import {
   Slack,
   Star,
   Wrench,
+  Zap,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { ChatSidebarSection } from "@/app/_parts/chat-sidebar-section";
 import { DefaultCredentialsWarning } from "@/components/default-credentials-warning";
-import { OpenClawIcon } from "@/components/icons/openclaw-icon";
 import { WithPermissions } from "@/components/roles/with-permissions";
 import { SecurityEngineWarning } from "@/components/security-engine-warning";
 import { Badge } from "@/components/ui/badge";
@@ -102,6 +102,13 @@ const getNavigationItems = (isAuthenticated: boolean): MenuItem[] => {
       customIsActive: (pathname: string) => pathname.startsWith("/mcp-catalog"),
     },
     {
+      title: "Agent Triggers",
+      url: "/agent-triggers/ms-teams",
+      icon: Zap,
+      customIsActive: (pathname: string) =>
+        pathname.startsWith("/agent-triggers"),
+    },
+    {
       title: "Cost & Limits",
       url: "/cost",
       icon: DollarSign,
@@ -116,11 +123,6 @@ const getNavigationItems = (isAuthenticated: boolean): MenuItem[] => {
       url: "/settings",
       icon: Settings,
       customIsActive: (pathname: string) => pathname.startsWith("/settings"),
-    },
-    {
-      title: "OpenClaw",
-      url: "/openclaw",
-      icon: OpenClawIcon,
     },
   ];
 };
