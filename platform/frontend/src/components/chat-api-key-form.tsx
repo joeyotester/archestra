@@ -1,9 +1,6 @@
 "use client";
 
-import {
-  type archestraApiTypes,
-  E2eTestId,
-} from "@shared";
+import { type archestraApiTypes, E2eTestId } from "@shared";
 import { Building2, CheckCircle2, User, Users } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -126,8 +123,7 @@ const PROVIDER_CONFIG: Record<
     enabled: true,
     consoleUrl: "https://ollama.ai/",
     consoleName: "Ollama",
-    description:
-      "For self-hosted Ollama, an API key is not required.",
+    description: "For self-hosted Ollama, an API key is not required.",
   },
   zhipuai: {
     name: "Zhipu AI",

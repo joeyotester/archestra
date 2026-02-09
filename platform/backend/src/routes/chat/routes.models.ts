@@ -1,4 +1,8 @@
-import { PROVIDERS_WITH_OPTIONAL_API_KEY, RouteId, type SupportedProvider } from "@shared";
+import {
+  PROVIDERS_WITH_OPTIONAL_API_KEY,
+  RouteId,
+  type SupportedProvider,
+} from "@shared";
 import type { FastifyPluginAsyncZod } from "fastify-type-provider-zod";
 import { z } from "zod";
 import {
@@ -982,7 +986,10 @@ const chatModelsRoutes: FastifyPluginAsyncZod = async (fastify) => {
           )) as string | null;
         }
 
-        if (!secretValue && !PROVIDERS_WITH_OPTIONAL_API_KEY.has(apiKey.provider)) {
+        if (
+          !secretValue &&
+          !PROVIDERS_WITH_OPTIONAL_API_KEY.has(apiKey.provider)
+        ) {
           if (apiKey.secretId) {
             logger.warn(
               { apiKeyId: apiKey.id, provider: apiKey.provider },
