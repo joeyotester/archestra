@@ -6,6 +6,7 @@ import {
   ChevronRight,
   Download,
   ExternalLink,
+  Info,
   Loader2,
   TriangleAlert,
 } from "lucide-react";
@@ -29,6 +30,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useChatOpsStatus } from "@/lib/chatops.query";
 import { useUpdateChatOpsConfigInQuickstart } from "@/lib/chatops-config.query";
 import { useFeatures } from "@/lib/features.query";
 
@@ -344,16 +346,17 @@ function StepConfigForm({
   saveRef: React.MutableRefObject<(() => Promise<void>) | null>;
   onCanSaveChange: (canSave: boolean) => void;
 }) {
-  const { data: features } = useFeatures();
   const mutation = useUpdateChatOpsConfigInQuickstart();
-  const chatops = features?.chatops;
+  const { data: chatOpsProviders } = useChatOpsStatus();
+  const msTeams = chatOpsProviders?.find((p) => p.id === "ms-teams");
+  const creds = msTeams?.credentials;
 
   const [appId, setAppId] = useState("");
   const [appSecret, setAppSecret] = useState("");
   const [tenantId, setTenantId] = useState("");
 
-  const hasAppId = Boolean(appId || chatops?.msTeamsAppId);
-  const hasAppSecret = Boolean(appSecret || chatops?.msTeamsAppSecret);
+  const hasAppId = Boolean(appId || creds?.appId);
+  const hasAppSecret = Boolean(appSecret || creds?.appSecret);
 
   React.useEffect(() => {
     onCanSaveChange(hasAppId && hasAppSecret);
@@ -388,7 +391,7 @@ function StepConfigForm({
       style={{ gridTemplateColumns: "6fr 4fr" }}
     >
       {/* Left side — form (matches image position in other steps) */}
-      <div className="flex flex-col justify-center gap-5 rounded-lg border bg-muted/30 p-6">
+      <div className="flex flex-col gap-5 rounded-lg border bg-muted/30 p-6">
         <div className="space-y-2">
           <Label htmlFor="setup-app-id">App ID</Label>
           <Input
@@ -396,7 +399,7 @@ function StepConfigForm({
             value={appId}
             onChange={(e) => setAppId(e.target.value)}
             placeholder={
-              chatops?.msTeamsAppId ? "Value already set" : "Azure Bot App ID"
+              creds?.appId ? `Current: ${creds.appId}` : "Azure Bot App ID"
             }
           />
         </div>
@@ -409,14 +412,14 @@ function StepConfigForm({
             value={appSecret}
             onChange={(e) => setAppSecret(e.target.value)}
             placeholder={
-              chatops?.msTeamsAppSecret
-                ? "Value already set"
+              creds?.appSecret
+                ? `Current: ${creds.appSecret}`
                 : "Azure Bot App Secret"
             }
           />
         </div>
 
-        <div className="space-y-2">
+        <div className="space-y-2 mb-8">
           <Label htmlFor="setup-tenant-id">
             Tenant ID{" "}
             <span className="text-muted-foreground font-normal">
@@ -428,12 +431,14 @@ function StepConfigForm({
             value={tenantId}
             onChange={(e) => setTenantId(e.target.value)}
             placeholder={
-              chatops?.msTeamsTenantId
-                ? "Value already set"
+              creds?.tenantId
+                ? `Current: ${creds.tenantId}`
                 : "Azure AD Tenant ID — only for single-tenant bots"
             }
           />
         </div>
+
+        <EnvVarsInfo appId={appId} appSecret={appSecret} tenantId={tenantId} />
       </div>
 
       {/* Right side — instructions (matches instruction position in other steps) */}
@@ -473,6 +478,45 @@ function StepConfigForm({
             </span>
           </li>
         </ol>
+      </div>
+    </div>
+  );
+}
+
+function EnvVarsInfo({
+  appId,
+  appSecret,
+  tenantId,
+}: {
+  appId: string;
+  appSecret: string;
+  tenantId: string;
+}) {
+  const envVarsText = [
+    `ARCHESTRA_CHATOPS_MS_TEAMS_ENABLED=true`,
+    `ARCHESTRA_CHATOPS_MS_TEAMS_APP_ID=${appId || "<your-app-id>"}`,
+    `ARCHESTRA_CHATOPS_MS_TEAMS_APP_SECRET=${appSecret || "<your-app-secret>"}`,
+    tenantId
+      ? `ARCHESTRA_CHATOPS_MS_TEAMS_TENANT_ID=${tenantId}`
+      : `ARCHESTRA_CHATOPS_MS_TEAMS_TENANT_ID=<your-tenant-id>`,
+  ].join("\n");
+
+  return (
+    <div className="flex items-start gap-2.5 rounded-md border border-blue-500/30 bg-blue-500/5 px-3 py-2.5 text-sm text-muted-foreground">
+      <Info className="h-4 w-4 shrink-0 text-blue-500 mt-0.5" />
+      <div className="min-w-0 flex-1">
+        <p>
+          Values that are set or edited here are stored in memory and will be reset after server
+          restart. For persistent configuration, set these environment variables:
+        </p>
+        <div className="relative mt-2">
+          <pre className="bg-muted rounded-md px-3 py-2 text-xs font-mono leading-relaxed overflow-x-auto">
+            {envVarsText}
+          </pre>
+          <div className="absolute top-1 right-1">
+            <CopyButton text={envVarsText} />
+          </div>
+        </div>
       </div>
     </div>
   );

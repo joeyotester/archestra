@@ -49,6 +49,7 @@ export const ollamaProxyRoutes = ollamaProxyRoutesV2;
 export const zhipuaiProxyRoutes = zhipuaiProxyRoutesV2;
 // Bedrock proxy routes - V2 only (unified handler, AWS Converse API)
 export const bedrockProxyRoutes = bedrockProxyRoutesV2;
+export { default as reachabilityRoutes } from "./reachability";
 export { default as secretsRoutes } from "./secrets";
 export { default as statisticsRoutes } from "./statistics";
 export { default as teamRoutes } from "./team";

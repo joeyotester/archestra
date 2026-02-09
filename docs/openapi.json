@@ -49545,6 +49545,26 @@
                           },
                           "configured": {
                             "type": "boolean"
+                          },
+                          "credentials": {
+                            "type": "object",
+                            "properties": {
+                              "appId": {
+                                "type": "string"
+                              },
+                              "appSecret": {
+                                "type": "string"
+                              },
+                              "tenantId": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "appId",
+                              "appSecret",
+                              "tenantId"
+                            ],
+                            "additionalProperties": false
                           }
                         },
                         "required": [
@@ -86149,6 +86169,47 @@
                   },
                   "required": [
                     "error"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/reachability-check": {
+      "get": {
+        "operationId": "checkHostReachability",
+        "tags": [
+          "Features"
+        ],
+        "description": "Check if a hostname resolves to a public (internet-reachable) IP address",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "in": "query",
+            "name": "host",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "reachable": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "reachable"
                   ],
                   "additionalProperties": false
                 }

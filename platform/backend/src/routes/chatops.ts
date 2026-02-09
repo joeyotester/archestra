@@ -346,6 +346,13 @@ const chatopsRoutes: FastifyPluginAsyncZod = async (fastify) => {
                 id: z.string(),
                 displayName: z.string(),
                 configured: z.boolean(),
+                credentials: z
+                  .object({
+                    appId: z.string(),
+                    appSecret: z.string(),
+                    tenantId: z.string(),
+                  })
+                  .optional(),
               }),
             ),
           }),
@@ -500,18 +507,31 @@ function getProviderInfo(providerType: ChatOpsProviderType): {
   id: ChatOpsProviderType;
   displayName: string;
   configured: boolean;
+  credentials?: { appId: string; appSecret: string; tenantId: string };
 } {
   switch (providerType) {
     case "ms-teams": {
       const provider = chatOpsManager.getMSTeamsProvider();
+      const { appId, appSecret, tenantId } = config.chatops.msTeams;
       return {
         id: "ms-teams",
         displayName: "Microsoft Teams",
         configured: provider?.isConfigured() ?? false,
+        credentials: {
+          appId: maskValue(appId),
+          appSecret: appSecret ? "••••••••" : "",
+          tenantId: maskValue(tenantId),
+        },
       };
     }
     // When adding new providers, TypeScript will error here until handled
   }
+}
+
+function maskValue(value: string): string {
+  if (!value) return "";
+  if (value.length <= 3) return "•".repeat(value.length);
+  return value.slice(0, 3) + "•".repeat(Math.min(value.length - 3, 8));
 }
 
 /**
