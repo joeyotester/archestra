@@ -329,42 +329,6 @@ export function clearChatMcpClient(agentId: string): void {
 }
 
 /**
- * Close and remove cached MCP client for a specific agent/user/conversation.
- * Should be called when browser stream unsubscribes to free resources.
- *
- * @param agentId - The agent (profile) ID
- * @param userId - The user ID
- * @param conversationId - The conversation ID
- */
-export function closeChatMcpClient(
-  agentId: string,
-  userId: string,
-  conversationId: string,
-): void {
-  const cacheKey = getCacheKey(agentId, userId, conversationId);
-  const client = clientCache.get(cacheKey);
-  if (client) {
-    try {
-      client.close();
-      logger.info(
-        { agentId, userId, conversationId, cacheKey },
-        "Closed MCP client connection for conversation",
-      );
-    } catch (error) {
-      logger.warn(
-        { agentId, userId, conversationId, cacheKey, error },
-        "Error closing MCP client connection (non-fatal)",
-      );
-    }
-    clientCache.delete(cacheKey);
-  }
-
-  // Also clear tool cache for this conversation
-  const toolCacheKey = getToolCacheKey(agentId, userId, conversationId);
-  toolCache.delete(toolCacheKey);
-}
-
-/**
  * Get or create MCP client for the specified agent and user
  * Connects to internal MCP Gateway with team token authentication
  *

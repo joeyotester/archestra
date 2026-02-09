@@ -1,7 +1,6 @@
 import type { ServerWebSocketMessage } from "@shared";
 import type { WebSocket, WebSocketServer } from "ws";
 import { WebSocket as WS } from "ws";
-import { closeChatMcpClient } from "@/clients/chat-mcp-client";
 import { browserStreamFeature } from "@/features/browser-stream/services/browser-stream.feature";
 import type { BrowserUserContext } from "@/features/browser-stream/services/browser-stream.service";
 import { browserStateManager } from "@/features/browser-stream/services/browser-stream.state-manager";
@@ -189,20 +188,12 @@ export class BrowserStreamSocketClientContext {
       clearInterval(subscription.intervalId);
       this.browserSubscriptions.delete(ws);
 
-      // Close the MCP client connection for this conversation to free resources.
-      // Each conversation has its own MCP client and browser instance.
-      closeChatMcpClient(
-        subscription.agentId,
-        subscription.userContext.userId,
-        subscription.conversationId,
-      );
-
       logger.info(
         {
           conversationId: subscription.conversationId,
           agentId: subscription.agentId,
         },
-        "Browser stream client unsubscribed and MCP client closed",
+        "Browser stream client unsubscribed (MCP client kept alive for active tool execution)",
       );
     }
   }
