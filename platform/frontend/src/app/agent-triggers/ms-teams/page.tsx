@@ -1,10 +1,17 @@
 "use client";
 
-import { CheckCircle2, Circle, ExternalLink } from "lucide-react";
+import {
+  CheckCircle2,
+  Circle,
+  ExternalLink,
+  Pencil,
+  Trash2,
+} from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { CopyButton } from "@/components/copy-button";
+import { DefaultAgentSetupDialog } from "@/components/default-agent-setup-dialog";
+import Divider from "@/components/divider";
 import { MsTeamsSetupDialog } from "@/components/ms-teams-setup-dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,25 +19,45 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useAllProfileTools } from "@/lib/agent-tools.query";
-import { useChatOpsStatus } from "@/lib/chatops.query";
+import { useProfiles } from "@/lib/agent.query";
+import {
+  useChatOpsBindings,
+  useChatOpsStatus,
+  useDeleteChatOpsBinding,
+  useUpdateChatOpsBinding,
+} from "@/lib/chatops.query";
 import { useFeatures } from "@/lib/features.query";
-import { useMcpServers } from "@/lib/mcp-server.query";
 import { useHostReachability } from "@/lib/reachability.query";
 
 export default function MsTeamsPage() {
-  const router = useRouter();
   const [msTeamsSetupOpen, setMsTeamsSetupOpen] = useState(false);
   const [ngrokDialogOpen, setNgrokDialogOpen] = useState(false);
+  const [defaultAgentDialogOpen, setDefaultAgentDialogOpen] = useState(false);
 
   const { data: features } = useFeatures();
   const { data: chatOpsProviders } = useChatOpsStatus();
-  const { data: mcpServers } = useMcpServers();
+  const { data: bindings } = useChatOpsBindings();
 
   const ngrokDomain = features?.ngrokDomain;
   const currentHost =
@@ -39,112 +66,126 @@ export default function MsTeamsPage() {
   const isReachable = !!ngrokDomain || !!hostReachable;
 
   const msTeams = chatOpsProviders?.find((p) => p.id === "ms-teams");
-  const githubServer = mcpServers?.find((s) =>
-    s.name.toLowerCase().includes("github"),
-  );
-
-  const { data: profileToolsData } = useAllProfileTools({
-    skipPagination: true,
-    enabled: !!githubServer,
-  });
-
-  const hasGithubTools =
-    !!githubServer &&
-    !!profileToolsData?.data?.some(
-      (t) =>
-        t.credentialSourceMcpServerId === githubServer.id ||
-        t.executionSourceMcpServerId === githubServer.id,
-    );
+  const hasBindings = !!bindings && bindings.length > 0;
 
   return (
-    <div className="flex flex-col gap-6">
-      <SetupStep
-        stepNumber={1}
-        title="Make Archestra reachable from the Internet"
-        description="The MS Teams bot needs to connect to an Archestra webhook — your instance must be publicly accessible"
-        done={isReachable}
-        ctaLabel="Configure ngrok"
-        onAction={() => setNgrokDialogOpen(true)}
-      >
-        {ngrokDomain ? (
-          <>
-            Ngrok domain{" "}
-            <code className="bg-muted px-1 py-0.5 rounded text-xs">
-              {ngrokDomain}
-            </code>{" "}
-            is configured.
-          </>
-        ) : hostReachable ? (
-          <>
-            <code className="bg-muted px-1 py-0.5 rounded text-xs">
-              {`https://${currentHost}`}
-            </code>{" "}
-            is reachable from the Internet.
-          </>
-        ) : (
-          <>
-            Your instance is not reachable from the Internet. Configure ngrok or
-            deploy to a public URL.
-          </>
-        )}
-      </SetupStep>
-      <SetupStep
-        stepNumber={2}
-        title="Connect Microsoft Teams"
-        description="Allow agents to be triggered via Teams"
-        done={!!msTeams?.configured}
-        ctaLabel="Setup MS Teams"
-        onAction={() => setMsTeamsSetupOpen(true)}
-      >
-        <p>
-          Register a Teams bot application and enter its credentials so
-          Archestra can receive and respond to messages.
-        </p>
-        <div className="flex items-center flex-wrap gap-4 pt-2">
-          <CredentialField label="App ID" value={msTeams?.credentials?.appId} />
-          <CredentialField
-            label="App Secret"
-            value={msTeams?.credentials?.appSecret}
-          />
-          <CredentialField
-            label="Tenant ID"
-            value={msTeams?.credentials?.tenantId}
-            optional
-          />
-          {msTeams?.configured && (
-            <Button
-              variant="outline"
-              size="sm"
-              className="text-xs h-7"
-              onClick={() => setMsTeamsSetupOpen(true)}
+    <div className="flex flex-col gap-8">
+      {/* Setup Section */}
+      <section className="flex flex-col gap-6">
+        <div>
+          <h2 className="text-lg font-semibold">Setup</h2>
+          <p className="text-sm text-muted-foreground mt-1">
+            Connect Microsoft Teams so agents can receive and respond to
+            messages.{" "}
+            <Link
+              href="https://archestra.ai/docs/platform-ms-teams"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 text-primary hover:underline"
             >
-              Setup again
-            </Button>
-          )}
+              Learn more
+              <ExternalLink className="h-3 w-3" />
+            </Link>
+          </p>
         </div>
-      </SetupStep>
-      <SetupStep
-        stepNumber={3}
-        title="Install GitHub MCP Server"
-        description="Add GitHub tools to your platform"
-        done={!!githubServer}
-        ctaLabel="Install MCP Server"
-        onAction={() => router.push("/mcp-catalog/registry")}
-      >
-        Install the GitHub MCP server from the registry to make GitHub API tools
-        available for your agents.
-      </SetupStep>
-      <SetupStep
-        stepNumber={4}
-        title="Connect Tools to Agent"
-        description="Assign GitHub tools to an agent"
-        done={hasGithubTools}
-        ctaLabel="Assign Tools"
-        onAction={() => router.push("/agents")}
-      >
-        Assign the GitHub tools to one or more agents so they can interact with
-        repositories, issues, and pull requests.
-      </SetupStep>
+        <SetupStep
+          stepNumber={1}
+          title="Make Archestra reachable from the Internet"
+          description="The MS Teams bot needs to connect to an Archestra webhook — your instance must be publicly accessible"
+          done={isReachable}
+          ctaLabel="Configure ngrok"
+          onAction={() => setNgrokDialogOpen(true)}
+        >
+          {ngrokDomain ? (
+            <>
+              Ngrok domain{" "}
+              <code className="bg-muted px-1 py-0.5 rounded text-xs">
+                {ngrokDomain}
+              </code>{" "}
+              is configured.
+            </>
+          ) : hostReachable ? (
+            <>
+              <code className="bg-muted px-1 py-0.5 rounded text-xs">
+                {`https://${currentHost}`}
+              </code>{" "}
+              is reachable from the Internet.
+            </>
+          ) : (
+            <>
+              Your instance is not reachable from the Internet. Configure ngrok
+              or deploy to a public URL.
+            </>
+          )}
+        </SetupStep>
+        <SetupStep
+          stepNumber={2}
+          title="Connect Microsoft Teams"
+          description="Allow agents to be triggered via Teams"
+          done={!!msTeams?.configured}
+          ctaLabel="Setup MS Teams"
+          onAction={() => setMsTeamsSetupOpen(true)}
+        >
+          <p>
+            Register a Teams bot application and enter its credentials so
+            Archestra can receive and respond to messages.
+          </p>
+          <div className="flex items-center flex-wrap gap-4 pt-2">
+            <CredentialField
+              label="App ID"
+              value={msTeams?.credentials?.appId}
+            />
+            <CredentialField
+              label="App Secret"
+              value={msTeams?.credentials?.appSecret}
+            />
+            <CredentialField
+              label="Tenant ID"
+              value={msTeams?.credentials?.tenantId}
+              optional
+            />
+            {msTeams?.configured && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="text-xs h-7"
+                onClick={() => setMsTeamsSetupOpen(true)}
+              >
+                Setup again
+              </Button>
+            )}
+          </div>
+        </SetupStep>
+        <SetupStep
+          stepNumber={3}
+          title="Choose Default Agent for MS Teams"
+          description="Each MS Teams channel needs a default agent to handle incoming messages"
+          done={hasBindings}
+          ctaLabel="Choose default agent"
+          onAction={() => setDefaultAgentDialogOpen(true)}
+        >
+          {hasBindings ? (
+            <p>
+              {bindings.length} channel{bindings.length === 1 ? "" : "s"} bound
+              to agents. View bindings below.
+            </p>
+          ) : (
+            <p>
+              Once the bot is installed in Teams, use the{" "}
+              <code className="bg-muted px-1 py-0.5 rounded text-xs">
+                /select-agent
+              </code>{" "}
+              command in any channel to select which agent handles messages
+              there.
+            </p>
+          )}
+        </SetupStep>
+      </section>
+
+      <Divider />
+
+      {/* Channel Bindings Section */}
+      <ChannelBindingsSection />
 
       <MsTeamsSetupDialog
         open={msTeamsSetupOpen}
@@ -154,7 +195,212 @@ export default function MsTeamsPage() {
         open={ngrokDialogOpen}
         onOpenChange={setNgrokDialogOpen}
       />
+      <DefaultAgentSetupDialog
+        open={defaultAgentDialogOpen}
+        onOpenChange={setDefaultAgentDialogOpen}
+      />
     </div>
+  );
+}
+
+function ChannelBindingsSection() {
+  const { data: bindings, isLoading } = useChatOpsBindings();
+  const { data: agents } = useProfiles({ filters: { agentType: "agent" } });
+  const deleteMutation = useDeleteChatOpsBinding();
+  const updateMutation = useUpdateChatOpsBinding();
+
+  const [editingBinding, setEditingBinding] = useState<{
+    id: string;
+    agentId: string | null;
+  } | null>(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+
+  const agentMap = new Map(agents?.map((a) => [a.id, a.name]) ?? []);
+  const msTeamsAgents =
+    agents?.filter((a) =>
+      Array.isArray(a.allowedChatops)
+        ? a.allowedChatops.includes("ms-teams")
+        : false,
+    ) ?? [];
+
+  const handleEdit = (bindingId: string, currentAgentId: string | null) => {
+    setEditingBinding({ id: bindingId, agentId: currentAgentId });
+  };
+
+  const handleSaveEdit = () => {
+    if (!editingBinding) return;
+    updateMutation.mutate(
+      { id: editingBinding.id, agentId: editingBinding.agentId },
+      { onSuccess: () => setEditingBinding(null) },
+    );
+  };
+
+  const handleDelete = () => {
+    if (!deleteConfirmId) return;
+    deleteMutation.mutate(deleteConfirmId, {
+      onSuccess: () => setDeleteConfirmId(null),
+    });
+  };
+
+  return (
+    <section className="flex flex-col gap-4 mt-[-8]">
+      <div>
+        <h2 className="text-lg font-semibold">Channel Bindings</h2>
+        <p className="text-sm text-muted-foreground mt-1">
+          Each Teams channel is bound to an agent that handles incoming messages
+          by default. Use{" "}
+          <code className="bg-muted px-1 py-0.5 rounded text-xs">
+            /select-agent
+          </code>{" "}
+          in Teams to create bindings.
+        </p>
+      </div>
+
+      {isLoading ? (
+        <p className="text-sm text-muted-foreground py-4">
+          Loading bindings...
+        </p>
+      ) : bindings && bindings.length > 0 ? (
+        <div className="rounded-md border">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Channel ID</TableHead>
+                <TableHead>Workspace ID</TableHead>
+                <TableHead>Agent</TableHead>
+                <TableHead className="w-24">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {bindings.map((binding) => (
+                <TableRow key={binding.id}>
+                  <TableCell className="font-mono text-xs">
+                    {binding.channelId}
+                  </TableCell>
+                  <TableCell className="font-mono text-xs">
+                    {binding.workspaceId ?? "—"}
+                  </TableCell>
+                  <TableCell>
+                    {binding.agentId
+                      ? (agentMap.get(binding.agentId) ?? "Unknown agent")
+                      : "No agent assigned"}
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7"
+                        onClick={() =>
+                          handleEdit(binding.id, binding.agentId ?? null)
+                        }
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 text-destructive hover:text-destructive"
+                        onClick={() => setDeleteConfirmId(binding.id)}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      ) : (
+        <Card>
+          <CardContent className="py-8 text-center">
+            <p className="text-sm text-muted-foreground">
+              There are no bindings yet
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Edit Dialog */}
+      <Dialog
+        open={!!editingBinding}
+        onOpenChange={(open) => {
+          if (!open) setEditingBinding(null);
+        }}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit Agent Binding</DialogTitle>
+            <DialogDescription>
+              Choose which agent should handle messages in this channel.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <Select
+              value={editingBinding?.agentId ?? ""}
+              onValueChange={(value) =>
+                setEditingBinding((prev) =>
+                  prev ? { ...prev, agentId: value || null } : null,
+                )
+              }
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Select an agent" />
+              </SelectTrigger>
+              <SelectContent>
+                {msTeamsAgents.map((agent) => (
+                  <SelectItem key={agent.id} value={agent.id}>
+                    {agent.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditingBinding(null)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSaveEdit}
+              disabled={updateMutation.isPending}
+            >
+              Save
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog
+        open={!!deleteConfirmId}
+        onOpenChange={(open) => {
+          if (!open) setDeleteConfirmId(null);
+        }}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Delete Binding</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this channel binding? The channel
+              will no longer have a default agent.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteConfirmId(null)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDelete}
+              disabled={deleteMutation.isPending}
+            >
+              Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </section>
   );
 }
 

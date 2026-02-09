@@ -23,7 +23,10 @@ import {
   ChatOpsProviderTypeSchema,
   type IncomingChatMessage,
 } from "@/types/chatops";
-import { ChatOpsChannelBindingResponseSchema } from "@/types/chatops-channel-binding";
+import {
+  ChatOpsChannelBindingResponseSchema,
+  UpdateChatOpsChannelBindingSchema,
+} from "@/types/chatops-channel-binding";
 
 const chatopsRoutes: FastifyPluginAsyncZod = async (fastify) => {
   /**
@@ -432,6 +435,49 @@ const chatopsRoutes: FastifyPluginAsyncZod = async (fastify) => {
   );
 
   /**
+   * Update a channel binding's agent assignment
+   */
+  fastify.patch(
+    "/api/chatops/bindings/:id",
+    {
+      schema: {
+        operationId: RouteId.UpdateChatOpsBinding,
+        description: "Update a chatops channel binding",
+        tags: ["ChatOps"],
+        params: z.object({
+          id: z.string().uuid(),
+        }),
+        body: UpdateChatOpsChannelBindingSchema,
+        response: constructResponseSchema(ChatOpsChannelBindingResponseSchema),
+      },
+    },
+    async (request, reply) => {
+      const { id } = request.params;
+
+      const existing = await ChatOpsChannelBindingModel.findByIdAndOrganization(
+        id,
+        request.organizationId,
+      );
+
+      if (!existing) {
+        throw new ApiError(404, "Binding not found");
+      }
+
+      const updated = await ChatOpsChannelBindingModel.update(id, request.body);
+
+      if (!updated) {
+        throw new ApiError(500, "Failed to update binding");
+      }
+
+      return reply.send({
+        ...updated,
+        createdAt: updated.createdAt.toISOString(),
+        updatedAt: updated.updatedAt.toISOString(),
+      });
+    },
+  );
+
+  /**
    * Update MS Teams chatops config in quickstart mode.
    * Mutates in-memory config and reinitializes the chatops manager.
    */
@@ -765,6 +811,7 @@ async function handleAgentSelection(
         threadId: message.threadId,
         senderId: message.senderId,
         senderName: message.senderName,
+        senderEmail: message.senderEmail,
         text: originalMessageText,
         rawText: originalMessageText,
         timestamp: message.timestamp,

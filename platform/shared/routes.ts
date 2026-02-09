@@ -320,6 +320,7 @@ export const RouteId = {
   GetChatOpsStatus: "getChatOpsStatus",
   ListChatOpsBindings: "listChatOpsBindings",
   DeleteChatOpsBinding: "deleteChatOpsBinding",
+  UpdateChatOpsBinding: "updateChatOpsBinding",
   UpdateChatOpsConfigInQuickstart: "updateChatOpsConfigInQuickstart",
 
   // Invitation Routes

@@ -2,8 +2,6 @@
 
 import JSZip from "jszip";
 import {
-  ChevronLeft,
-  ChevronRight,
   Download,
   ExternalLink,
   Info,
@@ -13,21 +11,9 @@ import {
 import * as React from "react";
 import { useRef, useState } from "react";
 import { CopyButton } from "@/components/copy-button";
+import { SetupDialog } from "@/components/setup-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Carousel,
-  type CarouselApi,
-  CarouselContent,
-  CarouselItem,
-} from "@/components/ui/carousel";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useChatOpsStatus } from "@/lib/chatops.query";
@@ -43,6 +29,92 @@ const ENV_VARS_TEXT = `ARCHESTRA_CHATOPS_MS_TEAMS_ENABLED=true
 ARCHESTRA_CHATOPS_MS_TEAMS_APP_ID=<Microsoft App ID>
 ARCHESTRA_CHATOPS_MS_TEAMS_APP_SECRET=<Client Secret>
 ARCHESTRA_CHATOPS_MS_TEAMS_TENANT_ID=<Tenant ID>`;
+
+export function MsTeamsSetupDialog({
+  open,
+  onOpenChange,
+}: MsTeamsSetupDialogProps) {
+  const { data: features } = useFeatures();
+  const ngrokDomain = features?.ngrokDomain ?? "";
+
+  const saveRef = useRef<(() => Promise<void>) | null>(null);
+  const [canSave, setCanSave] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  const stepContents = React.useMemo(() => {
+    const slides = buildSteps(ngrokDomain);
+    return slides.map((step, index) => {
+      if (step.component === "manifest") {
+        return <StepManifest key={step.title} stepNumber={index + 1} />;
+      }
+      if (index < slides.length - 1) {
+        return (
+          <StepSlide
+            key={step.title}
+            title={step.title}
+            stepNumber={index + 1}
+            video={step.video}
+            instructions={step.instructions}
+          />
+        );
+      }
+      // Last step
+      if (features?.isQuickstart) {
+        return (
+          <StepConfigForm
+            key={step.title}
+            saveRef={saveRef}
+            onCanSaveChange={setCanSave}
+          />
+        );
+      }
+      return <StepEnvVarsInfo key={step.title} />;
+    });
+  }, [ngrokDomain, features?.isQuickstart]);
+
+  const lastStepAction = features?.isQuickstart
+    ? {
+        label: saving ? "Connecting..." : "Connect",
+        disabled: saving || !canSave,
+        loading: saving,
+        onClick: async () => {
+          if (!saveRef.current) return;
+          setSaving(true);
+          try {
+            await saveRef.current();
+            onOpenChange(false);
+          } finally {
+            setSaving(false);
+          }
+        },
+      }
+    : undefined;
+
+  return (
+    <SetupDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      title="Setup Microsoft Teams"
+      description={
+        <>
+          Follow these steps to connect your Archestra agents to Microsoft
+          Teams. Find out more in our{" "}
+          <a
+            href="https://archestra.ai/docs/platform-ms-teams"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-primary underline hover:no-underline"
+          >
+            documentation
+          </a>
+          .
+        </>
+      }
+      steps={stepContents}
+      lastStepAction={lastStepAction}
+    />
+  );
+}
 
 function buildSteps(ngrokDomain: string) {
   return [
@@ -108,7 +180,7 @@ function buildSteps(ngrokDomain: string) {
     },
     {
       title: "Create App Manifest",
-      component: "manifest",
+      component: "manifest" as const,
     },
     {
       title: "Install in Teams",
@@ -132,174 +204,24 @@ function buildSteps(ngrokDomain: string) {
   ];
 }
 
-export function MsTeamsSetupDialog({
-  open,
-  onOpenChange,
-}: MsTeamsSetupDialogProps) {
-  const { data: features } = useFeatures();
-  const [api, setApi] = React.useState<CarouselApi>();
-  const [current, setCurrent] = React.useState(0);
-
-  const steps = React.useMemo(
-    () => buildSteps(features?.ngrokDomain ?? ""),
-    [features?.ngrokDomain],
-  );
-
-  React.useEffect(() => {
-    if (!api) return;
-    setCurrent(api.selectedScrollSnap());
-    api.on("select", () => {
-      setCurrent(api.selectedScrollSnap());
-    });
-  }, [api]);
-
-  const saveRef = useRef<(() => Promise<void>) | null>(null);
-  const [canSave, setCanSave] = useState(false);
-  const [saving, setSaving] = useState(false);
-
-  const isFirst = current === 0;
-  const isLast = current === steps.length - 1;
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="h-[85vh] max-h-[85vh] flex flex-col gap-0 p-0 overflow-hidden max-w-[1400px]! w-[80vw]">
-        <DialogHeader className="px-6 pt-6 pb-4">
-          <DialogTitle>Setup Microsoft Teams</DialogTitle>
-          <DialogDescription>
-            Follow these steps to connect your Archestra agents to Microsoft
-            Teams. Find out more in our{" "}
-            <a
-              href="https://archestra.ai/docs/platform-ms-teams"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-primary underline hover:no-underline"
-            >
-              documentation
-            </a>
-            .
-          </DialogDescription>
-        </DialogHeader>
-
-        {/* Carousel content */}
-        <div className="flex-1 min-h-0 [&_[data-slot=carousel-content]]:h-full">
-          <Carousel
-            setApi={setApi}
-            opts={{ watchDrag: false }}
-            className="h-full"
-          >
-            <CarouselContent className="h-full pb-6">
-              {steps.map((step, index) => (
-                // biome-ignore lint/suspicious/noArrayIndexKey: items are static
-                <CarouselItem key={index} className="h-full">
-                  <div className="flex h-full flex-col overflow-y-auto px-6">
-                    {step.component === "manifest" ? (
-                      <StepManifest stepNumber={index + 1} />
-                    ) : index < steps.length - 1 ? (
-                      <StepSlide
-                        title={step.title}
-                        stepNumber={index + 1}
-                        video={step.video}
-                        instructions={step.instructions}
-                        isActive={current === index}
-                      />
-                    ) : features?.isQuickstart ? (
-                      <StepConfigForm
-                        saveRef={saveRef}
-                        onCanSaveChange={setCanSave}
-                      />
-                    ) : (
-                      <StepEnvVarsInfo />
-                    )}
-                  </div>
-                </CarouselItem>
-              ))}
-            </CarouselContent>
-          </Carousel>
-        </div>
-
-        {/* Navigation footer */}
-        <div className="flex items-center justify-between border-t px-6 py-4">
-          <div className="text-sm text-muted-foreground">
-            Step {current + 1} of {steps.length}
-          </div>
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => api?.scrollPrev()}
-              disabled={isFirst}
-            >
-              <ChevronLeft className="mr-1 h-4 w-4" />
-              Back
-            </Button>
-            {isLast && !features?.isQuickstart && (
-              <Button size="sm" onClick={() => onOpenChange(false)}>
-                Close
-              </Button>
-            )}
-            {isLast && features?.isQuickstart && (
-              <Button
-                size="sm"
-                disabled={saving || !canSave}
-                onClick={async () => {
-                  if (!saveRef.current) return;
-                  setSaving(true);
-                  try {
-                    await saveRef.current();
-                    onOpenChange(false);
-                  } finally {
-                    setSaving(false);
-                  }
-                }}
-              >
-                {saving && <Loader2 className="mr-1 h-4 w-4 animate-spin" />}
-                Connect
-              </Button>
-            )}
-            {!isLast && (
-              <Button size="sm" onClick={() => api?.scrollNext()}>
-                Next
-                <ChevronRight className="ml-1 h-4 w-4" />
-              </Button>
-            )}
-          </div>
-        </div>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
 function StepSlide({
   title,
   stepNumber,
   video,
   instructions,
-  isActive,
 }: {
   title: string;
   stepNumber: number;
   video?: string;
   instructions?: React.ReactNode[];
-  isActive: boolean;
 }) {
-  const videoRef = useRef<HTMLVideoElement>(null);
-
-  React.useEffect(() => {
-    if (!videoRef.current) return;
-    if (isActive) {
-      videoRef.current.currentTime = 0;
-      videoRef.current.play();
-    } else {
-      videoRef.current.pause();
-    }
-  }, [isActive]);
+  const videoRef = React.useRef<HTMLVideoElement>(null);
 
   return (
     <div
       className="grid flex-1 gap-6"
       style={{ gridTemplateColumns: "6fr 4fr" }}
     >
-      {/* Video side */}
       {video && (
         <div className="flex justify-center items-center rounded-lg border bg-muted/30 p-2 relative">
           <video
@@ -313,7 +235,6 @@ function StepSlide({
         </div>
       )}
 
-      {/* Instructions side */}
       <div className="flex flex-col gap-4 py-2">
         <div className="flex items-center gap-2">
           <Badge variant="outline" className="font-mono text-xs">
@@ -382,7 +303,6 @@ function StepConfigForm({
     setTenantId("");
   };
 
-  // Expose handleSave to the parent dialog footer
   saveRef.current = handleSave;
 
   return (
@@ -390,7 +310,6 @@ function StepConfigForm({
       className="grid flex-1 gap-6"
       style={{ gridTemplateColumns: "6fr 4fr" }}
     >
-      {/* Left side — form (matches image position in other steps) */}
       <div className="flex flex-col gap-5 rounded-lg border bg-muted/30 p-6">
         <div className="space-y-2">
           <Label htmlFor="setup-app-id">App ID</Label>
@@ -441,7 +360,6 @@ function StepConfigForm({
         <EnvVarsInfo appId={appId} appSecret={appSecret} tenantId={tenantId} />
       </div>
 
-      {/* Right side — instructions (matches instruction position in other steps) */}
       <div className="flex flex-col gap-4 py-2">
         <div className="flex items-center gap-2">
           <Badge variant="outline" className="font-mono text-xs">
@@ -506,8 +424,9 @@ function EnvVarsInfo({
       <Info className="h-4 w-4 shrink-0 text-blue-500 mt-0.5" />
       <div className="min-w-0 flex-1">
         <p>
-          Values that are set or edited here are stored in memory and will be reset after server
-          restart. For persistent configuration, set these environment variables:
+          Values that are set or edited here are stored in memory and will be
+          reset after server restart. For persistent configuration, set these
+          environment variables:
         </p>
         <div className="relative mt-2">
           <pre className="bg-muted rounded-md px-3 py-2 text-xs font-mono leading-relaxed overflow-x-auto">
@@ -528,7 +447,6 @@ function StepEnvVarsInfo() {
       className="grid flex-1 gap-6"
       style={{ gridTemplateColumns: "7fr 3fr" }}
     >
-      {/* Left side — env vars info */}
       <div className="flex flex-col justify-center gap-5 rounded-lg border bg-muted/30 p-6">
         <p className="text-sm text-muted-foreground leading-relaxed">
           Set the following environment variables and restart Archestra to
@@ -552,7 +470,6 @@ function StepEnvVarsInfo() {
         </p>
       </div>
 
-      {/* Right side — instructions */}
       <div className="flex flex-col gap-4 py-2">
         <div className="flex items-center gap-2">
           <Badge variant="outline" className="font-mono text-xs">
@@ -688,7 +605,6 @@ function StepManifest({ stepNumber }: { stepNumber: number }) {
       className="grid flex-1 gap-6"
       style={{ gridTemplateColumns: "6fr 4fr" }}
     >
-      {/* Left side — manifest preview */}
       <div className="flex flex-col gap-3 rounded-lg border bg-muted/30 p-4 min-h-0">
         <div className="flex items-center justify-between">
           <span className="text-xs font-medium text-muted-foreground">
@@ -701,7 +617,6 @@ function StepManifest({ stepNumber }: { stepNumber: number }) {
         </pre>
       </div>
 
-      {/* Right side — instructions */}
       <div className="flex flex-col gap-4 py-2">
         <div className="flex items-center gap-2">
           <Badge variant="outline" className="font-mono text-xs">
