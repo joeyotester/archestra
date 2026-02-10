@@ -25,11 +25,6 @@ interface MsTeamsSetupDialogProps {
   onOpenChange: (open: boolean) => void;
 }
 
-const ENV_VARS_TEXT = `ARCHESTRA_CHATOPS_MS_TEAMS_ENABLED=true
-ARCHESTRA_CHATOPS_MS_TEAMS_APP_ID=<Microsoft App ID>
-ARCHESTRA_CHATOPS_MS_TEAMS_APP_SECRET=<Client Secret>
-ARCHESTRA_CHATOPS_MS_TEAMS_TENANT_ID=<Tenant ID>`;
-
 export function MsTeamsSetupDialog({
   open,
   onOpenChange,
@@ -41,11 +36,47 @@ export function MsTeamsSetupDialog({
   const [canSave, setCanSave] = useState(false);
   const [saving, setSaving] = useState(false);
 
+  // Shared credential state across steps (in-memory only)
+  const [sharedAppId, setSharedAppId] = useState("");
+  const [sharedAppSecret, setSharedAppSecret] = useState("");
+  const [sharedTenantId, setSharedTenantId] = useState("");
+
+  const handleOpenChange = (value: boolean) => {
+    onOpenChange(value);
+    if (!value) {
+      setSharedAppId("");
+      setSharedAppSecret("");
+      setSharedTenantId("");
+    }
+  };
+
   const stepContents = React.useMemo(() => {
-    const slides = buildSteps(ngrokDomain);
+    const slides = buildSteps();
     return slides.map((step, index) => {
+      if (step.component === "credentials") {
+        return (
+          <StepBotSettings
+            key={step.title}
+            stepNumber={index + 1}
+            video={step.video}
+            ngrokDomain={ngrokDomain}
+            appId={sharedAppId}
+            appSecret={sharedAppSecret}
+            tenantId={sharedTenantId}
+            onAppIdChange={setSharedAppId}
+            onAppSecretChange={setSharedAppSecret}
+            onTenantIdChange={setSharedTenantId}
+          />
+        );
+      }
       if (step.component === "manifest") {
-        return <StepManifest key={step.title} stepNumber={index + 1} />;
+        return (
+          <StepManifest
+            key={step.title}
+            stepNumber={index + 1}
+            prefillAppId={sharedAppId}
+          />
+        );
       }
       if (index < slides.length - 1) {
         return (
@@ -65,12 +96,28 @@ export function MsTeamsSetupDialog({
             key={step.title}
             saveRef={saveRef}
             onCanSaveChange={setCanSave}
+            prefillAppId={sharedAppId}
+            prefillAppSecret={sharedAppSecret}
+            prefillTenantId={sharedTenantId}
           />
         );
       }
-      return <StepEnvVarsInfo key={step.title} />;
+      return (
+        <StepEnvVarsInfo
+          key={step.title}
+          appId={sharedAppId}
+          appSecret={sharedAppSecret}
+          tenantId={sharedTenantId}
+        />
+      );
     });
-  }, [ngrokDomain, features?.isQuickstart]);
+  }, [
+    ngrokDomain,
+    features?.isQuickstart,
+    sharedAppId,
+    sharedAppSecret,
+    sharedTenantId,
+  ]);
 
   const lastStepAction = features?.isQuickstart
     ? {
@@ -82,7 +129,7 @@ export function MsTeamsSetupDialog({
           setSaving(true);
           try {
             await saveRef.current();
-            onOpenChange(false);
+            handleOpenChange(false);
           } finally {
             setSaving(false);
           }
@@ -93,7 +140,7 @@ export function MsTeamsSetupDialog({
   return (
     <SetupDialog
       open={open}
-      onOpenChange={onOpenChange}
+      onOpenChange={handleOpenChange}
       title="Setup Microsoft Teams"
       description={
         <>
@@ -116,7 +163,7 @@ export function MsTeamsSetupDialog({
   );
 }
 
-function buildSteps(ngrokDomain: string) {
+function buildSteps() {
   return [
     {
       title: "Create Azure Bot",
@@ -145,22 +192,8 @@ function buildSteps(ngrokDomain: string) {
     },
     {
       title: "Configure Bot Settings",
+      component: "credentials" as const,
       video: "/ms-teams/bot-settings.mp4",
-      instructions: [
-        <>
-          After creation, go to newly created <strong>resource</strong> and then
-          to <strong>Settings</strong> → <strong>Configuration</strong>
-        </>,
-        <WebhookUrlInstruction key="webhook-url" ngrokDomain={ngrokDomain} />,
-        <>
-          Copy the <strong>Microsoft App ID</strong> and save it for later
-        </>,
-        <>
-          Click <strong>Manage Password</strong> →{" "}
-          <strong>New client secret</strong> → copy the secret value and save it
-          for later too
-        </>,
-      ],
     },
     {
       title: "Add Teams Channel",
@@ -262,12 +295,137 @@ function StepSlide({
   );
 }
 
+function StepBotSettings({
+  stepNumber,
+  video,
+  ngrokDomain,
+  appId,
+  appSecret,
+  tenantId,
+  onAppIdChange,
+  onAppSecretChange,
+  onTenantIdChange,
+}: {
+  stepNumber: number;
+  video?: string;
+  ngrokDomain: string;
+  appId: string;
+  appSecret: string;
+  tenantId: string;
+  onAppIdChange: (v: string) => void;
+  onAppSecretChange: (v: string) => void;
+  onTenantIdChange: (v: string) => void;
+}) {
+  return (
+    <div
+      className="grid flex-1 gap-6"
+      style={{ gridTemplateColumns: "6fr 4fr" }}
+    >
+      {video && (
+        <div className="flex justify-center items-center rounded-lg border bg-muted/30 p-2 relative">
+          <video
+            src={video}
+            controls
+            muted
+            autoPlay
+            loop
+            playsInline
+            className="rounded-md w-full h-full object-contain"
+          />
+        </div>
+      )}
+
+      <div className="flex flex-col gap-4 py-2">
+        <div className="flex items-center gap-2">
+          <Badge variant="outline" className="font-mono text-xs">
+            Step {stepNumber}
+          </Badge>
+          <h3 className="text-lg font-semibold">Configure Bot Settings</h3>
+        </div>
+
+        <ol className="space-y-3">
+          <li className="flex gap-3 text-sm leading-relaxed">
+            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-medium">
+              1
+            </span>
+            <span className="pt-0.5">
+              After creation, go to newly created <strong>resource</strong> and
+              then to <strong>Settings</strong> → <strong>Configuration</strong>
+            </span>
+          </li>
+          <li className="flex gap-3 text-sm leading-relaxed">
+            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-medium">
+              2
+            </span>
+            <span className="pt-0.5">
+              <WebhookUrlInstruction ngrokDomain={ngrokDomain} />
+            </span>
+          </li>
+          <li className="flex gap-3 text-sm leading-relaxed">
+            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-medium">
+              3
+            </span>
+            <span className="pt-0.5 flex-1">
+              Copy the <strong>Microsoft App ID</strong> and paste it here
+              <Input
+                value={appId}
+                onChange={(e) => onAppIdChange(e.target.value)}
+                placeholder="Paste your Microsoft App ID"
+                className="h-7 text-xs mt-1.5"
+              />
+            </span>
+          </li>
+          <li className="flex gap-3 text-sm leading-relaxed">
+            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-medium">
+              4
+            </span>
+            <span className="pt-0.5 flex-1">
+              Click <strong>Manage Password</strong> →{" "}
+              <strong>New client secret</strong> → copy the secret value and
+              paste it here
+              <Input
+                type="password"
+                value={appSecret}
+                onChange={(e) => onAppSecretChange(e.target.value)}
+                placeholder="Paste your client secret"
+                className="h-7 text-xs mt-1.5"
+              />
+            </span>
+          </li>
+          <li className="flex gap-3 text-sm leading-relaxed">
+            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-medium">
+              5
+            </span>
+            <span className="pt-0.5 flex-1">
+              Copy <strong>App Tenant ID</strong>{" "}
+              <span className="text-muted-foreground">(optional)</span> — for
+              single-tenant bots
+              <Input
+                value={tenantId}
+                onChange={(e) => onTenantIdChange(e.target.value)}
+                placeholder="Paste your Tenant ID"
+                className="h-7 text-xs mt-1.5"
+              />
+            </span>
+          </li>
+        </ol>
+      </div>
+    </div>
+  );
+}
+
 function StepConfigForm({
   saveRef,
   onCanSaveChange,
+  prefillAppId,
+  prefillAppSecret,
+  prefillTenantId,
 }: {
   saveRef: React.MutableRefObject<(() => Promise<void>) | null>;
   onCanSaveChange: (canSave: boolean) => void;
+  prefillAppId?: string;
+  prefillAppSecret?: string;
+  prefillTenantId?: string;
 }) {
   const mutation = useUpdateChatOpsConfigInQuickstart();
   const { data: chatOpsProviders } = useChatOpsStatus();
@@ -278,8 +436,12 @@ function StepConfigForm({
   const [appSecret, setAppSecret] = useState("");
   const [tenantId, setTenantId] = useState("");
 
-  const hasAppId = Boolean(appId || creds?.appId);
-  const hasAppSecret = Boolean(appSecret || creds?.appSecret);
+  const effectiveAppId = appId || prefillAppId || "";
+  const effectiveAppSecret = appSecret || prefillAppSecret || "";
+  const effectiveTenantId = tenantId || prefillTenantId || "";
+
+  const hasAppId = Boolean(effectiveAppId || creds?.appId);
+  const hasAppSecret = Boolean(effectiveAppSecret || creds?.appSecret);
 
   React.useEffect(() => {
     onCanSaveChange(hasAppId && hasAppSecret);
@@ -287,9 +449,9 @@ function StepConfigForm({
 
   const handleSave = async () => {
     const body: Record<string, unknown> = { enabled: true };
-    if (appId) body.appId = appId;
-    if (appSecret) body.appSecret = appSecret;
-    if (tenantId) body.tenantId = tenantId;
+    if (effectiveAppId) body.appId = effectiveAppId;
+    if (effectiveAppSecret) body.appSecret = effectiveAppSecret;
+    if (effectiveTenantId) body.tenantId = effectiveTenantId;
 
     await mutation.mutateAsync(
       body as {
@@ -320,7 +482,11 @@ function StepConfigForm({
             value={appId}
             onChange={(e) => setAppId(e.target.value)}
             placeholder={
-              creds?.appId ? `Current: ${creds.appId}` : "Azure Bot App ID"
+              prefillAppId
+                ? `From Step 2: ${prefillAppId}`
+                : creds?.appId
+                  ? `Current: ${creds.appId}`
+                  : "Azure Bot App ID"
             }
           />
         </div>
@@ -333,9 +499,11 @@ function StepConfigForm({
             value={appSecret}
             onChange={(e) => setAppSecret(e.target.value)}
             placeholder={
-              creds?.appSecret
-                ? `Current: ${creds.appSecret}`
-                : "Azure Bot App Secret"
+              prefillAppSecret
+                ? "From Step 2: ********"
+                : creds?.appSecret
+                  ? `Current: ${creds.appSecret}`
+                  : "Azure Bot App Secret"
             }
           />
         </div>
@@ -352,14 +520,20 @@ function StepConfigForm({
             value={tenantId}
             onChange={(e) => setTenantId(e.target.value)}
             placeholder={
-              creds?.tenantId
-                ? `Current: ${creds.tenantId}`
-                : "Azure AD Tenant ID — only for single-tenant bots"
+              prefillTenantId
+                ? `From Step 2: ${prefillTenantId}`
+                : creds?.tenantId
+                  ? `Current: ${creds.tenantId}`
+                  : "Azure AD Tenant ID — only for single-tenant bots"
             }
           />
         </div>
 
-        <EnvVarsInfo appId={appId} appSecret={appSecret} tenantId={tenantId} />
+        <EnvVarsInfo
+          appId={effectiveAppId}
+          appSecret={effectiveAppSecret}
+          tenantId={effectiveTenantId}
+        />
       </div>
 
       <div className="flex flex-col gap-4 py-2">
@@ -413,12 +587,21 @@ function EnvVarsInfo({
   tenantId: string;
 }) {
   const envVarsText = [
-    `ARCHESTRA_CHATOPS_MS_TEAMS_ENABLED=true`,
+    "ARCHESTRA_CHATOPS_MS_TEAMS_ENABLED=true",
     `ARCHESTRA_CHATOPS_MS_TEAMS_APP_ID=${appId || "<your-app-id>"}`,
     `ARCHESTRA_CHATOPS_MS_TEAMS_APP_SECRET=${appSecret || "<your-app-secret>"}`,
     tenantId
       ? `ARCHESTRA_CHATOPS_MS_TEAMS_TENANT_ID=${tenantId}`
-      : `ARCHESTRA_CHATOPS_MS_TEAMS_TENANT_ID=<your-tenant-id>`,
+      : "ARCHESTRA_CHATOPS_MS_TEAMS_TENANT_ID=<your-tenant-id>",
+  ].join("\n");
+
+  const maskedDisplay = [
+    "ARCHESTRA_CHATOPS_MS_TEAMS_ENABLED=true",
+    `ARCHESTRA_CHATOPS_MS_TEAMS_APP_ID=${appId || "<your-app-id>"}`,
+    `ARCHESTRA_CHATOPS_MS_TEAMS_APP_SECRET=${appSecret ? "********" : "<your-app-secret>"}`,
+    tenantId
+      ? `ARCHESTRA_CHATOPS_MS_TEAMS_TENANT_ID=${tenantId}`
+      : "ARCHESTRA_CHATOPS_MS_TEAMS_TENANT_ID=<your-tenant-id>",
   ].join("\n");
 
   return (
@@ -432,7 +615,7 @@ function EnvVarsInfo({
         </p>
         <div className="relative mt-2">
           <pre className="bg-muted rounded-md px-3 py-2 text-xs font-mono leading-relaxed overflow-x-auto">
-            {envVarsText}
+            {maskedDisplay}
           </pre>
           <div className="absolute top-1 right-1">
             <CopyButton text={envVarsText} />
@@ -443,7 +626,29 @@ function EnvVarsInfo({
   );
 }
 
-function StepEnvVarsInfo() {
+function StepEnvVarsInfo({
+  appId,
+  appSecret,
+  tenantId,
+}: {
+  appId?: string;
+  appSecret?: string;
+  tenantId?: string;
+}) {
+  const envVarsText = [
+    "ARCHESTRA_CHATOPS_MS_TEAMS_ENABLED=true",
+    `ARCHESTRA_CHATOPS_MS_TEAMS_APP_ID=${appId || "<Microsoft App ID>"}`,
+    `ARCHESTRA_CHATOPS_MS_TEAMS_APP_SECRET=${appSecret || "<Client Secret>"}`,
+    `ARCHESTRA_CHATOPS_MS_TEAMS_TENANT_ID=${tenantId || "<Tenant ID>"}`,
+  ].join("\n");
+
+  const maskedEnvVarsDisplay = [
+    "ARCHESTRA_CHATOPS_MS_TEAMS_ENABLED=true",
+    `ARCHESTRA_CHATOPS_MS_TEAMS_APP_ID=${appId || "<Microsoft App ID>"}`,
+    `ARCHESTRA_CHATOPS_MS_TEAMS_APP_SECRET=${appSecret ? "********" : "<Client Secret>"}`,
+    `ARCHESTRA_CHATOPS_MS_TEAMS_TENANT_ID=${tenantId || "<Tenant ID>"}`,
+  ].join("\n");
+
   return (
     <div
       className="grid flex-1 gap-6"
@@ -456,15 +661,11 @@ function StepEnvVarsInfo() {
         </p>
         <div className="relative rounded bg-muted px-4 py-3 font-mono text-sm leading-loose">
           <div className="absolute top-2 right-2">
-            <CopyButton text={ENV_VARS_TEXT} />
+            <CopyButton text={envVarsText} />
           </div>
-          ARCHESTRA_CHATOPS_MS_TEAMS_ENABLED=true
-          <br />
-          ARCHESTRA_CHATOPS_MS_TEAMS_APP_ID=&lt;Microsoft App ID&gt;
-          <br />
-          ARCHESTRA_CHATOPS_MS_TEAMS_APP_SECRET=&lt;Client Secret&gt;
-          <br />
-          ARCHESTRA_CHATOPS_MS_TEAMS_TENANT_ID=&lt;Tenant ID&gt;
+          <pre className="text-xs leading-loose whitespace-pre-wrap">
+            {maskedEnvVarsDisplay}
+          </pre>
         </div>
         <p className="text-sm text-muted-foreground leading-relaxed">
           After setting these variables, restart Archestra for the changes to
@@ -570,11 +771,18 @@ function buildManifest(botAppId: string) {
   };
 }
 
-function StepManifest({ stepNumber }: { stepNumber: number }) {
+function StepManifest({
+  stepNumber,
+  prefillAppId,
+}: {
+  stepNumber: number;
+  prefillAppId?: string;
+}) {
   const [botAppId, setBotAppId] = useState("");
   const [downloading, setDownloading] = useState(false);
 
-  const manifest = buildManifest(botAppId);
+  const effectiveAppId = botAppId || prefillAppId || "";
+  const manifest = buildManifest(effectiveAppId);
   const manifestJson = JSON.stringify(manifest, null, 2);
 
   const handleDownload = async () => {
@@ -631,19 +839,24 @@ function StepManifest({ stepNumber }: { stepNumber: number }) {
           <Label htmlFor="manifest-bot-id">Microsoft App ID</Label>
           <Input
             id="manifest-bot-id"
-            value={botAppId}
+            value={effectiveAppId}
             onChange={(e) => setBotAppId(e.target.value)}
-            placeholder="Paste your Microsoft App ID"
+            placeholder={
+              prefillAppId
+                ? `From Step 2: ${prefillAppId}`
+                : "Paste your Microsoft App ID"
+            }
           />
           <p className="text-xs text-muted-foreground">
-            The App ID from Step 2. It will be injected into the manifest
-            automatically.
+            {effectiveAppId
+              ? "App ID will be injected into the manifest automatically."
+              : "The App ID from Step 2. It will be injected into the manifest automatically."}
           </p>
         </div>
 
         <Button
           onClick={handleDownload}
-          disabled={!botAppId || downloading}
+          disabled={!effectiveAppId || downloading}
           className="w-full"
         >
           {downloading ? (
@@ -654,7 +867,7 @@ function StepManifest({ stepNumber }: { stepNumber: number }) {
           Download archestra-teams-app.zip
         </Button>
 
-        {!botAppId && (
+        {!effectiveAppId && (
           <span className="flex items-center gap-1 text-xs text-amber-500">
             <TriangleAlert className="h-3 w-3 shrink-0" />
             Enter your Microsoft App ID to generate the manifest
