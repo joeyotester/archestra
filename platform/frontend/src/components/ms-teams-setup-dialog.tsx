@@ -899,9 +899,13 @@ function WebhookUrlInstruction({ ngrokDomain }: { ngrokDomain: string }) {
       </span>
       {!hasKnownDomain && (
         <>
-          <label className="mt-2 flex items-center gap-2 text-xs">
+          <label
+            htmlFor="webhook-custom-domain"
+            className="mt-2 flex items-center gap-2 text-xs"
+          >
             <span className="shrink-0 text-muted-foreground">Your domain:</span>
-            <input
+            <Input
+              id="webhook-custom-domain"
               type="text"
               value={customDomain}
               onChange={(e) => setCustomDomain(e.target.value)}

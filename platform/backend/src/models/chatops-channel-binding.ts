@@ -1,4 +1,4 @@
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, isNull } from "drizzle-orm";
 import db, { schema } from "@/database";
 import type { ChatOpsProviderType } from "@/types/chatops";
 import type {
@@ -54,25 +54,7 @@ class ChatOpsChannelBindingModel {
         eq(schema.chatopsChannelBindingsTable.workspaceId, params.workspaceId),
       );
     } else {
-      // For null workspaceId, we need to check for null explicitly
-      // but Drizzle doesn't have a direct isNull, so we use raw SQL
-      const [binding] = await db
-        .select()
-        .from(schema.chatopsChannelBindingsTable)
-        .where(
-          and(
-            eq(schema.chatopsChannelBindingsTable.provider, params.provider),
-            eq(schema.chatopsChannelBindingsTable.channelId, params.channelId),
-          ),
-        )
-        .limit(1);
-
-      // Filter by null workspaceId in JS since it's an edge case
-      if (binding && binding.workspaceId === null) {
-        return binding as ChatOpsChannelBinding;
-      }
-
-      return null;
+      conditions.push(isNull(schema.chatopsChannelBindingsTable.workspaceId));
     }
 
     const [binding] = await db
