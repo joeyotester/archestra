@@ -34,6 +34,7 @@ export interface Context {
   organizationId: string;
   agentId?: string;
   externalAgentId?: string;
+  executionId?: string;
   userId?: string;
   sessionId?: string | null;
   sessionSource?: SessionSource;
@@ -70,7 +71,7 @@ export async function handleLLMProxy<
   provider: LLMProvider<TRequest, TResponse, TMessages, TChunk, THeaders>,
   context: Context,
 ): Promise<FastifyReply> {
-  const { agentId, externalAgentId } = context;
+  const { agentId, externalAgentId, executionId } = context;
   const providerName = provider.provider;
 
   // Extract session info if not already provided in context
@@ -402,6 +403,7 @@ export async function handleLLMProxy<
         sessionId,
         sessionSource,
         teamIds,
+        executionId,
       );
     } else {
       return handleNonStreaming(
@@ -423,6 +425,7 @@ export async function handleLLMProxy<
         sessionId,
         sessionSource,
         teamIds,
+        executionId,
       );
     }
   } catch (error) {
@@ -465,6 +468,7 @@ async function handleStreaming<
   sessionId?: string | null,
   sessionSource?: SessionSource,
   teamIds?: string[],
+  executionId?: string,
 ): Promise<FastifyReply> {
   const providerName = provider.provider;
   const streamStartTime = Date.now();
@@ -656,6 +660,7 @@ async function handleStreaming<
       await InteractionModel.create({
         profileId: agent.id,
         externalAgentId,
+        executionId,
         userId,
         sessionId,
         sessionSource,
@@ -709,6 +714,7 @@ async function handleNonStreaming<
   sessionId?: string | null,
   sessionSource?: SessionSource,
   teamIds?: string[],
+  executionId?: string,
 ): Promise<FastifyReply> {
   const providerName = provider.provider;
 
@@ -804,6 +810,7 @@ async function handleNonStreaming<
       await InteractionModel.create({
         profileId: agent.id,
         externalAgentId,
+        executionId,
         userId,
         sessionId,
         sessionSource,
@@ -865,6 +872,7 @@ async function handleNonStreaming<
   await InteractionModel.create({
     profileId: agent.id,
     externalAgentId,
+    executionId,
     userId,
     sessionId,
     sessionSource,

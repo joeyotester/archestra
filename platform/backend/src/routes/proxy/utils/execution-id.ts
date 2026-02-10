@@ -1,19 +1,19 @@
-import { EXTERNAL_AGENT_ID_HEADER } from "@shared";
+import { EXECUTION_ID_HEADER } from "@shared";
 import { parseMetaHeader } from "./meta-header";
 
 /**
- * Extract the external agent ID from request headers.
- * Checks X-Archestra-Agent-Id first, then falls back to the
- * first segment of X-Archestra-Meta.
+ * Extract the execution ID from request headers.
+ * Checks X-Archestra-Execution-Id first, then falls back to the
+ * second segment of X-Archestra-Meta.
  *
  * @param headers - The request headers object
- * @returns The external agent ID if present, undefined otherwise
+ * @returns The execution ID if present, undefined otherwise
  */
-export function getExternalAgentId(
+export function getExecutionId(
   headers: Record<string, string | string[] | undefined>,
 ): string | undefined {
   // Priority 1: Explicit header
-  const headerKey = EXTERNAL_AGENT_ID_HEADER.toLowerCase();
+  const headerKey = EXECUTION_ID_HEADER.toLowerCase();
   const headerValue = headers[headerKey];
 
   if (typeof headerValue === "string" && headerValue.trim().length > 0) {
@@ -30,5 +30,5 @@ export function getExternalAgentId(
 
   // Priority 2: Meta header fallback
   const meta = parseMetaHeader(headers);
-  return meta.externalAgentId;
+  return meta.executionId;
 }
