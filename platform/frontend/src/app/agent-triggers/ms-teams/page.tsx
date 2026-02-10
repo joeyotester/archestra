@@ -4,6 +4,7 @@ import {
   CheckCircle2,
   Circle,
   ExternalLink,
+  Info,
   Pencil,
   Trash2,
 } from "lucide-react";
@@ -50,6 +51,7 @@ import {
   useDeleteChatOpsBinding,
   useUpdateChatOpsBinding,
 } from "@/lib/chatops.query";
+import config from "@/lib/config";
 import { useFeatures } from "@/lib/features.query";
 import { useHostReachability } from "@/lib/reachability.query";
 
@@ -72,6 +74,72 @@ export default function MsTeamsPage() {
   const msTeams = chatOpsProviders?.find((p) => p.id === "ms-teams");
   const hasBindings = !!bindings && bindings.length > 0;
 
+  const localDevOrQuickstartFirstStep = (
+    <SetupStep
+      stepNumber={1}
+      title="Make Archestra reachable from the Internet"
+      description="The MS Teams bot needs to connect to an Archestra webhook — your instance must be publicly accessible"
+      done={isReachable}
+      ctaLabel="Configure ngrok"
+      onAction={() => setNgrokDialogOpen(true)}
+    >
+      {ngrokDomain ? (
+        <>
+          Ngrok domain{" "}
+          <code className="bg-muted px-1 py-0.5 rounded text-xs">
+            {ngrokDomain}
+          </code>{" "}
+          is configured.
+        </>
+      ) : hostReachable ? (
+        <>
+          <code className="bg-muted px-1 py-0.5 rounded text-xs">
+            {`https://${currentHost}`}
+          </code>{" "}
+          is reachable from the Internet.
+        </>
+      ) : (
+        <>
+          Your instance needs to be reachable from the Internet. Configure ngrok
+          or deploy to a public URL.
+        </>
+      )}
+    </SetupStep>
+  );
+  const prodFirstStep = (
+    <div className="flex items-start gap-3 rounded-lg border border-blue-500/30 bg-blue-500/5 px-4 py-3">
+      <Info className="h-5 w-5 text-blue-500 shrink-0 mt-0.5" />
+      <div className="flex flex-col gap-1 text-sm">
+        <span className="font-medium">
+          Archestra must be reachable from the Internet
+        </span>
+        <span className="text-muted-foreground">
+          {hostReachable ? (
+            <>
+              <code className="bg-muted px-1 py-0.5 rounded text-xs">
+                {`https://${currentHost}/api/webhooks/chatops/ms-teams`}
+              </code>{" "}
+              is reachable from the Internet.
+            </>
+          ) : (
+            <>
+              The webhook endpoint{" "}
+              <code className="bg-muted px-1 py-0.5 rounded text-xs">
+                POST {"<archestra-url>/api/webhooks/chatops/ms-teams"}
+              </code>{" "}
+              must be publicly accessible so MS Teams can deliver messages to
+              Archestra. Deploy to a public URL or configure a tunnel.
+            </>
+          )}
+        </span>
+      </div>
+    </div>
+  );
+  const firstStep =
+    features?.isQuickstart || config.environment === "development"
+      ? localDevOrQuickstartFirstStep
+      : prodFirstStep;
+
   return (
     <div className="flex flex-col gap-8">
       {/* Setup Section */}
@@ -92,36 +160,7 @@ export default function MsTeamsPage() {
             </Link>
           </p>
         </div>
-        <SetupStep
-          stepNumber={1}
-          title="Make Archestra reachable from the Internet"
-          description="The MS Teams bot needs to connect to an Archestra webhook — your instance must be publicly accessible"
-          done={isReachable}
-          ctaLabel="Configure ngrok"
-          onAction={() => setNgrokDialogOpen(true)}
-        >
-          {ngrokDomain ? (
-            <>
-              Ngrok domain{" "}
-              <code className="bg-muted px-1 py-0.5 rounded text-xs">
-                {ngrokDomain}
-              </code>{" "}
-              is configured.
-            </>
-          ) : hostReachable ? (
-            <>
-              <code className="bg-muted px-1 py-0.5 rounded text-xs">
-                {`https://${currentHost}`}
-              </code>{" "}
-              is reachable from the Internet.
-            </>
-          ) : (
-            <>
-              Your instance is not reachable from the Internet. Configure ngrok
-              or deploy to a public URL.
-            </>
-          )}
-        </SetupStep>
+        {firstStep}
         <SetupStep
           stepNumber={2}
           title="Connect MS Teams"
@@ -512,6 +551,9 @@ function NgrokSetupDialog({
                 <TabsTrigger value="local">Local Development</TabsTrigger>
               </TabsList>
               <TabsContent value="docker" className="space-y-3 pt-2">
+                <p className="text-xs text-muted-foreground">
+                  Restart Archestra using the following command to enable ngrok:
+                </p>
                 <div className="relative">
                   <pre className="bg-muted rounded-md p-4 text-xs overflow-x-auto whitespace-pre">
                     {dockerCommand}

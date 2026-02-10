@@ -78,6 +78,7 @@ function StepEnableMsTeams() {
       <div className="flex flex-col gap-3 rounded-lg border bg-muted/30 p-4 min-h-0">
         <div className="flex items-center justify-between">
           <h4 className="text-sm font-medium">Agents</h4>
+          <span className="text-sm font-medium">Teams enabled</span>
         </div>
         {isLoading ? (
           <div className="flex items-center justify-center py-8">
@@ -167,6 +168,8 @@ function StepSelectAgentInTeams() {
           src="/ms-teams/agent-bound.mp4"
           controls
           muted
+          autoPlay
+          loop
           playsInline
           className="rounded-md w-full h-full object-contain"
         />
@@ -401,17 +404,17 @@ export function StepStartChatting({
 
         {isK8sEnabled && (
           <div className="flex flex-col gap-3 mt-2">
-            <h4 className="text-sm font-medium">Browser tool</h4>
+            <h4 className="text-sm font-medium">Browser tools</h4>
             {browserReady ? (
               <div className="flex items-center gap-2 rounded-md border border-green-500/30 bg-green-500/5 px-3 py-2.5 text-sm">
                 <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0" />
-                <span>Browser is installed and ready to use.</span>
+                <span>Browser tools are installed and ready to use.</span>
               </div>
             ) : (
               <>
                 <p className="text-xs text-muted-foreground leading-relaxed">
-                  Install the Browser tool so your agent can browse websites and
-                  retrieve live content when asked.
+                  Install the Browser tools so your agent can browse websites
+                  and retrieve live content when asked.
                 </p>
                 <Button
                   variant="outline"

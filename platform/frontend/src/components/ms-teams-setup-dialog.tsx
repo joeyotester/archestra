@@ -229,6 +229,8 @@ function StepSlide({
             src={video}
             controls
             muted
+            autoPlay
+            loop
             playsInline
             className="rounded-md w-full h-full object-contain"
           />
