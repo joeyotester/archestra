@@ -494,9 +494,13 @@ const chatopsRoutes: FastifyPluginAsyncZod = async (fastify) => {
         tags: ["ChatOps"],
         body: z.object({
           enabled: z.boolean().optional(),
-          appId: z.string().optional(),
-          appSecret: z.string().optional(),
-          tenantId: z.string().optional(),
+          appId: z.string().uuid("appId must be a valid UUID").optional(),
+          appSecret: z
+            .string()
+            .min(1, "appSecret must not be empty")
+            .max(512, "appSecret exceeds maximum length")
+            .optional(),
+          tenantId: z.string().uuid("tenantId must be a valid UUID").optional(),
         }),
         response: constructResponseSchema(z.object({ success: z.boolean() })),
       },
