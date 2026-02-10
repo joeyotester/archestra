@@ -293,6 +293,7 @@ const DEFAULT_BODY_LIMIT = 50 * 1024 * 1024; // 50MB
 // Default OTEL OTLP endpoint for HTTP/Protobuf (4318). For gRPC, the typical port is 4317.
 const DEFAULT_OTEL_ENDPOINT = "http://localhost:4318";
 const OTEL_TRACES_PATH = "/v1/traces";
+const OTEL_LOGS_PATH = "/v1/logs";
 
 /**
  * Get OTEL exporter endpoint for traces.
@@ -333,6 +334,37 @@ export const getOtelExporterOtlpEndpoint = (
 
   // Otherwise, append the full /v1/traces path
   return `${normalizedUrl}${OTEL_TRACES_PATH}`;
+};
+
+/**
+ * Get OTEL exporter endpoint for logs.
+ * Reuses the same base ARCHESTRA_OTEL_EXPORTER_OTLP_ENDPOINT env var, but appends /v1/logs.
+ *
+ * @param envValue - The environment variable value (for testing)
+ * @returns The full OTEL endpoint URL with /v1/logs suffix
+ */
+export const getOtelExporterOtlpLogEndpoint = (
+  envValue?: string | undefined,
+): string => {
+  const rawValue =
+    envValue ?? process.env.ARCHESTRA_OTEL_EXPORTER_OTLP_ENDPOINT;
+  const value = rawValue?.trim();
+
+  if (!value) {
+    return `${DEFAULT_OTEL_ENDPOINT}${OTEL_LOGS_PATH}`;
+  }
+
+  const normalizedUrl = value.replace(/\/+$/, "");
+
+  if (normalizedUrl.endsWith(OTEL_LOGS_PATH)) {
+    return normalizedUrl;
+  }
+
+  if (normalizedUrl.endsWith("/v1")) {
+    return `${normalizedUrl}/logs`;
+  }
+
+  return `${normalizedUrl}${OTEL_LOGS_PATH}`;
 };
 
 export default {
@@ -577,6 +609,10 @@ export default {
     otel: {
       traceExporter: {
         url: getOtelExporterOtlpEndpoint(),
+        headers: getOtlpAuthHeaders(),
+      } satisfies Partial<OTLPExporterNodeConfigBase>,
+      logExporter: {
+        url: getOtelExporterOtlpLogEndpoint(),
         headers: getOtlpAuthHeaders(),
       } satisfies Partial<OTLPExporterNodeConfigBase>,
     },

@@ -80,10 +80,10 @@ The platform exports OpenTelemetry traces to help you understand request flows a
 Configure the OpenTelemetry Collector endpoint via environment variable:
 
 ```bash
-ARCHESTRA_OTEL_EXPORTER_OTLP_ENDPOINT=http://your-collector:4318/v1/traces
+ARCHESTRA_OTEL_EXPORTER_OTLP_ENDPOINT=http://your-collector:4318
 ```
 
-If not specified, the platform defaults to `http://localhost:4318/v1/traces`.
+This base URL is used for both traces (`/v1/traces`) and logs (`/v1/logs`). If not specified, the platform defaults to `http://localhost:4318`.
 
 ### Authentication
 

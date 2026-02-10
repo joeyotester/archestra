@@ -1,10 +1,12 @@
 import { FastifyOtelInstrumentation } from "@fastify/otel";
 import { getNodeAutoInstrumentations } from "@opentelemetry/auto-instrumentations-node";
+import { OTLPLogExporter } from "@opentelemetry/exporter-logs-otlp-http";
 import { OTLPTraceExporter } from "@opentelemetry/exporter-trace-otlp-http";
 import {
   defaultResource,
   resourceFromAttributes,
 } from "@opentelemetry/resources";
+import { BatchLogRecordProcessor } from "@opentelemetry/sdk-logs";
 import { NodeSDK } from "@opentelemetry/sdk-node";
 import {
   BatchSpanProcessor,
@@ -27,13 +29,19 @@ import sentryClient from "@/sentry";
 const {
   api: { name, version },
   observability: {
-    otel: { traceExporter: traceExporterConfig },
+    otel: {
+      traceExporter: traceExporterConfig,
+      logExporter: logExporterConfig,
+    },
     sentry: { enabled: sentryEnabled },
   },
 } = config;
 
 // Configure the OTLP exporter to send traces to the OpenTelemetry Collector
 const traceExporter = new OTLPTraceExporter(traceExporterConfig);
+
+// Configure the OTLP exporter to send logs to the OpenTelemetry Collector
+const logExporter = new OTLPLogExporter(logExporterConfig);
 
 // Create a resource with service information
 const resource = defaultResource().merge(
@@ -86,9 +94,11 @@ const sdk = new NodeSDK({
           }),
         ]),
     getNodeAutoInstrumentations({
-      // Disable instrumentation for specific packages if needed
       "@opentelemetry/instrumentation-fs": {
         enabled: false, // File system operations can be noisy
+      },
+      "@opentelemetry/instrumentation-pino": {
+        enabled: false, // We handle log-trace correlation and OTEL log sending manually in logging.ts
       },
     }),
   ],
@@ -101,6 +111,8 @@ const sdk = new NodeSDK({
   textMapPropagator: sentryEnabled ? new SentryPropagator() : undefined,
   // Use multiple span processors to send traces to both Sentry and OTLP endpoints
   spanProcessors,
+  // Export pino logs (with trace context) to the OTLP endpoint
+  logRecordProcessors: [new BatchLogRecordProcessor(logExporter)],
 });
 
 // Start the SDK
@@ -110,11 +122,12 @@ sdk.start();
 logger.info(
   {
     sentryEnabled,
-    otlpEndpoint: traceExporterConfig.url,
+    otlpTraceEndpoint: traceExporterConfig.url,
+    otlpLogEndpoint: logExporterConfig.url,
     spanProcessorCount: spanProcessors.length,
     processors: spanProcessors.map((p) => p.constructor.name),
   },
-  "OpenTelemetry SDK initialized with multiple span processors",
+  "OpenTelemetry SDK initialized with trace and log pipelines",
 );
 
 // Validate Sentry + OpenTelemetry integration if Sentry is configured
