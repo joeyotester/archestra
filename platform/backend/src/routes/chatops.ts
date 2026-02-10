@@ -494,20 +494,19 @@ const chatopsRoutes: FastifyPluginAsyncZod = async (fastify) => {
         tags: ["ChatOps"],
         body: z.object({
           enabled: z.boolean().optional(),
-          appId: z.string().uuid("appId must be a valid UUID").optional(),
-          appSecret: z
-            .string()
-            .min(1, "appSecret must not be empty")
-            .max(512, "appSecret exceeds maximum length")
-            .optional(),
-          tenantId: z.string().uuid("tenantId must be a valid UUID").optional(),
+          appId: z.string().min(1).max(256).optional(),
+          appSecret: z.string().min(1).max(512).optional(),
+          tenantId: z.string().min(1).max(256).optional(),
         }),
         response: constructResponseSchema(z.object({ success: z.boolean() })),
       },
     },
     async (request, reply) => {
-      if (!config.isQuickstart) {
-        throw new ApiError(403, "Only available in quickstart mode");
+      if (config.production && !config.isQuickstart) {
+        throw new ApiError(
+          403,
+          "Only available in quickstart or local development mode. Forbidden in production.",
+        );
       }
 
       const { enabled, appId, appSecret, tenantId } = request.body;

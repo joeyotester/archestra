@@ -9,7 +9,7 @@ import {
   TriangleAlert,
 } from "lucide-react";
 import * as React from "react";
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { CopyButton } from "@/components/copy-button";
 import { SetupDialog } from "@/components/setup-dialog";
 import { Badge } from "@/components/ui/badge";
@@ -33,8 +33,11 @@ export function MsTeamsSetupDialog({
   const { data: features } = useFeatures();
   const ngrokDomain = features?.ngrokDomain ?? "";
 
-  const saveRef = useRef<(() => Promise<void>) | null>(null);
-  const [canSave, setCanSave] = useState(false);
+  const mutation = useUpdateChatOpsConfigInQuickstart();
+  const { data: chatOpsProviders } = useChatOpsStatus();
+  const msTeams = chatOpsProviders?.find((p) => p.id === "ms-teams");
+  const creds = msTeams?.credentials;
+
   const [saving, setSaving] = useState(false);
 
   // Shared credential state across steps (in-memory only)
@@ -44,6 +47,10 @@ export function MsTeamsSetupDialog({
 
   const isLocalEnvOrQuickstart =
     features?.isQuickstart || config.environment === "development";
+
+  const hasAppId = Boolean(sharedAppId || creds?.appId);
+  const hasAppSecret = Boolean(sharedAppSecret || creds?.appSecret);
+  const canSave = hasAppId && hasAppSecret;
 
   const handleOpenChange = (value: boolean) => {
     onOpenChange(value);
@@ -98,11 +105,13 @@ export function MsTeamsSetupDialog({
         return (
           <StepConfigForm
             key={step.title}
-            saveRef={saveRef}
-            onCanSaveChange={setCanSave}
-            prefillAppId={sharedAppId}
-            prefillAppSecret={sharedAppSecret}
-            prefillTenantId={sharedTenantId}
+            appId={sharedAppId}
+            appSecret={sharedAppSecret}
+            tenantId={sharedTenantId}
+            onAppIdChange={setSharedAppId}
+            onAppSecretChange={setSharedAppSecret}
+            onTenantIdChange={setSharedTenantId}
+            creds={creds}
           />
         );
       }
@@ -121,6 +130,7 @@ export function MsTeamsSetupDialog({
     sharedAppId,
     sharedAppSecret,
     sharedTenantId,
+    creds,
   ]);
 
   const lastStepAction = isLocalEnvOrQuickstart
@@ -129,11 +139,23 @@ export function MsTeamsSetupDialog({
         disabled: saving || !canSave,
         loading: saving,
         onClick: async () => {
-          if (!saveRef.current) return;
           setSaving(true);
           try {
-            await saveRef.current();
-            handleOpenChange(false);
+            const body: Record<string, unknown> = { enabled: true };
+            if (sharedAppId) body.appId = sharedAppId;
+            if (sharedAppSecret) body.appSecret = sharedAppSecret;
+            if (sharedTenantId) body.tenantId = sharedTenantId;
+            const updateResult = await mutation.mutateAsync(
+              body as {
+                enabled?: boolean;
+                appId?: string;
+                appSecret?: string;
+                tenantId?: string;
+              },
+            );
+            if (updateResult?.success) {
+              handleOpenChange(false);
+            }
           } finally {
             setSaving(false);
           }
@@ -191,6 +213,9 @@ function buildSteps() {
         <>
           Under <strong>Microsoft App ID</strong>, select{" "}
           <strong>Create new Microsoft App ID</strong>
+        </>,
+        <>
+          Click <strong>Review + create</strong> and create the new resource
         </>,
       ],
     },
@@ -384,6 +409,22 @@ function StepBotSettings({
               4
             </span>
             <span className="pt-0.5 flex-1">
+              Copy <strong>App Tenant ID</strong>{" "}
+              <span className="text-muted-foreground">(optional)</span> — for
+              single-tenant bots
+              <Input
+                value={tenantId}
+                onChange={(e) => onTenantIdChange(e.target.value)}
+                placeholder="Paste your Tenant ID"
+                className="h-7 text-xs mt-1.5"
+              />
+            </span>
+          </li>
+          <li className="flex gap-3 text-sm leading-relaxed">
+            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-medium">
+              5
+            </span>
+            <span className="pt-0.5 flex-1">
               Click <strong>Manage Password</strong> →{" "}
               <strong>New client secret</strong> → copy the secret value and
               paste it here
@@ -396,22 +437,6 @@ function StepBotSettings({
               />
             </span>
           </li>
-          <li className="flex gap-3 text-sm leading-relaxed">
-            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-medium">
-              5
-            </span>
-            <span className="pt-0.5 flex-1">
-              Copy <strong>App Tenant ID</strong>{" "}
-              <span className="text-muted-foreground">(optional)</span> — for
-              single-tenant bots
-              <Input
-                value={tenantId}
-                onChange={(e) => onTenantIdChange(e.target.value)}
-                placeholder="Paste your Tenant ID"
-                className="h-7 text-xs mt-1.5"
-              />
-            </span>
-          </li>
         </ol>
       </div>
     </div>
@@ -419,60 +444,22 @@ function StepBotSettings({
 }
 
 function StepConfigForm({
-  saveRef,
-  onCanSaveChange,
-  prefillAppId,
-  prefillAppSecret,
-  prefillTenantId,
+  appId,
+  appSecret,
+  tenantId,
+  onAppIdChange,
+  onAppSecretChange,
+  onTenantIdChange,
+  creds,
 }: {
-  saveRef: React.MutableRefObject<(() => Promise<void>) | null>;
-  onCanSaveChange: (canSave: boolean) => void;
-  prefillAppId?: string;
-  prefillAppSecret?: string;
-  prefillTenantId?: string;
+  appId: string;
+  appSecret: string;
+  tenantId: string;
+  onAppIdChange: (v: string) => void;
+  onAppSecretChange: (v: string) => void;
+  onTenantIdChange: (v: string) => void;
+  creds?: { appId?: string; appSecret?: string; tenantId?: string };
 }) {
-  const mutation = useUpdateChatOpsConfigInQuickstart();
-  const { data: chatOpsProviders } = useChatOpsStatus();
-  const msTeams = chatOpsProviders?.find((p) => p.id === "ms-teams");
-  const creds = msTeams?.credentials;
-
-  const [appId, setAppId] = useState("");
-  const [appSecret, setAppSecret] = useState("");
-  const [tenantId, setTenantId] = useState("");
-
-  const effectiveAppId = appId || prefillAppId || "";
-  const effectiveAppSecret = appSecret || prefillAppSecret || "";
-  const effectiveTenantId = tenantId || prefillTenantId || "";
-
-  const hasAppId = Boolean(effectiveAppId || creds?.appId);
-  const hasAppSecret = Boolean(effectiveAppSecret || creds?.appSecret);
-
-  React.useEffect(() => {
-    onCanSaveChange(hasAppId && hasAppSecret);
-  }, [hasAppId, hasAppSecret, onCanSaveChange]);
-
-  const handleSave = async () => {
-    const body: Record<string, unknown> = { enabled: true };
-    if (effectiveAppId) body.appId = effectiveAppId;
-    if (effectiveAppSecret) body.appSecret = effectiveAppSecret;
-    if (effectiveTenantId) body.tenantId = effectiveTenantId;
-
-    await mutation.mutateAsync(
-      body as {
-        enabled?: boolean;
-        appId?: string;
-        appSecret?: string;
-        tenantId?: string;
-      },
-    );
-
-    setAppId("");
-    setAppSecret("");
-    setTenantId("");
-  };
-
-  saveRef.current = handleSave;
-
   return (
     <div
       className="grid flex-1 gap-6"
@@ -484,13 +471,9 @@ function StepConfigForm({
           <Input
             id="setup-app-id"
             value={appId}
-            onChange={(e) => setAppId(e.target.value)}
+            onChange={(e) => onAppIdChange(e.target.value)}
             placeholder={
-              prefillAppId
-                ? `From Step 2: ${prefillAppId}`
-                : creds?.appId
-                  ? `Current: ${creds.appId}`
-                  : "Azure Bot App ID"
+              creds?.appId ? `Current: ${creds.appId}` : "Azure Bot App ID"
             }
           />
         </div>
@@ -501,13 +484,11 @@ function StepConfigForm({
             id="setup-app-secret"
             type="password"
             value={appSecret}
-            onChange={(e) => setAppSecret(e.target.value)}
+            onChange={(e) => onAppSecretChange(e.target.value)}
             placeholder={
-              prefillAppSecret
-                ? "From Step 2: ********"
-                : creds?.appSecret
-                  ? `Current: ${creds.appSecret}`
-                  : "Azure Bot App Secret"
+              creds?.appSecret
+                ? `Current: ${creds.appSecret}`
+                : "Azure Bot App Secret"
             }
           />
         </div>
@@ -522,22 +503,16 @@ function StepConfigForm({
           <Input
             id="setup-tenant-id"
             value={tenantId}
-            onChange={(e) => setTenantId(e.target.value)}
+            onChange={(e) => onTenantIdChange(e.target.value)}
             placeholder={
-              prefillTenantId
-                ? `From Step 2: ${prefillTenantId}`
-                : creds?.tenantId
-                  ? `Current: ${creds.tenantId}`
-                  : "Azure AD Tenant ID — only for single-tenant bots"
+              creds?.tenantId
+                ? `Current: ${creds.tenantId}`
+                : "Azure AD Tenant ID — only for single-tenant bots"
             }
           />
         </div>
 
-        <EnvVarsInfo
-          appId={effectiveAppId}
-          appSecret={effectiveAppSecret}
-          tenantId={effectiveTenantId}
-        />
+        <EnvVarsInfo appId={appId} appSecret={appSecret} tenantId={tenantId} />
       </div>
 
       <div className="flex flex-col gap-4 py-2">
