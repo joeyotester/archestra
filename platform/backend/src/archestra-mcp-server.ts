@@ -135,6 +135,8 @@ export interface ArchestraContext {
    * E.g., "agentA:agentB" means agentA delegated to agentB.
    */
   delegationChain?: string;
+  /** Optional cancellation signal from parent chat/tool execution */
+  abortSignal?: AbortSignal;
 }
 
 /**
@@ -248,6 +250,7 @@ export async function executeArchestraTool(
         parentDelegationChain: context.delegationChain || context.agentId,
         // Propagate conversationId for browser tab isolation
         conversationId: context.conversationId,
+        abortSignal: context.abortSignal,
       });
 
       return {
@@ -255,10 +258,18 @@ export async function executeArchestraTool(
         isError: false,
       };
     } catch (error) {
-      logger.error(
-        { error, agentId, targetAgentId: delegation.targetAgent.id },
-        "Agent delegation tool execution failed",
-      );
+      if (isAbortLikeError(error)) {
+        logger.info(
+          { agentId, targetAgentId: delegation.targetAgent.id },
+          "Agent delegation was aborted",
+        );
+        throw error;
+      } else {
+        logger.error(
+          { error, agentId, targetAgentId: delegation.targetAgent.id },
+          "Agent delegation tool execution failed",
+        );
+      }
       return {
         content: [
           {
@@ -1945,6 +1956,18 @@ export async function executeArchestraTool(
     code: -32601, // Method not found
     message: `Tool '${toolName}' not found`,
   };
+}
+
+function isAbortLikeError(error: unknown): boolean {
+  if (!(error instanceof Error)) {
+    return false;
+  }
+
+  if (error.name === "AbortError") {
+    return true;
+  }
+
+  return error.message.toLowerCase().includes("abort");
 }
 
 /**

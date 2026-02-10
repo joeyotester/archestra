@@ -154,10 +154,19 @@ const chatRoutes: FastifyPluginAsyncZod = async (fastify) => {
         response: ErrorResponsesSchema,
       },
     },
-    async (
-      { body: { id: conversationId, messages }, user, organizationId, headers },
-      reply,
-    ) => {
+    async (request, reply) => {
+      const {
+        body: { id: conversationId, messages },
+        user,
+        organizationId,
+        headers,
+      } = request;
+      const chatAbortController = new AbortController();
+      const removeAbortListeners = attachRequestAbortListeners({
+        request,
+        reply,
+        abortController: chatAbortController,
+      });
       // Extract and ingest documents to knowledge graph (fire and forget)
       // This runs asynchronously to avoid blocking the chat response
       extractAndIngestDocuments(messages).catch((error) => {
@@ -209,6 +218,7 @@ const chatRoutes: FastifyPluginAsyncZod = async (fastify) => {
         sessionId: conversation.id,
         // Pass agentId as initial delegation chain (will be extended by delegated agents)
         delegationChain: conversation.agentId,
+        abortSignal: chatAbortController.signal,
       });
 
       // Build system prompt from agent's systemPrompt and userPrompt fields
@@ -289,7 +299,9 @@ const chatRoutes: FastifyPluginAsyncZod = async (fastify) => {
         messages: modelMessages,
         tools: mcpTools,
         stopWhen: stepCountIs(500),
+        abortSignal: chatAbortController.signal,
         onFinish: async ({ usage, finishReason }) => {
+          removeAbortListeners();
           logger.info(
             {
               conversationId,
@@ -379,6 +391,7 @@ const chatRoutes: FastifyPluginAsyncZod = async (fastify) => {
                   }
                 },
                 onFinish: async ({ messages: finalMessages }) => {
+                  removeAbortListeners();
                   if (!conversationId) return;
 
                   // Get existing messages count to know how many are new
@@ -1305,6 +1318,43 @@ export async function generateConversationTitle(
 // ============================================================================
 // Helper Functions
 // ============================================================================
+
+function attachRequestAbortListeners(params: {
+  request: { raw: NodeJS.EventEmitter };
+  reply: { raw: NodeJS.EventEmitter & { writableEnded: boolean } };
+  abortController: AbortController;
+}): () => void {
+  const { request, reply, abortController } = params;
+  let didCleanup = false;
+
+  const abortStreamExecution = () => {
+    cleanup();
+    if (reply.raw.writableEnded || abortController.signal.aborted) {
+      return;
+    }
+
+    logger.info("Chat request connection closed, aborting stream execution");
+    abortController.abort();
+  };
+
+  const cleanup = () => {
+    if (didCleanup) {
+      return;
+    }
+
+    didCleanup = true;
+    request.raw.removeListener("close", abortStreamExecution);
+    request.raw.removeListener("aborted", abortStreamExecution);
+    reply.raw.removeListener("close", abortStreamExecution);
+  };
+
+  request.raw.on("close", abortStreamExecution);
+  request.raw.on("aborted", abortStreamExecution);
+  // Stop can close the response stream even when request body is already complete.
+  reply.raw.on("close", abortStreamExecution);
+
+  return cleanup;
+}
 
 /**
  * Validates that a chat API key exists, belongs to the organization,

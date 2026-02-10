@@ -556,6 +556,7 @@ export async function getChatMcpTools({
   conversationId,
   sessionId,
   delegationChain,
+  abortSignal,
 }: {
   agentName: string;
   agentId: string;
@@ -568,12 +569,15 @@ export async function getChatMcpTools({
   sessionId?: string;
   /** Delegation chain of agent IDs for tracking delegated agent calls */
   delegationChain?: string;
+  /** Optional cancellation signal from parent stream execution */
+  abortSignal?: AbortSignal;
 }): Promise<Record<string, Tool>> {
   const toolCacheKey = getToolCacheKey(agentId, userId, conversationId);
+  const shouldUseToolCache = !abortSignal;
 
   // Check in-memory tool cache first (cannot use distributed cacheManager - Tool objects have execute functions)
   // LRU eviction and TTL are handled automatically by LRUCacheManager
-  const cachedTools = toolCache.get(toolCacheKey);
+  const cachedTools = shouldUseToolCache ? toolCache.get(toolCacheKey) : null;
   if (cachedTools) {
     logger.info(
       {
@@ -680,6 +684,7 @@ export async function getChatMcpTools({
             const toolArguments = isRecord(args) ? args : undefined;
 
             try {
+              throwIfAborted(abortSignal);
               // Check if this is an Archestra tool - handle directly without DB lookup
               if (isArchestraMcpServerTool(mcpTool.name)) {
                 const archestraResponse = await executeArchestraTool(
@@ -692,6 +697,7 @@ export async function getChatMcpTools({
                     agentId,
                     organizationId,
                     sessionId,
+                    abortSignal,
                   },
                 );
 
@@ -737,19 +743,21 @@ export async function getChatMcpTools({
                 userIsProfileAdmin,
                 conversationId,
                 mcpGwToken,
+                abortSignal,
               });
             } catch (error) {
-              logger.error(
-                {
-                  agentId,
-                  userId,
-                  toolName: mcpTool.name,
-                  err: error,
-                  errorMessage:
-                    error instanceof Error ? error.message : String(error),
-                },
-                "MCP tool execution failed",
-              );
+              const logPayload = {
+                agentId,
+                userId,
+                toolName: mcpTool.name,
+                err: error,
+                errorMessage: error instanceof Error ? error.message : String(error),
+              };
+              if (isAbortLikeError(error)) {
+                logger.info(logPayload, "MCP tool execution aborted");
+              } else {
+                logger.error(logPayload, "MCP tool execution failed");
+              }
               throw error;
             }
           },
@@ -787,6 +795,7 @@ export async function getChatMcpTools({
           sessionId,
           // Pass delegation chain for tracking delegated agent calls
           delegationChain,
+          abortSignal,
           tokenAuth: mcpGwToken
             ? {
                 tokenId: mcpGwToken.tokenId,
@@ -819,6 +828,7 @@ export async function getChatMcpTools({
               );
 
               try {
+                throwIfAborted(abortSignal);
                 const response = await executeArchestraTool(
                   agentTool.name,
                   args,
@@ -848,17 +858,19 @@ export async function getChatMcpTools({
                   )
                   .join("\n");
               } catch (error) {
-                logger.error(
-                  {
-                    agentId,
-                    userId,
-                    toolName: agentTool.name,
-                    err: error,
-                    errorMessage:
-                      error instanceof Error ? error.message : String(error),
-                  },
-                  "Agent tool execution failed",
-                );
+                const logPayload = {
+                  agentId,
+                  userId,
+                  toolName: agentTool.name,
+                  err: error,
+                  errorMessage:
+                    error instanceof Error ? error.message : String(error),
+                };
+                if (isAbortLikeError(error)) {
+                  logger.info(logPayload, "Agent tool execution aborted");
+                } else {
+                  logger.error(logPayload, "Agent tool execution failed");
+                }
                 throw error;
               }
             },
@@ -892,10 +904,13 @@ export async function getChatMcpTools({
       agentId,
       conversationId,
       mcpGwToken,
+      abortSignal,
     });
 
     // Cache tools in-memory (LRU eviction and TTL handled by LRUCacheManager)
-    toolCache.set(toolCacheKey, aiTools);
+    if (shouldUseToolCache) {
+      toolCache.set(toolCacheKey, aiTools);
+    }
 
     // Apply filtering if enabledToolIds provided and non-empty
     return await filterToolsByEnabledIds(aiTools, enabledToolIds);
@@ -924,6 +939,7 @@ interface ToolExecutionContext {
     teamId: string | null;
     isOrganizationToken: boolean;
   } | null;
+  abortSignal?: AbortSignal;
 }
 
 /**
@@ -947,7 +963,9 @@ async function executeMcpTool(ctx: ToolExecutionContext): Promise<string> {
     userIsProfileAdmin,
     conversationId,
     mcpGwToken,
+    abortSignal,
   } = ctx;
+  throwIfAborted(abortSignal);
 
   // For browser tools, ensure the correct conversation tab is selected first
   const { browserStreamFeature } = await import(
@@ -999,6 +1017,7 @@ async function executeMcpTool(ctx: ToolExecutionContext): Promise<string> {
       : undefined,
     { conversationId },
   );
+  throwIfAborted(abortSignal);
 
   // Check if MCP tool returned an error
   if (result.isError) {
@@ -1074,6 +1093,7 @@ async function addGlobalCatalogTools({
   agentId,
   conversationId,
   mcpGwToken,
+  abortSignal,
 }: {
   aiTools: Record<string, Tool>;
   userId: string;
@@ -1088,6 +1108,7 @@ async function addGlobalCatalogTools({
     isOrganizationToken: boolean;
     isUserToken?: boolean;
   } | null;
+  abortSignal?: AbortSignal;
 }): Promise<void> {
   try {
     // Get all globally available catalogs
@@ -1175,6 +1196,7 @@ async function addGlobalCatalogTools({
             const toolArguments = isRecord(args) ? args : undefined;
 
             try {
+              throwIfAborted(abortSignal);
               // Execute via shared helper with browser sync
               return await executeMcpTool({
                 toolName: catalogTool.name,
@@ -1185,19 +1207,21 @@ async function addGlobalCatalogTools({
                 userIsProfileAdmin,
                 conversationId,
                 mcpGwToken,
+                abortSignal,
               });
             } catch (error) {
-              logger.error(
-                {
-                  agentId,
-                  userId,
-                  toolName: catalogTool.name,
-                  err: error,
-                  errorMessage:
-                    error instanceof Error ? error.message : String(error),
-                },
-                "Global catalog tool execution failed",
-              );
+              const logPayload = {
+                agentId,
+                userId,
+                toolName: catalogTool.name,
+                err: error,
+                errorMessage: error instanceof Error ? error.message : String(error),
+              };
+              if (isAbortLikeError(error)) {
+                logger.info(logPayload, "Global catalog tool execution aborted");
+              } else {
+                logger.error(logPayload, "Global catalog tool execution failed");
+              }
               throw error;
             }
           },
@@ -1288,4 +1312,26 @@ async function filterToolsByEnabledIds(
   );
 
   return filteredTools;
+}
+
+function throwIfAborted(abortSignal?: AbortSignal): void {
+  if (!abortSignal?.aborted) {
+    return;
+  }
+
+  const abortError = new Error("Chat execution aborted");
+  abortError.name = "AbortError";
+  throw abortError;
+}
+
+function isAbortLikeError(error: unknown): boolean {
+  if (!(error instanceof Error)) {
+    return false;
+  }
+
+  if (error.name === "AbortError") {
+    return true;
+  }
+
+  return error.message.toLowerCase().includes("abort");
 }

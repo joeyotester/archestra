@@ -42,6 +42,8 @@ export interface A2AExecuteParams {
    * and cleaned up after execution.
    */
   conversationId?: string;
+  /** Optional cancellation signal propagated from parent chat/tool execution */
+  abortSignal?: AbortSignal;
 }
 
 export interface A2AExecuteResult {
@@ -69,6 +71,7 @@ export async function executeA2AMessage(
     userId,
     sessionId,
     parentDelegationChain,
+    abortSignal,
   } = params;
 
   // Generate isolation key for browser tab isolation.
@@ -138,6 +141,7 @@ export async function executeA2AMessage(
       sessionId,
       delegationChain,
       conversationId: isolationKey,
+      abortSignal,
     });
 
     logger.info(
@@ -180,6 +184,7 @@ export async function executeA2AMessage(
       prompt: message,
       tools: mcpTools,
       stopWhen: stepCountIs(500),
+      abortSignal,
       onError: ({ error }) => {
         capturedStreamError = error;
       },
