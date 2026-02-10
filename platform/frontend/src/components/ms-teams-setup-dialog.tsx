@@ -18,6 +18,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useChatOpsStatus } from "@/lib/chatops.query";
 import { useUpdateChatOpsConfigInQuickstart } from "@/lib/chatops-config.query";
+import config from "@/lib/config";
 import { useFeatures } from "@/lib/features.query";
 
 interface MsTeamsSetupDialogProps {
@@ -40,6 +41,9 @@ export function MsTeamsSetupDialog({
   const [sharedAppId, setSharedAppId] = useState("");
   const [sharedAppSecret, setSharedAppSecret] = useState("");
   const [sharedTenantId, setSharedTenantId] = useState("");
+
+  const isLocalEnvOrQuickstart =
+    features?.isQuickstart || config.environment === "development";
 
   const handleOpenChange = (value: boolean) => {
     onOpenChange(value);
@@ -90,7 +94,7 @@ export function MsTeamsSetupDialog({
         );
       }
       // Last step
-      if (features?.isQuickstart) {
+      if (isLocalEnvOrQuickstart) {
         return (
           <StepConfigForm
             key={step.title}
@@ -113,13 +117,13 @@ export function MsTeamsSetupDialog({
     });
   }, [
     ngrokDomain,
-    features?.isQuickstart,
+    isLocalEnvOrQuickstart,
     sharedAppId,
     sharedAppSecret,
     sharedTenantId,
   ]);
 
-  const lastStepAction = features?.isQuickstart
+  const lastStepAction = isLocalEnvOrQuickstart
     ? {
         label: saving ? "Connecting..." : "Connect",
         disabled: saving || !canSave,
@@ -712,7 +716,12 @@ function StepEnvVarsInfo({
   );
 }
 
-function buildManifest(botAppId: string) {
+function buildManifest(params: {
+  botAppId: string;
+  nameShort: string;
+  nameFull: string;
+}) {
+  const { botAppId, nameShort, nameFull } = params;
   return {
     $schema:
       "https://developer.microsoft.com/json-schemas/teams/v1.16/MicrosoftTeams.schema.json",
@@ -726,7 +735,7 @@ function buildManifest(botAppId: string) {
       privacyUrl: "https://archestra.ai/privacy",
       termsOfUseUrl: "https://archestra.ai/terms",
     },
-    name: { short: "Archestra", full: "Archestra Bot" },
+    name: { short: nameShort, full: nameFull },
     description: { short: "Ask Archestra", full: "Chat with Archestra agents" },
     icons: { outline: "outline.png", color: "color.png" },
     accentColor: "#FFFFFF",
@@ -765,6 +774,8 @@ function buildManifest(botAppId: string) {
         resourceSpecific: [
           { name: "ChannelMessage.Read.Group", type: "Application" },
           { name: "ChatMessage.Read.Chat", type: "Application" },
+          { name: "TeamMember.Read.Group", type: "Application" },
+          { name: "ChatMember.Read.Chat", type: "Application" },
         ],
       },
     },
@@ -779,10 +790,16 @@ function StepManifest({
   prefillAppId?: string;
 }) {
   const [botAppId, setBotAppId] = useState("");
+  const [nameShort, setNameShort] = useState("Archestra");
+  const [nameFull, setNameFull] = useState("Archestra Bot");
   const [downloading, setDownloading] = useState(false);
 
   const effectiveAppId = botAppId || prefillAppId || "";
-  const manifest = buildManifest(effectiveAppId);
+  const manifest = buildManifest({
+    botAppId: effectiveAppId,
+    nameShort,
+    nameFull,
+  });
   const manifestJson = JSON.stringify(manifest, null, 2);
 
   const handleDownload = async () => {
@@ -852,6 +869,27 @@ function StepManifest({
               ? "App ID will be injected into the manifest automatically."
               : "The App ID from Step 2. It will be injected into the manifest automatically."}
           </p>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-1">
+            <Label htmlFor="manifest-name-short">Name (short)</Label>
+            <Input
+              id="manifest-name-short"
+              value={nameShort}
+              onChange={(e) => setNameShort(e.target.value)}
+              placeholder="Archestra"
+            />
+          </div>
+          <div className="space-y-1">
+            <Label htmlFor="manifest-name-full">Name (full)</Label>
+            <Input
+              id="manifest-name-full"
+              value={nameFull}
+              onChange={(e) => setNameFull(e.target.value)}
+              placeholder="Archestra Bot"
+            />
+          </div>
         </div>
 
         <Button
