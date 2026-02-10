@@ -67,7 +67,8 @@ describe("PUT /api/chatops/config/ms-teams", () => {
     expect(response.statusCode).toBe(403);
     expect(response.json()).toEqual({
       error: {
-        message: "Only available in quickstart or local development mode",
+        message:
+          "Only available in quickstart or local development mode. Forbidden in production.",
         type: "api_authorization_error",
       },
     });
