@@ -51,14 +51,6 @@ export default function SettingsLayout({
     ...(userCanUpdateOrganization && secretsType?.type === "Vault"
       ? [{ label: "Secrets", href: "/settings/secrets" }]
       : []),
-    ...(userCanUpdateOrganization
-      ? [
-          {
-            label: "Agent Trigger Rules",
-            href: "/settings/agent-trigger-rules",
-          },
-        ]
-      : []),
   ];
 
   return (

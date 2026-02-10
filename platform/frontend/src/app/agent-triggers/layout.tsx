@@ -1,12 +1,21 @@
 "use client";
 
 import { PageLayout } from "@/components/page-layout";
+import { useHasPermissions } from "@/lib/auth.query";
 
 export default function AgentTriggersLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const { data: canUpdate } = useHasPermissions({
+    organization: ["update"],
+  });
+
+  if (canUpdate === false) {
+    return null;
+  }
+
   return (
     <PageLayout
       title="Agent Triggers"

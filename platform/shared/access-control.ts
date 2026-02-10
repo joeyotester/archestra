@@ -797,7 +797,11 @@ export const requiredPagePermissionsMap: Record<string, Permissions> = {
   "/settings/secrets": {
     organization: ["update"],
   },
-  "/settings/agent-trigger-rules": {
+  // Agent Triggers
+  "/agent-triggers/ms-teams": {
+    organization: ["update"],
+  },
+  "/agent-triggers/email": {
     organization: ["update"],
   },
 
