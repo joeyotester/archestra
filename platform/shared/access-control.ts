@@ -624,7 +624,6 @@ export const requiredEndpointPermissionsMap: Partial<
     ssoProvider: ["delete"],
   },
 
-  [RouteId.CheckHostReachability]: {},
   [RouteId.GetOnboardingStatus]: {}, // Onboarding status route - available to all authenticated users (no specific permissions required)
   [RouteId.GetUserPermissions]: {}, // User permissions route - available to all authenticated users (no specific permissions required)
 

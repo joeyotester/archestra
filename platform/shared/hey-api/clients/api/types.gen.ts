@@ -24048,26 +24048,6 @@ export type GetPolicyConfigSubagentPromptResponses = {
 
 export type GetPolicyConfigSubagentPromptResponse = GetPolicyConfigSubagentPromptResponses[keyof GetPolicyConfigSubagentPromptResponses];
 
-export type CheckHostReachabilityData = {
-    body?: never;
-    path?: never;
-    query: {
-        host: string;
-    };
-    url: '/api/reachability-check';
-};
-
-export type CheckHostReachabilityResponses = {
-    /**
-     * Default Response
-     */
-    200: {
-        reachable: boolean;
-    };
-};
-
-export type CheckHostReachabilityResponse = CheckHostReachabilityResponses[keyof CheckHostReachabilityResponses];
-
 export type GetSecretsTypeData = {
     body?: never;
     path?: never;

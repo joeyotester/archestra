@@ -53,7 +53,6 @@ import {
 } from "@/lib/chatops.query";
 import config from "@/lib/config";
 import { useFeatures } from "@/lib/features.query";
-import { useHostReachability } from "@/lib/reachability.query";
 
 export default function MsTeamsPage() {
   const [msTeamsSetupOpen, setMsTeamsSetupOpen] = useState(false);
@@ -66,10 +65,6 @@ export default function MsTeamsPage() {
   const { data: bindings } = useChatOpsBindings();
 
   const ngrokDomain = features?.ngrokDomain;
-  const currentHost =
-    typeof window !== "undefined" ? window.location.hostname : "";
-  const { data: hostReachable } = useHostReachability(currentHost);
-  const isReachable = !!ngrokDomain || !!hostReachable;
 
   const msTeams = chatOpsProviders?.find((p) => p.id === "ms-teams");
   const hasBindings = !!bindings && bindings.length > 0;
@@ -79,7 +74,7 @@ export default function MsTeamsPage() {
       stepNumber={1}
       title="Make Archestra reachable from the Internet"
       description="The MS Teams bot needs to connect to an Archestra webhook — your instance must be publicly accessible"
-      done={isReachable}
+      done={!!ngrokDomain}
       ctaLabel="Configure ngrok"
       onAction={() => setNgrokDialogOpen(true)}
     >
@@ -91,17 +86,14 @@ export default function MsTeamsPage() {
           </code>{" "}
           is configured.
         </>
-      ) : hostReachable ? (
-        <>
-          <code className="bg-muted px-1 py-0.5 rounded text-xs">
-            {`https://${currentHost}`}
-          </code>{" "}
-          is reachable from the Internet.
-        </>
       ) : (
         <>
-          Your instance needs to be reachable from the Internet. Configure ngrok
-          or deploy to a public URL.
+          Archestra's webhook{" "}
+          <code className="bg-muted px-1 py-0.5 rounded text-xs">
+            POST {"<archestra-url>/api/webhooks/chatops/ms-teams"}
+          </code>{" "}
+          needs to be reachable from the Internet. Configure ngrok or deploy to
+          a public URL.
         </>
       )}
     </SetupStep>
@@ -111,26 +103,15 @@ export default function MsTeamsPage() {
       <Info className="h-5 w-5 text-blue-500 shrink-0 mt-0.5" />
       <div className="flex flex-col gap-1 text-sm">
         <span className="font-medium">
-          Archestra must be reachable from the Internet
+          Archestra's webhook must be reachable from the Internet
         </span>
         <span className="text-muted-foreground">
-          {hostReachable ? (
-            <>
-              <code className="bg-muted px-1 py-0.5 rounded text-xs">
-                {`https://${currentHost}/api/webhooks/chatops/ms-teams`}
-              </code>{" "}
-              is reachable from the Internet.
-            </>
-          ) : (
-            <>
-              The webhook endpoint{" "}
-              <code className="bg-muted px-1 py-0.5 rounded text-xs">
-                POST {"<archestra-url>/api/webhooks/chatops/ms-teams"}
-              </code>{" "}
-              must be publicly accessible so MS Teams can deliver messages to
-              Archestra. Deploy to a public URL or configure a tunnel.
-            </>
-          )}
+          The webhook endpoint{" "}
+          <code className="bg-muted px-1 py-0.5 rounded text-xs">
+            POST {"<archestra-url>/api/webhooks/chatops/ms-teams"}
+          </code>{" "}
+          must be publicly accessible so MS Teams can deliver messages to
+          Archestra. Deploy to a public URL or configure a tunnel.
         </span>
       </div>
     </div>

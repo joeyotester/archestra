@@ -32,7 +32,6 @@ export const RouteId = {
 
   // Features Routes
   GetFeatures: "getFeatures",
-  CheckHostReachability: "checkHostReachability",
 
   // Auth Routes
   GetDefaultCredentialsStatus: "getDefaultCredentialsStatus",
