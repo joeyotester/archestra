@@ -1,5 +1,5 @@
 {
-  "id": "3e687a44-6943-43f8-841c-c4113d89c57c",
+  "id": "1af10599-db7d-4794-868b-5f2e568b3d14",
   "prevId": "2aea9c3e-63b3-4075-bd1b-dca44c24d01a",
   "version": "7",
   "dialect": "postgresql",
@@ -1273,18 +1273,6 @@
         },
         "workspace_id": {
           "name": "workspace_id",
-          "type": "varchar(256)",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "channel_name": {
-          "name": "channel_name",
-          "type": "varchar(256)",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "workspace_name": {
-          "name": "workspace_name",
           "type": "varchar(256)",
           "primaryKey": false,
           "notNull": false
@@ -2781,6 +2769,18 @@
           "type": "text",
           "primaryKey": false,
           "notNull": true
+        },
+        "session_endpoint_url": {
+          "name": "session_endpoint_url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "session_endpoint_pod_name": {
+          "name": "session_endpoint_pod_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
         },
         "updated_at": {
           "name": "updated_at",
