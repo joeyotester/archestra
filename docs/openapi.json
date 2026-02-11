@@ -28765,7 +28765,7 @@
         "tags": [
           "Agent Tools"
         ],
-        "description": "Automatically configure security policies for tools using Anthropic LLM analysis",
+        "description": "Automatically configure security policies for tools using LLM analysis",
         "requestBody": {
           "content": {
             "application/json": {
@@ -28817,12 +28817,21 @@
                           "config": {
                             "type": "object",
                             "properties": {
-                              "toolResultTreatment": {
+                              "toolInvocationAction": {
                                 "type": "string",
                                 "enum": [
-                                  "trusted",
+                                  "allow_when_context_is_untrusted",
+                                  "block_when_context_is_untrusted",
+                                  "block_always"
+                                ]
+                              },
+                              "trustedDataAction": {
+                                "type": "string",
+                                "enum": [
+                                  "mark_as_trusted",
+                                  "mark_as_untrusted",
                                   "sanitize_with_dual_llm",
-                                  "untrusted"
+                                  "block_always"
                                 ]
                               },
                               "reasoning": {
@@ -28830,7 +28839,8 @@
                               }
                             },
                             "required": [
-                              "toolResultTreatment",
+                              "toolInvocationAction",
+                              "trustedDataAction",
                               "reasoning"
                             ],
                             "additionalProperties": false
@@ -31526,6 +31536,18 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "/api/auth/oauth2/authorize": {
+      "get": {
+        "tags": [
+          "auth"
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
           }
         }
       }
@@ -80035,6 +80057,9 @@
                       "items": {
                         "type": "string"
                       }
+                    },
+                    "client_id_metadata_document_supported": {
+                      "type": "boolean"
                     }
                   },
                   "required": [
@@ -80047,7 +80072,8 @@
                     "grant_types_supported",
                     "token_endpoint_auth_methods_supported",
                     "code_challenge_methods_supported",
-                    "scopes_supported"
+                    "scopes_supported",
+                    "client_id_metadata_document_supported"
                   ],
                   "additionalProperties": false
                 }

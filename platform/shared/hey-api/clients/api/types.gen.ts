@@ -8343,7 +8343,8 @@ export type AutoConfigureAgentToolPoliciesResponses = {
             toolId: string;
             success: boolean;
             config?: {
-                toolResultTreatment: 'trusted' | 'sanitize_with_dual_llm' | 'untrusted';
+                toolInvocationAction: 'allow_when_context_is_untrusted' | 'block_when_context_is_untrusted' | 'block_always';
+                trustedDataAction: 'mark_as_trusted' | 'mark_as_untrusted' | 'sanitize_with_dual_llm' | 'block_always';
                 reasoning: string;
             };
             error?: string;
@@ -9130,6 +9131,20 @@ export type GetOAuthClientInfoResponses = {
 };
 
 export type GetOAuthClientInfoResponse = GetOAuthClientInfoResponses[keyof GetOAuthClientInfoResponses];
+
+export type GetApiAuthOauth2AuthorizeData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/auth/oauth2/authorize';
+};
+
+export type GetApiAuthOauth2AuthorizeResponses = {
+    /**
+     * Default Response
+     */
+    200: unknown;
+};
 
 export type PostApiAuthOauth2TokenData = {
     body?: never;
@@ -22178,6 +22193,7 @@ export type GetWellKnownOauthAuthorizationServerResponses = {
         token_endpoint_auth_methods_supported: Array<string>;
         code_challenge_methods_supported: Array<string>;
         scopes_supported: Array<string>;
+        client_id_metadata_document_supported: boolean;
     };
 };
 
