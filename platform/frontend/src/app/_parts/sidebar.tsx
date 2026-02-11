@@ -40,6 +40,7 @@ import {
   Slack,
   Star,
   Wrench,
+  Zap,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -530,9 +531,10 @@ const MainSideBarSection = ({
   const option3 = (
     <SidebarContent className="gap-1">
       {/* <Divider className="w-[calc(100%-30px)] mx-auto" /> */}
+      {/* <Divider className="w-[calc(100%-30px)] mx-auto" /> */}
       <SidebarGroup className={sidebarGroupClassName}>
         <SidebarGroupLabel className={groupLabelClassName}>
-          Chats
+          Agents
         </SidebarGroupLabel>
         <Divider className={dividerClassName} />
         <SidebarMenuItem>
@@ -544,6 +546,30 @@ const MainSideBarSection = ({
               </a>
             </SidebarMenuButton>
           </SidebarMenuItem>
+        </SidebarMenuItem>
+        <SidebarMenuItem>
+          <SidebarMenuButton asChild className={menuBtnClassName}>
+            <Link href="/chat">
+              <Bot />
+              <span>My Agents</span>
+            </Link>
+          </SidebarMenuButton>
+        </SidebarMenuItem>
+        <SidebarMenuItem>
+          <SidebarMenuButton asChild className={menuBtnClassName}>
+            <Link href="/chat">
+              <Zap />
+              <span>Triggers</span>
+            </Link>
+          </SidebarMenuButton>
+        </SidebarMenuItem>
+        <SidebarMenuItem>
+          <SidebarMenuButton asChild className={menuBtnClassName}>
+            <Link href="/chat">
+              <Calendar />
+              <span>Schedules</span>
+            </Link>
+          </SidebarMenuButton>
         </SidebarMenuItem>
         <SidebarMenuItem>
           <SidebarMenuButton asChild className={menuBtnClassName}>
@@ -568,29 +594,6 @@ const MainSideBarSection = ({
             <Link href="/chat" className="opacity-70">
               <ChevronRight className="h-1 w-1 [&>svg]:size-1 [&>svg]:shrink-0" />
               <span className="text-xs">show more</span>
-            </Link>
-          </SidebarMenuButton>
-        </SidebarMenuItem>
-      </SidebarGroup>
-      {/* <Divider className="w-[calc(100%-30px)] mx-auto" /> */}
-      <SidebarGroup className={sidebarGroupClassName}>
-        <SidebarGroupLabel className={groupLabelClassName}>
-          Agents
-        </SidebarGroupLabel>
-        <Divider className={dividerClassName} />
-        <SidebarMenuItem>
-          <SidebarMenuButton asChild className={menuBtnClassName}>
-            <Link href="/chat">
-              <Bot />
-              <span>My Agents</span>
-            </Link>
-          </SidebarMenuButton>
-        </SidebarMenuItem>
-        <SidebarMenuItem>
-          <SidebarMenuButton asChild className={menuBtnClassName}>
-            <Link href="/chat">
-              <Calendar />
-              <span>Schedules</span>
             </Link>
           </SidebarMenuButton>
         </SidebarMenuItem>
@@ -680,14 +683,6 @@ const MainSideBarSection = ({
         <SidebarMenuItem>
           <SidebarMenuButton asChild className={menuBtnClassName}>
             <Link href="/chat">
-              <Info />
-              <span className="ml-1">How it works</span>
-            </Link>
-          </SidebarMenuButton>
-        </SidebarMenuItem>
-        <SidebarMenuItem>
-          <SidebarMenuButton asChild className={menuBtnClassName}>
-            <Link href="/chat">
               <Cable />
               <span className="ml-1">Connect</span>
             </Link>
@@ -710,8 +705,8 @@ const MainSideBarSection = ({
 
 const FooterSideBarSection = ({ pathname }: { pathname: string }) => (
   <SidebarFooter>
-    {/* <SecurityEngineWarning />
-    <DefaultCredentialsWarning /> */}
+    <SecurityEngineWarning />
+    <DefaultCredentialsWarning />
     <SignedIn>
       <SidebarGroup className="mt-auto">
         <SidebarGroupContent>
