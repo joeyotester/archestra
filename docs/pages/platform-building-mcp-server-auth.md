@@ -21,7 +21,7 @@ This document covers building MCP servers with authentication for Archestra. Inc
 
 Three authentication patterns for MCP servers deployed through Archestra, depending on whether your server needs external credentials and whether they differ per user.
 
-## Choosing a Pattern
+## Auth Patterns
 
 ```mermaid
 flowchart TD
@@ -42,13 +42,13 @@ flowchart TD
 | Static credentials | Shared API key or service account | User provides at install, Archestra stores and injects |
 | OAuth 2.1 | Per-user access to a SaaS API | Full OAuth flow at install, auto-refresh by Archestra |
 
-## No Auth (Hosted)
+### No Auth (Hosted)
 
 Your server runs in Archestra's K8s cluster. Gateway connects via stdio (kubectl attach) or streamable-http. No auth headers — same cluster, same trust boundary.
 
 Build with the MCP SDK, deploy via MCP Catalog. See [MCP Orchestrator](/docs/platform-orchestrator).
 
-## Static Credentials
+### Static Credentials
 
 Your server needs an API key or service token:
 
@@ -58,7 +58,7 @@ Your server needs an API key or service token:
 
 All tool calls through the gateway use the same credential.
 
-## OAuth 2.1
+### OAuth 2.1
 
 Your server connects to a SaaS API where each user has their own account (GitHub, Salesforce, etc.).
 
@@ -67,50 +67,13 @@ What your server (or its OAuth provider) needs to expose:
 - 401 + `WWW-Authenticate` header when tokens are expired
 
 What Archestra handles:
-- Endpoint discovery (RFC 9728 + 8414)
-- Client registration (RFC 7591 DCR) when no `client_id` exists
-- Authorization code flow with PKCE (when provider supports it; graceful fallback when not)
-- Token storage and automatic refresh on 401
+- Endpoint discovery, client registration, authorization code flow with PKCE, token storage, and automatic refresh on 401
 
-Your server receives `Authorization: Bearer <access_token>` with each request from the gateway.
-
-## Identity Providers (In Development)
-
-For hosted MCP servers that serve your own users, the gateway can validate JWTs from your organization's identity provider and pass authenticated user identity to your server. This eliminates per-server credential management — users authenticate once with your IdP, and the gateway handles the rest.
-
-The flow:
-
-1. User authenticates with your IdP and receives a JWT
-2. MCP client sends the JWT to the Archestra gateway
-3. Gateway validates the token against your IdP's JWKS endpoint
-4. User identity is extracted for access control and audit logging
-5. Request proceeds to your MCP server with authenticated context
-
-| Provider | Configuration |
-|---|---|
-| Auth0 | Domain + JWKS endpoint URL |
-| Microsoft Entra ID | Tenant ID (JWKS and issuer derived automatically) |
-| Okta | Domain (JWKS and issuer derived automatically) |
-
-Optional: configure `aud` (audience) claim validation to ensure tokens target your specific gateway.
-
-This is separate from [SSO](/docs/platform-single-sign-on), which handles authentication to the Archestra platform itself (role mapping, team sync). IdP integration for MCP servers validates tokens at the gateway level and forwards user identity to your server.
-
-## Archestra Discovery Endpoints
-
-Archestra acts as an OAuth authorization server for MCP clients. It exposes:
-
-| Endpoint | Standard | Purpose |
-|---|---|---|
-| `GET /.well-known/oauth-protected-resource/v1/mcp/:profileId` | RFC 9728 | Points clients to the authorization server for this gateway profile |
-| `GET /.well-known/oauth-authorization-server` | RFC 8414 | Lists authorize, token, register, JWKS endpoints |
-
-`authorization_endpoint` points to the frontend URL (browser-facing for consent). `token_endpoint` and `registration_endpoint` point to the backend (server-to-server).
+Your server receives `Authorization: Bearer <access_token>` with each request from the gateway. See [MCP Authentication](/docs/mcp-authentication) for details on discovery and the OAuth 2.1 flow.
 
 ## Related
 
-- [MCP Authentication](/docs/mcp-authentication) — Standards overview
-- [Using MCP Servers with Authentication](/docs/platform-mcp-server-authentication) — Deploying existing servers
+- [MCP Authentication](/docs/mcp-authentication) — OAuth 2.1, discovery, DCR vs CIMD
+- [Using MCP Servers with Authentication](/docs/platform-mcp-server-authentication) — Credential resolution and per-user access
 - [MCP Gateway](/docs/platform-mcp-gateway) — Gateway setup
-- [Single Sign-On](/docs/platform-single-sign-on) — IdP configuration
 - [MCP Orchestrator](/docs/platform-orchestrator) — Hosted server deployment

@@ -20,14 +20,14 @@ This document covers how Archestra manages credentials for MCP servers. Include:
 
 MCP servers that connect to services like GitHub, Atlassian, or ServiceNow need credentials. Archestra manages this with a two-token model:
 
-- **Token A** — authenticates the client (Cursor, Open WebUI, agent app) to the Archestra gateway
-- **Token B** — authenticates the Archestra gateway to the upstream MCP server
+- **Token A** — authenticates the client (Cursor, Open WebUI, agent app) to the Archestra gateway. See [MCP Gateway](/docs/platform-mcp-gateway) for connection details.
+- **Token B** — authenticates the Archestra gateway to the upstream MCP server. This page covers how Token B works.
 
 The client sends Token A. Archestra resolves Token B at runtime. The client never sees upstream credentials.
 
 ## Terminology
 
-- **Hosted servers** — MCP servers running in Archestra's K8s cluster (containers managed by the orchestrator)
+- **Hosted servers** — MCP servers running in Archestra's K8s cluster (containers managed by the [orchestrator](/docs/platform-orchestrator))
 - **Passthrough servers** — Remote third-party MCP servers (GitHub, Atlassian, etc.) that Archestra proxies to
 
 ## Architecture
@@ -70,19 +70,7 @@ graph LR
     style CR fill:#fff,stroke:#0066cc,stroke-width:1px
 ```
 
-## Token A: Client to Gateway
-
-The MCP Gateway (`POST /v1/mcp/:profileId`) accepts three token types:
-
-| Method | Format | Use case |
-|---|---|---|
-| Team / Org token | `archestra_*` | CI/CD, shared programmatic access |
-| User token | `archestra_*` | Personal access, chat, scoped to user's teams |
-| OAuth 2.1 | Bearer token | MCP-native clients (Open WebUI, Claude Desktop) |
-
-On 401, the gateway returns `WWW-Authenticate` per RFC 9728 — OAuth-capable clients discover and authenticate automatically. Create tokens in **Settings > Tokens**. See [MCP Gateway](/docs/platform-mcp-gateway).
-
-## Token B: Upstream Credentials
+## Upstream Credentials
 
 Credentials for upstream MCP servers are set during installation from the MCP Catalog:
 
@@ -94,11 +82,11 @@ For **hosted** servers: stdio transport within K8s — no auth headers needed.
 
 Stored in the secrets backend (database by default, [HashiCorp Vault](/docs/platform-secrets-management) for enterprise).
 
-## Per-User Credentials
+### Per-User Credentials
 
 Default: one credential per MCP server installation, shared by all callers.
 
-With `useDynamicTeamCredential` enabled: Archestra resolves the credential at call time based on the caller's identity. This enables multi-tenant setups — each developer uses their own GitHub PAT, each team member their own Jira access.
+With "Resolve at call time" enabled: Archestra resolves the credential dynamically based on the caller's identity. This enables multi-tenant setups — each developer uses their own GitHub PAT, each team member their own Jira access.
 
 ```mermaid
 flowchart TD
@@ -124,7 +112,7 @@ Priority order:
 3. Any organization-wide credential
 4. Error with install link
 
-## Missing Credentials
+### Missing Credentials
 
 When no credential is found, the gateway returns an actionable error:
 
@@ -145,26 +133,25 @@ sequenceDiagram
     participant P as Provider<br/>(GitHub, Atlassian, etc.)
 
     User->>A: Install from MCP Catalog
-    A->>P: Discover OAuth endpoints<br/>(RFC 9728 + 8414)
-    A->>P: Register client (DCR)<br/>(if no client_id configured)
+    A->>P: Discover endpoints + register client
     A-->>User: Redirect to provider login
     User->>P: Authorize
     P-->>A: Auth code
-    A->>P: Exchange for tokens<br/>(+ PKCE if supported)
+    A->>P: Exchange for tokens
     P-->>A: access_token + refresh_token
     A->>A: Store in secrets backend
     Note over A: Auto-refresh on 401
 ```
 
 Key behaviors:
-- **PKCE**: Used when the provider supports it. Skipped for providers like GitHub that don't.
-- **DCR**: Automatic client registration when no `client_id` is pre-configured.
 - **Auto-refresh**: On 401, Archestra uses the refresh token to get a new access token and retries. No user intervention.
 - **Refresh failures**: Tracked per server. Visible in the MCP server status.
 
+See [MCP Authentication](/docs/mcp-authentication) for details on discovery, PKCE, and DCR.
+
 ## Related
 
-- [MCP Authentication](/docs/mcp-authentication) — OAuth 2.1, PKCE, discovery concepts
-- [Building MCP Servers with Authentication](/docs/platform-building-mcp-server-auth) — For server developers
-- [MCP Gateway](/docs/platform-mcp-gateway) — Connection setup
+- [MCP Authentication](/docs/mcp-authentication) — OAuth 2.1, discovery, DCR vs CIMD
+- [Building MCP Servers with Authentication](/docs/platform-building-mcp-server-auth) — Auth patterns for server developers
+- [MCP Gateway](/docs/platform-mcp-gateway) — Gateway setup
 - [Secrets Management](/docs/platform-secrets-management) — Vault integration
