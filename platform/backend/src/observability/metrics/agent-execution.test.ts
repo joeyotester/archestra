@@ -23,7 +23,9 @@ vi.mock("prom-client", () => {
 import {
   _getSeenExecutionIdsSize,
   _resetSeenExecutionIds,
+  hasSeenExecution,
   initializeAgentExecutionMetrics,
+  markSeen,
   reportAgentExecution,
 } from "./agent-execution";
 
@@ -93,18 +95,13 @@ describe("reportAgentExecution", () => {
     });
   });
 
-  test("deduplicates same execution id", () => {
+  test("adds execution id to seen set after reporting", () => {
     reportAgentExecution({
       executionId: "exec-1",
       profile: makeProfile(),
     });
 
-    reportAgentExecution({
-      executionId: "exec-1",
-      profile: makeProfile(),
-    });
-
-    expect(counterInc).toHaveBeenCalledTimes(1);
+    expect(hasSeenExecution("exec-1")).toBe(true);
   });
 
   test("counts different execution ids separately", () => {
@@ -179,8 +176,64 @@ describe("reportAgentExecution", () => {
     // The guard is tested implicitly by the module structure.
     expect(counterInc).not.toHaveBeenCalled();
   });
+});
 
-  test("clears seen set when capacity is reached and allows re-counting", () => {
+describe("hasSeenExecution", () => {
+  beforeEach(() => {
+    _resetSeenExecutionIds();
+    initializeAgentExecutionMetrics([]);
+  });
+
+  test("returns false for unseen execution id", () => {
+    expect(hasSeenExecution("never-seen")).toBe(false);
+  });
+
+  test("returns true after reportAgentExecution", () => {
+    reportAgentExecution({
+      executionId: "exec-1",
+      profile: makeProfile(),
+    });
+
+    expect(hasSeenExecution("exec-1")).toBe(true);
+  });
+
+  test("returns true after markSeen", () => {
+    markSeen("exec-1");
+
+    expect(hasSeenExecution("exec-1")).toBe(true);
+  });
+});
+
+describe("markSeen", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    _resetSeenExecutionIds();
+    initializeAgentExecutionMetrics([]);
+  });
+
+  test("adds to cache without incrementing counter", () => {
+    markSeen("exec-1");
+
+    expect(hasSeenExecution("exec-1")).toBe(true);
+    expect(counterInc).not.toHaveBeenCalled();
+  });
+
+  test("is idempotent", () => {
+    markSeen("exec-1");
+    markSeen("exec-1");
+
+    expect(_getSeenExecutionIdsSize()).toBe(1);
+    expect(counterInc).not.toHaveBeenCalled();
+  });
+});
+
+describe("LRU eviction", () => {
+  beforeEach(() => {
+    _resetSeenExecutionIds();
+    initializeAgentExecutionMetrics([]);
+  });
+
+  test("evicts oldest entry when capacity is reached", () => {
     // Fill up to capacity
     for (let i = 0; i < 100_000; i++) {
       reportAgentExecution({
@@ -190,15 +243,32 @@ describe("reportAgentExecution", () => {
     }
 
     expect(_getSeenExecutionIdsSize()).toBe(100_000);
-    counterInc.mockClear();
 
-    // Next call should trigger eviction then add the new id
+    // Next entry should evict the oldest (exec-0), not clear everything
     reportAgentExecution({
       executionId: "exec-overflow",
       profile: makeProfile(),
     });
 
-    expect(_getSeenExecutionIdsSize()).toBe(1);
-    expect(counterInc).toHaveBeenCalledTimes(1);
+    expect(_getSeenExecutionIdsSize()).toBe(100_000);
+    expect(hasSeenExecution("exec-overflow")).toBe(true);
+    expect(hasSeenExecution("exec-0")).toBe(false);
+  });
+
+  test("recently accessed entries survive eviction", () => {
+    // Fill up to capacity
+    for (let i = 0; i < 100_000; i++) {
+      markSeen(`exec-${i}`);
+    }
+
+    // Access exec-0 to make it recently used
+    hasSeenExecution("exec-0");
+
+    // Add a new entry — should evict exec-1 (now the oldest), not exec-0
+    markSeen("exec-new");
+
+    expect(hasSeenExecution("exec-0")).toBe(true);
+    expect(hasSeenExecution("exec-1")).toBe(false);
+    expect(hasSeenExecution("exec-new")).toBe(true);
   });
 });

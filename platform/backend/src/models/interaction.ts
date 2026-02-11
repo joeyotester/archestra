@@ -227,6 +227,15 @@ function buildExternalAgentDisplayName(
 }
 
 class InteractionModel {
+  static async existsByExecutionId(executionId: string): Promise<boolean> {
+    const [result] = await db
+      .select({ id: schema.interactionsTable.id })
+      .from(schema.interactionsTable)
+      .where(eq(schema.interactionsTable.executionId, executionId))
+      .limit(1);
+    return result !== undefined;
+  }
+
   static async create(data: InsertInteraction) {
     const [interaction] = await db
       .insert(schema.interactionsTable)
