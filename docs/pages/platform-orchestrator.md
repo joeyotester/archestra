@@ -64,4 +64,4 @@ Credentials can be **personal** (owned by a single user) or **team-scoped** (sha
 
 > **Note:** For local MCP servers (running as K8s pods), the "credential" is the pod itself. The orchestrator routes tool calls to the correct pod rather than injecting API tokens.
 
-See [Using MCP Servers with Authentication](/docs/platform-mcp-server-authentication) for the full credential resolution logic, per-user credentials, and missing credential handling.
+See [Authentication](/docs/mcp-authentication) for the full credential resolution logic, per-user credentials, and missing credential handling.

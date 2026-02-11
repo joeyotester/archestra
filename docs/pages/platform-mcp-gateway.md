@@ -72,12 +72,8 @@ graph TB
 
 Archestra's MCP Gateways support two authentication methods:
 
-- **OAuth 2.1** — MCP-native clients (Claude Desktop, Cursor, Open WebUI) authenticate automatically via the [MCP Authorization spec](https://modelcontextprotocol.io/specification/2025-11-25/basic/authorization). Supports both DCR and CIMD client registration. See [MCP Authentication](/docs/mcp-authentication) for details.
+- **OAuth 2.1** — MCP-native clients (Claude Desktop, Cursor, Open WebUI) authenticate automatically via the [MCP Authorization spec](https://modelcontextprotocol.io/specification/2025-11-25/basic/authorization). Supports both DCR and CIMD client registration. See [Authentication](/docs/mcp-authentication) for details.
 
 - **Bearer Token** — For direct API integrations. Use `Authorization: Bearer archestra_<token>`. Tokens can be scoped to a user, team, or organization. Create tokens in **Settings → Tokens**.
 
-## Related
-
-- [MCP Authentication](/docs/mcp-authentication) — OAuth 2.1, PKCE, and discovery concepts
-- [Using MCP Servers with Authentication](/docs/platform-mcp-server-authentication) — How Archestra manages upstream credentials
-- [Building MCP Servers with Authentication](/docs/platform-building-mcp-server-auth) — Auth patterns for server developers
+See [Authentication](/docs/mcp-authentication) for OAuth 2.1 concepts, upstream credential management, and auth patterns for building MCP servers.
