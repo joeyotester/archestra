@@ -1,7 +1,7 @@
 ---
 title: Costs & Limits
-category: Agents
-order: 4
+category: LLM Proxy
+order: 2
 ---
 
 Monitor and control AI model expenses with real-time tracking, spending limits, and automatic optimizations.
