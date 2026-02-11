@@ -1,5 +1,5 @@
 ---
-title: MCP Gateway
+title: Overview
 category: MCP Gateway
 order: 1
 description: Unified access point for all MCP servers

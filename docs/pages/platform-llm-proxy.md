@@ -1,5 +1,5 @@
 ---
-title: LLM Proxy
+title: Overview
 category: LLM Proxy
 order: 1
 description: Secure proxy for LLM provider interactions
