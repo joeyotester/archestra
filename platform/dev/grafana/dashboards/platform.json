@@ -1515,7 +1515,7 @@
             "uid": "$metrics_datasource"
           },
           "editorMode": "code",
-          "expr": "round(sum by (agent_id) (increase(agent_executions_total{agent_id!=\"\"}[$agent_cost_range])))",
+          "expr": "round(sum by (agent_id) (increase(agent_executions_total{agent_id!=\"\"}[$__range])))",
           "hide": false,
           "instant": true,
           "legendFormat": "{{agent_id}}",
@@ -1524,7 +1524,7 @@
           "refId": "A"
         }
       ],
-      "title": "Executions per Agent ($agent_cost_range)",
+      "title": "Executions per Agent",
       "type": "stat"
     },
     {
@@ -1614,7 +1614,7 @@
             "uid": "$metrics_datasource"
           },
           "editorMode": "code",
-          "expr": "sum by (agent_id) (increase(llm_cost_total{agent_id!=\"\"}[$agent_cost_range]))",
+          "expr": "sum by (agent_id) (increase(llm_cost_total{agent_id!=\"\"}[$__range]))",
           "hide": false,
           "instant": false,
           "legendFormat": "{{agent_id}}",
@@ -1623,7 +1623,7 @@
           "refId": "A"
         }
       ],
-      "title": "Inference Cost per Agent ($agent_cost_range)",
+      "title": "Inference Cost per Agent",
       "type": "timeseries"
     },
     {
@@ -1713,7 +1713,7 @@
             "uid": "$metrics_datasource"
           },
           "editorMode": "code",
-          "expr": "sum by (agent_id) (increase(llm_cost_total{agent_id!=\"\"}[$agent_cost_range])) + round(sum by (agent_id) (increase(agent_executions_total{agent_id!=\"\"}[$agent_cost_range]))) * 1",
+          "expr": "sum by (agent_id) (increase(llm_cost_total{agent_id!=\"\"}[$__range])) + round(sum by (agent_id) (increase(agent_executions_total{agent_id!=\"\"}[$__range]))) * 1",
           "hide": false,
           "instant": false,
           "legendFormat": "{{agent_id}}",
@@ -1722,7 +1722,7 @@
           "refId": "A"
         }
       ],
-      "title": "Inference + N8N Cost ($agent_cost_range)",
+      "title": "Inference + N8N Cost",
       "type": "timeseries"
     },
     {
@@ -2327,28 +2327,6 @@
         "query": "tempo",
         "refresh": 1,
         "type": "datasource"
-      },
-      {
-        "allowCustomValue": true,
-        "current": {
-          "text": "7d",
-          "value": "7d"
-        },
-        "description": "Time range for Agent TCO panels",
-        "includeAll": false,
-        "label": "Agent Cost Range",
-        "name": "agent_cost_range",
-        "options": [
-          { "selected": false, "text": "30m", "value": "30m" },
-          { "selected": false, "text": "1h", "value": "1h" },
-          { "selected": false, "text": "1d", "value": "1d" },
-          { "selected": false, "text": "3d", "value": "3d" },
-          { "selected": true, "text": "7d", "value": "7d" },
-          { "selected": false, "text": "14d", "value": "14d" },
-          { "selected": false, "text": "30d", "value": "30d" }
-        ],
-        "query": "30m,1h,1d,3d,7d,14d,30d",
-        "type": "custom"
       },
       {
         "allowCustomValue": false,
