@@ -139,6 +139,14 @@ export async function handleLLMProxy<
     `[${providerName}Proxy] Agent resolved`,
   );
 
+  if (executionId) {
+    metrics.agentExecution.reportAgentExecution({
+      executionId,
+      profile: resolvedAgent,
+      externalAgentId,
+    });
+  }
+
   // Extract API key
   const apiKey = provider.extractApiKey(headers);
 

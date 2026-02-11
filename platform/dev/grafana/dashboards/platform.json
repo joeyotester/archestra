@@ -1458,6 +1458,281 @@
         "x": 0,
         "y": 62
       },
+      "id": 40,
+      "panels": [],
+      "title": "Agent Executions",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "$metrics_datasource"
+      },
+      "description": "Total unique executions per agent, identified by X-Archestra-Execution-Id header. Shows a sliding window — values rise as new executions enter the window and drop as old ones fall out.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 63
+      },
+      "id": 41,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "pluginVersion": "12.2.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "$metrics_datasource"
+          },
+          "editorMode": "code",
+          "expr": "round(sum by (agent_id) (increase(agent_executions_total{agent_id!=\"\"}[$agent_cost_range])))",
+          "hide": false,
+          "instant": true,
+          "legendFormat": "{{agent_id}}",
+          "queryType": "instant",
+          "range": false,
+          "refId": "A"
+        }
+      ],
+      "title": "Executions per Agent ($agent_cost_range)",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "$metrics_datasource"
+      },
+      "description": "LLM inference cost per agent. Shows a sliding window — each point represents the total cost in the preceding interval. Values rise as new costs enter the window and drop as old ones fall out.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "showValues": false,
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              }
+            ]
+          },
+          "unit": "currencyUSD"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 71
+      },
+      "id": 42,
+      "options": {
+        "legend": {
+          "calcs": ["lastNotNull"],
+          "displayMode": "table",
+          "placement": "right",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "12.2.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "$metrics_datasource"
+          },
+          "editorMode": "code",
+          "expr": "sum by (agent_id) (increase(llm_cost_total{agent_id!=\"\"}[$agent_cost_range]))",
+          "hide": false,
+          "instant": false,
+          "legendFormat": "{{agent_id}}",
+          "queryType": "range",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Inference Cost per Agent ($agent_cost_range)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "$metrics_datasource"
+      },
+      "description": "Inference + N8N cost: LLM token cost + execution cost ($1 per execution). Shows a sliding window — values rise as new costs enter the window and drop as old ones fall out.\nFormula: sum(llm_cost_total) by (agent_id) + round(sum(agent_executions_total) by (agent_id)) * 1",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "showValues": false,
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              }
+            ]
+          },
+          "unit": "currencyUSD"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 79
+      },
+      "id": 43,
+      "options": {
+        "legend": {
+          "calcs": ["lastNotNull"],
+          "displayMode": "table",
+          "placement": "right",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "12.2.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "$metrics_datasource"
+          },
+          "editorMode": "code",
+          "expr": "sum by (agent_id) (increase(llm_cost_total{agent_id!=\"\"}[$agent_cost_range])) + round(sum by (agent_id) (increase(agent_executions_total{agent_id!=\"\"}[$agent_cost_range]))) * 1",
+          "hide": false,
+          "instant": false,
+          "legendFormat": "{{agent_id}}",
+          "queryType": "range",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Inference + N8N Cost ($agent_cost_range)",
+      "type": "timeseries"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 87
+      },
       "id": 22,
       "panels": [],
       "title": "Application",
@@ -1525,7 +1800,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 63
+        "y": 88
       },
       "id": 7,
       "options": {
@@ -1630,7 +1905,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 63
+        "y": 88
       },
       "id": 9,
       "options": {
@@ -1779,7 +2054,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 71
+        "y": 96
       },
       "id": 8,
       "options": {
@@ -1880,7 +2155,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 79
+        "y": 104
       },
       "id": 1,
       "options": {
@@ -1981,7 +2256,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 79
+        "y": 104
       },
       "id": 2,
       "options": {
@@ -2052,6 +2327,28 @@
         "query": "tempo",
         "refresh": 1,
         "type": "datasource"
+      },
+      {
+        "allowCustomValue": true,
+        "current": {
+          "text": "7d",
+          "value": "7d"
+        },
+        "description": "Time range for Agent TCO panels",
+        "includeAll": false,
+        "label": "Agent Cost Range",
+        "name": "agent_cost_range",
+        "options": [
+          { "selected": false, "text": "30m", "value": "30m" },
+          { "selected": false, "text": "1h", "value": "1h" },
+          { "selected": false, "text": "1d", "value": "1d" },
+          { "selected": false, "text": "3d", "value": "3d" },
+          { "selected": true, "text": "7d", "value": "7d" },
+          { "selected": false, "text": "14d", "value": "14d" },
+          { "selected": false, "text": "30d", "value": "30d" }
+        ],
+        "query": "30m,1h,1d,3d,7d,14d,30d",
+        "type": "custom"
       },
       {
         "allowCustomValue": false,
