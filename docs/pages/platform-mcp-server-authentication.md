@@ -96,21 +96,17 @@ flowchart TD
     D -- Yes --> E["Use caller's credential"]
     D -- No --> F{Team member<br/>has credential?}
     F -- Yes --> G["Use team member's<br/>credential"]
-    F -- No --> H{Any org<br/>credential?}
-    H -- Yes --> I["Use org credential"]
-    H -- No --> J["Return error +<br/>install link"]
+    F -- No --> J["Return error +<br/>install link"]
 
     style E fill:#d4edda,stroke:#28a745
     style G fill:#d4edda,stroke:#28a745
-    style I fill:#d4edda,stroke:#28a745
     style J fill:#f8d7da,stroke:#dc3545
 ```
 
 Priority order:
 1. Calling user's own credential (highest)
 2. Team member's credential
-3. Any organization-wide credential
-4. Error with install link
+3. Error with install link
 
 ### Missing Credentials
 
