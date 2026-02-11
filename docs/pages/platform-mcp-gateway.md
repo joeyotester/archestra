@@ -99,3 +99,9 @@ Authorization: Bearer archestra_<token>
 ```
 
 Create tokens in **Settings → Tokens** or via the Archestra API.
+
+## Related
+
+- [MCP Authentication](/docs/mcp-authentication) — OAuth 2.1, PKCE, and discovery concepts
+- [Using MCP Servers with Authentication](/docs/platform-mcp-server-authentication) — How Archestra manages upstream credentials
+- [Building MCP Servers with Authentication](/docs/platform-building-mcp-server-auth) — Auth patterns for server developers
