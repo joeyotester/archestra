@@ -1,5 +1,5 @@
 import { SESSION_ID_HEADER } from "@shared";
-import { parseMetaHeader } from "./meta-header";
+import { getHeaderValue, parseMetaHeader } from "./meta-header";
 
 const OPENWEBUI_CHAT_ID_HEADER = "x-openwebui-chat-id";
 
@@ -77,31 +77,4 @@ export function extractSessionInfo(
   }
 
   return { sessionId: null, sessionSource: null };
-}
-
-/**
- * Helper to get a header value from the headers object.
- * Handles both string and array values.
- */
-function getHeaderValue(
-  headers: Record<string, string | string[] | undefined>,
-  headerName: string,
-): string | undefined {
-  // HTTP headers are case-insensitive, so we check lowercase
-  const headerKey = headerName.toLowerCase();
-  const headerValue = headers[headerKey];
-
-  if (typeof headerValue === "string" && headerValue.trim().length > 0) {
-    return headerValue.trim();
-  }
-
-  // Handle case where header might be an array
-  if (Array.isArray(headerValue) && headerValue.length > 0) {
-    const firstValue = headerValue[0];
-    if (typeof firstValue === "string" && firstValue.trim().length > 0) {
-      return firstValue.trim();
-    }
-  }
-
-  return undefined;
 }

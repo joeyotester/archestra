@@ -170,6 +170,8 @@ export const EXECUTION_ID_HEADER = "X-Archestra-Execution-Id";
  * Provides a convenience way to set all three values at once.
  * Individual headers take precedence over meta header values.
  * Any segment can be empty (e.g., "/exec-123/" sets only execution-id).
+ *
+ * Values must not contain "/" since it is used as the segment delimiter.
  */
 export const META_HEADER = "X-Archestra-Meta";
 
