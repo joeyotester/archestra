@@ -167,7 +167,7 @@ async function getAgentNamesById(
  * Resolve an external agent ID to a human-readable label.
  * - Single agent ID: Returns the agent name
  * - Delegation chain: Returns only the last (most specific) agent name
- * - Non-UUID: Returns null (will fall back to Main/Subagent)
+ * - Non-UUID: Returns the original string as-is
  */
 function resolveExternalAgentIdLabel(
   externalAgentId: string | null,
