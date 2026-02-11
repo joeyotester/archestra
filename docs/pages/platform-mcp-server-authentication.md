@@ -46,7 +46,7 @@ graph LR
         GW --> CR
     end
 
-    subgraph Passthrough["Passthrough MCP Servers"]
+    subgraph Passthrough["Passthrough Servers"]
         U1["GitHub"]
         U2["Atlassian"]
         U3["ServiceNow"]
