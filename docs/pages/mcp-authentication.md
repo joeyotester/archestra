@@ -1,8 +1,8 @@
 ---
 title: "MCP Authentication"
-category: Archestra Platform
-subcategory: Concepts
-order: 5
+category: MCP Gateway
+subcategory: Authentication
+order: 4
 description: "How authentication works in the Model Context Protocol"
 lastUpdated: 2026-02-10
 ---

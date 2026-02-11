@@ -1,8 +1,8 @@
 ---
 title: "Building MCP Servers with Authentication"
-category: Archestra Platform
-subcategory: Guides
-order: 7
+category: MCP Gateway
+subcategory: Authentication
+order: 6
 description: "How to build MCP servers that work with Archestra's authentication"
 lastUpdated: 2026-02-10
 ---

@@ -1,8 +1,8 @@
 ---
 title: "Using MCP Servers with Authentication"
-category: Archestra Platform
-subcategory: Guides
-order: 6
+category: MCP Gateway
+subcategory: Authentication
+order: 5
 description: "How Archestra handles authentication for MCP servers like GitHub, Atlassian, and ServiceNow"
 lastUpdated: 2026-02-10
 ---
@@ -78,7 +78,7 @@ The MCP Gateway (`POST /v1/mcp/:profileId`) accepts three token types:
 |---|---|---|
 | Team / Org token | `archestra_*` | CI/CD, shared programmatic access |
 | User token | `archestra_*` | Personal access, chat, scoped to user's teams |
-| OAuth 2.1 | JWT | MCP-native clients (Open WebUI, Claude Desktop) |
+| OAuth 2.1 | Bearer token | MCP-native clients (Open WebUI, Claude Desktop) |
 
 On 401, the gateway returns `WWW-Authenticate` per RFC 9728 — OAuth-capable clients discover and authenticate automatically. Create tokens in **Settings > Tokens**. See [MCP Gateway](/docs/platform-mcp-gateway).
 
