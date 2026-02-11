@@ -80,7 +80,7 @@ Credentials for upstream MCP servers are set during installation from the MCP Ca
 For **passthrough** servers: `Authorization: Bearer` header over HTTP.
 For **hosted** servers: stdio transport within K8s — no auth headers needed.
 
-Stored in the secrets backend (database by default, [HashiCorp Vault](/docs/platform-secrets-management) for enterprise).
+Stored in the secrets backend (database by default, [external secrets manager](/docs/platform-secrets-management) for enterprise).
 
 ### Per-User Credentials
 
